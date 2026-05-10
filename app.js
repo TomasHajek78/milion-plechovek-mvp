@@ -115,7 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
         markersLayer.clearLayers();
         myHistory.forEach(item => {
             if (item.coords) {
-                L.marker([item.coords.lat, item.coords.lon])
+                const numberIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<span>${item.count}</span>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                L.marker([item.coords.lat, item.coords.lon], { icon: numberIcon })
                     .bindPopup(`<b>${item.count} ks</b><br>${item.date}`)
                     .addTo(markersLayer);
             }
