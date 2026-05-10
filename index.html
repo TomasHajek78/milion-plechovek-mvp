@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="logo.png?v=2">
+    <link rel="icon" type="image/png" href="logo.png?v=2">
+    <title>Milion Plechovek | Sběrač</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Leaflet Mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Hlavička s logem -->
+        <header class="header">
+            <img src="logo.png" alt="Milion Plechovek Logo" class="brand-logo">
+        </header>
+
+        <!-- Registrace Nickname (pokud není uložen) -->
+        <div id="loginScreen" class="card hidden">
+            <h3>Jak ti máme říkat?</h3>
+            <p class="small-text">Vymysli si přezdívku nebo zadej svůj IG, ať se najdeš v žebříčku.</p>
+            <input type="text" id="nicknameInput" placeholder="@pepa_sbira">
+            <button id="saveNickBtn" class="primary-btn-small">Uložit</button>
+        </div>
+
+        <!-- Statistiky -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card" id="myStatsCard" style="cursor: pointer;">
+                <h3>MOJE STATISTIKY</h3>
+                <div class="stat-value" id="myTotal">0</div>
+                <p>Nasbíráno (<span id="userNickDisplay">...</span>)</p>
+                <div class="small-text" style="margin-top: 5px; color: var(--rust-red);">👆 Klikni pro historii</div>
+            </div>
+            <div class="stat-card">
+                <h3>CELKOVÝ ODPOČET</h3>
+                <div class="stat-value highlight" id="globalTotal">999 171</div>
+                <p>Zbývá do cíle</p>
+            </div>
+        </div>
+
+        <!-- Historie mých úlovků (skrytá/zobrazitelná) -->
+        <div id="historyPanel" class="card hidden">
+            <h3 style="font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 5px;">Historie nálezů</h3>
+            <ul id="historyList" class="history-list"></ul>
+        </div>
+
+        <!-- Hlavní Tlačítka -->
+        <div class="main-action" id="mainAction">
+            <button id="cameraBtn" class="primary-btn">
+                <span class="icon">📸</span><br>VYFOTIT<br>NÁLEZ
+            </button>
+            
+            <button id="galleryBtn" class="gallery-btn">
+                📂 Nahrát z galerie
+            </button>
+
+            <!-- Skryté inputy -->
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+            <input type="file" id="galleryInput" accept="image/*" style="display: none;">
+        </div>
+
+        <!-- Mapa nálezů -->
+        <div class="card map-card">
+            <h3>Mapa úlovků</h3>
+            <div id="map" style="height: 300px; border-radius: 8px; z-index: 1;"></div>
+        </div>
+
+        <!-- Formulář pro úlovek (skrytý do vyfocení) -->
+        <div id="pickupForm" class="card pickup-form hidden">
+            <img id="photoPreview" alt="Náhled úlovku" class="photo-preview">
+            
+            <div class="form-group">
+                <label for="canCount">Kolik plechovek je na fotce?</label>
+                <input type="number" id="canCount" value="1" min="1" max="500">
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Zanech poznámku (lze i nadiktovat):</label>
+                <textarea id="notes" placeholder="Třeba: Objevil jsem poklad v příkopu..."></textarea>
+            </div>
+
+            <div class="gps-status" id="gpsStatus">📍 Zjišťuji GPS polohu a čas...</div>
+
+            <button id="submitBtn" class="submit-btn">Odeslat do odpočtu</button>
+            <button id="cancelBtn" class="secondary-btn">Zrušit a zpět</button>
+        </div>
+        
+        <!-- Výsledek / Sdílení -->
+        <div id="successScreen" class="card success-screen hidden">
+            <h2>🎉 Skvělá práce!</h2>
+            <p>Odečteno z celkového milionu.</p>
+            <p class="small-text">Tvoje data (GPS a čas) jsme uložili do mapy.</p>
+            
+            <button id="shareBtn" class="share-btn">Sdílet na IG/FB s @milionplechovek</button>
+            <button id="newPickupBtn" class="secondary-btn">Jít nasbírat další</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
