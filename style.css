@@ -4,6 +4,7 @@
     --forest-green: #377c45;
     --bg-light: #f5f8f5;
     --text-dark: #111717;
+    --nav-bg: #ffffff;
 }
 
 * {
@@ -11,36 +12,37 @@
     margin: 0;
     padding: 0;
     font-family: 'Montserrat', sans-serif;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    background: linear-gradient(to bottom, #ffffff, var(--bg-light));
+    background: var(--bg-light);
     color: var(--text-dark);
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding-bottom: 50px;
+    overflow-x: hidden;
 }
 
 .app-container {
     width: 100%;
     max-width: 480px;
     padding: 20px;
+    padding-bottom: 90px; /* Místo pro spodní nav */
     display: flex;
     flex-direction: column;
-    align-items: center;
+    position: relative;
+    min-height: 100vh;
 }
 
 .header {
     text-align: center;
-    margin-bottom: 30px;
-    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 .brand-logo {
-    max-width: 260px;
+    max-width: 180px;
     height: auto;
-    display: block;
     margin: 0 auto;
 }
 
@@ -49,55 +51,51 @@ body {
 }
 
 .card {
-    width: 100%;
     background: white;
     padding: 20px;
     border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
     margin-bottom: 20px;
     overflow: hidden;
 }
 
-.map-card {
-    padding: 10px;
+/* Navigace mezi sekcemi */
+.view-section {
+    width: 100%;
+    animation: fadeIn 0.3s ease;
 }
 
-.map-card h3 {
-    padding: 10px;
-    font-size: 12px;
-    text-transform: uppercase;
-    color: #666;
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
+/* Statistiky */
 .stats-row {
     display: flex;
-    gap: 15px;
-    width: 100%;
-    margin-bottom: 40px;
+    gap: 12px;
+    margin-bottom: 20px;
 }
 
 .stat-card {
     background: white;
     border-radius: 12px;
-    padding: 15px;
+    padding: 12px;
     flex: 1;
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 .stat-card h3 {
-    font-size: 10px;
+    font-size: 9px;
     text-transform: uppercase;
-    color: #666;
-    margin-bottom: 5px;
+    color: #888;
+    margin-bottom: 4px;
 }
 
 .stat-value {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
     color: var(--forest-green);
 }
 
@@ -106,180 +104,229 @@ body {
 }
 
 .stat-card p {
-    font-size: 10px;
-    margin-top: 5px;
-    color: #888;
+    font-size: 11px;
+    color: #666;
 }
 
-/* Hlavní tlačítko */
-.main-action {
-    margin-top: 10px;
-    margin-bottom: 30px;
+/* HLAVNÍ TLAČÍTKO UPROSTŘED */
+.main-action-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 0;
 }
 
-.primary-btn {
-    width: 220px;
-    height: 220px;
+.primary-btn-large {
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
     background-color: var(--rust-red);
     color: white;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 900;
-    border: 8px solid white;
-    box-shadow: 0 10px 30px rgba(193, 83, 69, 0.4);
+    border: 10px solid white;
+    box-shadow: 0 15px 35px rgba(193, 83, 69, 0.3);
     cursor: pointer;
-    transition: transform 0.1s, background-color 0.2s;
-    text-transform: uppercase;
-    line-height: 1.2;
-}
-
-.primary-btn:active {
-    transform: scale(0.95);
-    background-color: var(--rust-dark);
-}
-
-.primary-btn .icon {
-    font-size: 40px;
-    margin-bottom: 5px;
-    display: inline-block;
-}
-
-.gallery-btn {
-    margin-top: 15px;
-    background: none;
-    border: 2px dashed #ccc;
-    color: #666;
-    padding: 12px 20px;
-    border-radius: 30px;
-    font-weight: 600;
-    cursor: pointer;
-    width: 100%;
-    transition: all 0.2s;
-}
-
-.gallery-btn:hover {
-    background: #eee;
-    border-color: #999;
-}
-
-.primary-btn-small {
-    padding: 12px;
-    background-color: var(--forest-green);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.photo-preview {
-    width: 100%;
-    height: 220px;
-    object-fit: cover;
-    border-radius: 8px;
-    background: #eee;
-}
-
-.form-group {
+    transition: transform 0.1s;
+    line-height: 1.1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    justify-content: center;
+    align-items: center;
 }
 
-.form-group label {
-    font-size: 14px;
-    font-weight: 700;
+.primary-btn-large:active {
+    transform: scale(0.92);
 }
 
-.form-group input, .form-group textarea {
-    padding: 12px;
-    border: 2px solid #eee;
-    border-radius: 8px;
-    font-size: 16px;
-    font-family: inherit;
+.primary-btn-large .icon {
+    font-size: 44px;
+    margin-bottom: 5px;
 }
 
-#nicknameInput {
-    padding: 16px;
-    font-size: 18px;
-    width: 100%;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-.form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-.gps-status {
-    font-size: 12px;
-    color: var(--forest-green);
-    text-align: center;
-    background: #eaf3eb;
-    padding: 10px;
-    border-radius: 6px;
-}
-
-.submit-btn, .share-btn, .secondary-btn {
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
+.gallery-link {
+    margin-top: 20px;
+    background: none;
     border: none;
-    text-align: center;
-}
-
-.submit-btn {
-    background-color: var(--forest-green);
-    color: white;
-}
-
-.share-btn {
-    background-color: #E1306C; /* IG Barva */
-    color: white;
-}
-
-.secondary-btn {
-    background-color: #eee;
-    color: var(--text-dark);
-}
-
-.success-screen h2 {
-    color: var(--forest-green);
-    text-align: center;
-}
-
-.success-screen p {
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-.small-text {
+    color: #888;
     font-size: 14px;
-    line-height: 1.4;
-    color: #555;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Historie */
+.history-card h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    color: #666;
 }
 
 .history-list {
     list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 180px;
-    overflow-y: auto;
 }
 
 .history-list li {
     display: flex;
     justify-content: space-between;
     padding: 10px 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+}
+
+/* Mapa */
+.map-full-card {
+    padding: 0;
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.map-full-card h3 {
+    padding: 15px;
     font-size: 14px;
 }
 
-.history-list li:last-child {
-    border-bottom: none;
+#map {
+    flex: 1;
+    width: 100%;
+    z-index: 1;
+}
+
+/* Žebříček */
+.leaderboard-list {
+    list-style: none;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.leaderboard-item.me {
+    background: #fff9f0;
+    border-radius: 8px;
+    margin: 5px -10px;
+    padding: 12px 10px;
+    border: 1px solid #ffe0b3;
+    font-weight: 700;
+}
+
+.rank {
+    width: 30px;
+    font-weight: 900;
+    color: #888;
+}
+
+.leaderboard-item:nth-child(1) .rank { color: #FFD700; }
+.leaderboard-item:nth-child(2) .rank { color: #C0C0C0; }
+.leaderboard-item:nth-child(3) .rank { color: #CD7F32; }
+
+.nick {
+    flex: 1;
+    font-size: 14px;
+}
+
+.count {
+    color: var(--forest-green);
+    font-weight: 700;
+}
+
+/* Spodní Navigace */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 75px;
+    background: var(--nav-bg);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.2s;
+    flex: 1;
+}
+
+.nav-item.active {
+    color: var(--rust-red);
+}
+
+.nav-icon {
+    font-size: 22px;
+}
+
+.nav-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Formuláře */
+.photo-preview {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+.form-group { margin-bottom: 15px; }
+.form-group label { font-size: 13px; font-weight: 700; display: block; margin-bottom: 5px; }
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--forest-green);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.secondary-btn {
+    width: 100%;
+    padding: 12px;
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.share-btn {
+    width: 100%;
+    padding: 16px;
+    background: #E1306C;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    margin-bottom: 10px;
 }

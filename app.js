@@ -1,11 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
-    const statsRow = document.getElementById('statsRow');
-    const mainAction = document.getElementById('mainAction');
+    const sections = {
+        home: document.getElementById('homeSection'),
+        map: document.getElementById('mapSection'),
+        leaderboard: document.getElementById('leaderboardSection')
+    };
+    const navItems = document.querySelectorAll('.nav-item');
     const pickupForm = document.getElementById('pickupForm');
     const successScreen = document.getElementById('successScreen');
-    const mapCard = document.querySelector('.map-card');
     
     // --- Tlačítka a inputy ---
     const nicknameInput = document.getElementById('nicknameInput');
@@ -28,26 +31,82 @@ document.addEventListener('DOMContentLoaded', () => {
     const myTotalEl = document.getElementById('myTotal');
     const globalTotalEl = document.getElementById('globalTotal');
     
-    const myStatsCard = document.getElementById('myStatsCard');
-    const historyPanel = document.getElementById('historyPanel');
     const historyList = document.getElementById('historyList');
+    const leaderboardList = document.getElementById('leaderboardList');
 
     // --- State Aplikace ---
     let myStats = parseInt(localStorage.getItem('milion_mystats')) || 0;
     let globalStats = parseInt(localStorage.getItem('milion_globalstats')) || 999171;
     let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
+    let userNick = localStorage.getItem('milion_nickname') || '';
     let currentCoords = null;
     let map, markersLayer;
 
-    // --- Inicializace Mapy ---
-    function initMap() {
-        // Výchozí pohled na ČR, pokud nemáme polohu
-        map = L.map('map').setView([49.8175, 15.473], 7);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+    // --- Mock Data pro Žebříček ---
+    const mockLeaderboard = [
+        { nick: "Plechovkový Král", count: 1250 },
+        { nick: "EkoVálečník", count: 840 },
+        { nick: "Sběrač_007", count: 620 },
+        { nick: "Příroda_v_srdci", count: 510 },
+        { nick: "Hliníkový_Honza", count: 480 },
+        { nick: "Kovy_z_lesa", count: 420 },
+        { nick: "Recykluj_nebo_zemři", count: 390 },
+        { nick: "Zelená_Zuzka", count: 350 },
+        { nick: "Čistá_Stezka", count: 310 },
+        { nick: "Plecháč", count: 280 }
+    ];
 
+    // --- Navigace ---
+    function switchView(viewName) {
+        // Skrýt vše
+        Object.values(sections).forEach(s => s.classList.add('hidden'));
+        navItems.forEach(n => n.classList.remove('active'));
+
+        // Zobrazit vybrané
+        sections[viewName].classList.remove('hidden');
+        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+
+        if (viewName === 'map') {
+            setTimeout(() => map.invalidateSize(), 100);
+        }
+        if (viewName === 'leaderboard') {
+            renderLeaderboard();
+        }
+    }
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => switchView(item.dataset.view));
+    });
+
+    // --- Žebříček ---
+    function renderLeaderboard() {
+        leaderboardList.innerHTML = '';
+        mockLeaderboard.forEach((user, index) => {
+            const li = document.createElement('li');
+            li.className = 'leaderboard-item';
+            li.innerHTML = `
+                <span class="rank">${index + 1}.</span>
+                <span class="nick">${user.nick}</span>
+                <span class="count">${user.count} ks</span>
+            `;
+            leaderboardList.appendChild(li);
+        });
+
+        // Moje pozice (11. řádek)
+        const myLi = document.createElement('li');
+        myLi.className = 'leaderboard-item me';
+        myLi.innerHTML = `
+            <span class="rank">11.</span>
+            <span class="nick">${userNick || 'Já'}</span>
+            <span class="count">${myStats} ks</span>
+        `;
+        leaderboardList.appendChild(myLi);
+    }
+
+    // --- Mapa ---
+    function initMap() {
+        map = L.map('map').setView([49.8175, 15.473], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         markersLayer = L.layerGroup().addTo(map);
         renderMarkers();
     }
@@ -56,54 +115,39 @@ document.addEventListener('DOMContentLoaded', () => {
         markersLayer.clearLayers();
         myHistory.forEach(item => {
             if (item.coords) {
-                const marker = L.marker([item.coords.lat, item.coords.lon]);
-                marker.bindPopup(`<b>${item.count} ks</b><br>${item.date}<br>${item.note || ''}`);
-                markersLayer.addLayer(marker);
+                L.marker([item.coords.lat, item.coords.lon])
+                    .bindPopup(`<b>${item.count} ks</b><br>${item.date}`)
+                    .addTo(markersLayer);
             }
         });
-        
-        // Pokud máme body, zazoomujeme na ně
-        if (myHistory.length > 0 && myHistory[0].coords) {
-            const latest = myHistory[0].coords;
-            map.setView([latest.lat, latest.lon], 13);
-        }
     }
 
-    initMap();
-
-    // Vykreslení historie v seznamu
+    // --- Historie ---
     function renderHistory() {
         historyList.innerHTML = '';
         if (myHistory.length === 0) {
-            historyList.innerHTML = '<li class="small-text" style="color:#888;">Zatím žádné úlovky. Běž na lov!</li>';
+            historyList.innerHTML = '<li class="small-text" style="color:#888; text-align:center; width:100%;">Zatím nic. Vyraz ven!</li>';
             return;
         }
-        myHistory.forEach(item => {
+        myHistory.slice(0, 5).forEach(item => {
             const li = document.createElement('li');
             li.innerHTML = `<span>📅 ${item.date}</span> <strong>+${item.count} ks</strong>`;
             historyList.appendChild(li);
         });
     }
 
-    // Inicializace UI
+    // --- Inicializace ---
     myTotalEl.textContent = myStats;
     globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
+    if (userNick) userNickDisplay.textContent = userNick;
     renderHistory();
+    initMap();
 
-    // Přepínání panelu historie
-    myStatsCard.addEventListener('click', () => {
-        historyPanel.classList.toggle('hidden');
-    });
-
-    // Kontrola přezdívky
-    let userNick = localStorage.getItem('milion_nickname');
+    // Kontrola nickname
     if (!userNick) {
         loginScreen.classList.remove('hidden');
-        statsRow.classList.add('hidden');
-        mainAction.classList.add('hidden');
-        mapCard.classList.add('hidden');
-    } else {
-        userNickDisplay.textContent = userNick;
+        sections.home.classList.add('hidden');
+        document.querySelector('.bottom-nav').classList.add('hidden');
     }
 
     saveNickBtn.addEventListener('click', () => {
@@ -111,85 +155,57 @@ document.addEventListener('DOMContentLoaded', () => {
             userNick = nicknameInput.value.trim();
             localStorage.setItem('milion_nickname', userNick);
             userNickDisplay.textContent = userNick;
-            
             loginScreen.classList.add('hidden');
-            statsRow.classList.remove('hidden');
-            mainAction.classList.remove('hidden');
-            mapCard.classList.remove('hidden');
+            sections.home.classList.remove('hidden');
+            document.querySelector('.bottom-nav').classList.remove('hidden');
+            renderLeaderboard();
         }
     });
 
-    // --- Ovládání vstupu (Foťák/Galerie) ---
+    // --- Akce ---
     cameraBtn.addEventListener('click', () => cameraInput.click());
     galleryBtn.addEventListener('click', () => galleryInput.click());
 
     [cameraInput, galleryInput].forEach(input => {
         input.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
-                const file = e.target.files[0];
                 const reader = new FileReader();
                 reader.onload = (e) => { photoPreview.src = e.target.result; };
-                reader.readAsDataURL(file);
-
-                mainAction.classList.add('hidden');
-                statsRow.classList.add('hidden');
-                mapCard.classList.add('hidden');
+                reader.readAsDataURL(e.target.files[0]);
+                sections.home.classList.add('hidden');
+                document.querySelector('.bottom-nav').classList.add('hidden');
                 pickupForm.classList.remove('hidden');
-
                 getGPSLocation();
             }
         });
     });
 
-    // Získání polohy
     function getGPSLocation() {
         gpsStatus.textContent = "📍 Zjišťuji polohu...";
-        
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    currentCoords = {
-                        lat: position.coords.latitude,
-                        lon: position.coords.longitude
-                    };
-                    gpsStatus.innerHTML = `📍 <b>Poloha zaměřena!</b>`;
-                    gpsStatus.style.color = 'var(--forest-green)';
-                },
-                (error) => {
-                    gpsStatus.innerHTML = "📍 Polohu se nepodařilo zaměřit.";
-                    gpsStatus.style.color = 'var(--rust-red)';
-                },
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
-        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                gpsStatus.innerHTML = "📍 Poloha zaměřena!";
+                gpsStatus.style.color = "var(--forest-green)";
+            },
+            () => { gpsStatus.innerHTML = "📍 Poloha nezaměřena."; gpsStatus.style.color = "var(--rust-red)"; },
+            { timeout: 5000 }
+        );
     }
 
-    // Odeslání do odpočtu
     submitBtn.addEventListener('click', () => {
         const count = parseInt(canCountInput.value) || 1;
         const now = new Date();
         const dateStr = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
-        const note = document.getElementById('notes').value;
         
-        // Update statistik
         myStats += count;
         globalStats -= count;
+        myHistory.unshift({ count: count, date: dateStr, coords: currentCoords });
         
-        // Zápis do historie včetně souřadnic
-        const newEntry = { 
-            count: count, 
-            date: dateStr, 
-            coords: currentCoords,
-            note: note 
-        };
-        myHistory.unshift(newEntry);
-        
-        // Persistence
         localStorage.setItem('milion_mystats', myStats);
         localStorage.setItem('milion_globalstats', globalStats);
         localStorage.setItem('milion_history', JSON.stringify(myHistory));
         
-        // Update UI
         myTotalEl.textContent = myStats;
         globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
         renderHistory();
@@ -197,21 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         pickupForm.classList.add('hidden');
         successScreen.classList.remove('hidden');
-        statsRow.classList.remove('hidden');
     });
 
-    // Sdílení
-    shareBtn.addEventListener('click', async () => {
-        const count = canCountInput.value;
-        const shareText = `Právě jsem sebral a odečetl ${count} plechovek z přírody! 🚮 @milionplechovek #youaresomeone`;
-        
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: 'Milion Plechovek', text: shareText, url: window.location.href });
-            } catch (err) {}
-        } else {
-            alert("Text zkopírován! Vlož ho na svůj IG.");
-        }
+    shareBtn.addEventListener('click', () => {
+        const text = `Právě jsem sebral ${canCountInput.value} plechovek! @milionplechovek`;
+        if (navigator.share) navigator.share({ text: text });
+        else alert("Text zkopírován!");
     });
 
     newPickupBtn.addEventListener('click', () => { window.location.reload(); });

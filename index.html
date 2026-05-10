@@ -25,7 +25,7 @@
             </a>
         </header>
 
-        <!-- Registrace Nickname (pokud není uložen) -->
+        <!-- Registrace Nickname -->
         <div id="loginScreen" class="card hidden">
             <h3>Jak ti máme říkat?</h3>
             <p class="small-text">Vymysli si přezdívku nebo zadej svůj IG, ať se najdeš v žebříčku.</p>
@@ -33,77 +33,92 @@
             <button id="saveNickBtn" class="primary-btn-small">Uložit</button>
         </div>
 
-        <!-- Statistiky -->
-        <div class="stats-row" id="statsRow">
-            <div class="stat-card" id="myStatsCard" style="cursor: pointer;">
-                <h3>MOJE STATISTIKY</h3>
-                <div class="stat-value" id="myTotal">0</div>
-                <p>Nasbíráno (<span id="userNickDisplay">...</span>)</p>
-                <div class="small-text" style="margin-top: 5px; color: var(--rust-red);">👆 Klikni pro historii</div>
+        <!-- HLAVNÍ SEKCE (HOME) -->
+        <div id="homeSection" class="view-section">
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card" id="myStatsCard">
+                    <h3>MOJE STATISTIKY</h3>
+                    <div class="stat-value" id="myTotal">0</div>
+                    <p><span id="userNickDisplay">...</span></p>
+                </div>
+                <div class="stat-card">
+                    <h3>CELKEM ZBÝVÁ</h3>
+                    <div class="stat-value highlight" id="globalTotal">999 171</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <h3>CELKOVÝ ODPOČET</h3>
-                <div class="stat-value highlight" id="globalTotal">999 171</div>
-                <p>Zbývá do cíle</p>
+
+            <!-- Vycentrované Tlačítko -->
+            <div class="main-action-center" id="mainAction">
+                <button id="cameraBtn" class="primary-btn-large">
+                    <span class="icon">📸</span><br>FOTIT
+                </button>
+                <button id="galleryBtn" class="gallery-link">📂 nebo z galerie</button>
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+                <input type="file" id="galleryInput" accept="image/*" style="display: none;">
+            </div>
+
+            <div id="historyPanel" class="card history-card">
+                <h3>Poslední úlovky</h3>
+                <ul id="historyList" class="history-list"></ul>
             </div>
         </div>
 
-        <!-- Historie mých úlovků (skrytá/zobrazitelná) -->
-        <div id="historyPanel" class="card hidden">
-            <h3 style="font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 5px;">Historie nálezů</h3>
-            <ul id="historyList" class="history-list"></ul>
+        <!-- SEKCE MAPA -->
+        <div id="mapSection" class="view-section hidden">
+            <div class="card map-full-card">
+                <h3>Mapa nálezů</h3>
+                <div id="map"></div>
+            </div>
         </div>
 
-        <!-- Hlavní Tlačítka -->
-        <div class="main-action" id="mainAction">
-            <button id="cameraBtn" class="primary-btn">
-                <span class="icon">📸</span><br>VYFOTIT<br>NÁLEZ
-            </button>
-            
-            <button id="galleryBtn" class="gallery-btn">
-                📂 Nahrát z galerie
-            </button>
-
-            <!-- Skryté inputy -->
-            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
-            <input type="file" id="galleryInput" accept="image/*" style="display: none;">
+        <!-- SEKCE ŽEBŘÍČEK -->
+        <div id="leaderboardSection" class="view-section hidden">
+            <div class="card leaderboard-card">
+                <h3>Žebříček sběračů</h3>
+                <ul id="leaderboardList" class="leaderboard-list">
+                    <!-- Tady bude TOP 10 + uživatel -->
+                </ul>
+            </div>
         </div>
 
-        <!-- Mapa nálezů -->
-        <div class="card map-card">
-            <h3>Mapa úlovků</h3>
-            <div id="map" style="height: 300px; border-radius: 8px; z-index: 1;"></div>
-        </div>
-
-        <!-- Formulář pro úlovek (skrytý do vyfocení) -->
+        <!-- FORMULÁŘE (MIMO HLAVNÍ NAVIGACI) -->
         <div id="pickupForm" class="card pickup-form hidden">
             <img id="photoPreview" alt="Náhled úlovku" class="photo-preview">
-            
             <div class="form-group">
                 <label for="canCount">Kolik plechovek je na fotce?</label>
                 <input type="number" id="canCount" value="1" min="1" max="500">
             </div>
-
             <div class="form-group">
-                <label for="notes">Zanech poznámku (lze i nadiktovat):</label>
-                <textarea id="notes" placeholder="Třeba: Objevil jsem poklad v příkopu..."></textarea>
+                <label for="notes">Poznámka:</label>
+                <textarea id="notes" placeholder="Kde jsi to našel?"></textarea>
             </div>
-
-            <div class="gps-status" id="gpsStatus">📍 Zjišťuji GPS polohu a čas...</div>
-
+            <div class="gps-status" id="gpsStatus">📍 Zjišťuji polohu...</div>
             <button id="submitBtn" class="submit-btn">Odeslat do odpočtu</button>
-            <button id="cancelBtn" class="secondary-btn">Zrušit a zpět</button>
+            <button id="cancelBtn" class="secondary-btn">Zrušit</button>
         </div>
         
-        <!-- Výsledek / Sdílení -->
         <div id="successScreen" class="card success-screen hidden">
             <h2>🎉 Skvělá práce!</h2>
             <p>Odečteno z celkového milionu.</p>
-            <p class="small-text">Tvoje data (GPS a čas) jsme uložili do mapy.</p>
-            
-            <button id="shareBtn" class="share-btn">Sdílet na IG/FB s @milionplechovek</button>
-            <button id="newPickupBtn" class="secondary-btn">Jít nasbírat další</button>
+            <button id="shareBtn" class="share-btn">Sdílet úlovek</button>
+            <button id="newPickupBtn" class="secondary-btn">Hotovo</button>
         </div>
+
+        <!-- SPODNÍ NAVIGACE -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-view="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Domů</span>
+            </button>
+            <button class="nav-item" data-view="map">
+                <span class="nav-icon">📍</span>
+                <span class="nav-label">Mapa</span>
+            </button>
+            <button class="nav-item" data-view="leaderboard">
+                <span class="nav-icon">🏆</span>
+                <span class="nav-label">Žebříček</span>
+            </button>
+        </nav>
     </div>
 
     <script src="app.js"></script>
