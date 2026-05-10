@@ -1,0 +1,21 @@
+{
+  "name": "Milion Plechovek",
+  "short_name": "Plechovky",
+  "description": "Sběračská aplikace projektu Milion Plechovek",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#c15345",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
