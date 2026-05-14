@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.coords) {
                 const numberIcon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: `<span>${item.count}</span>`,
+                    html: ``,
                     iconSize: [40, 40],
                     iconAnchor: [20, 20]
                 });
