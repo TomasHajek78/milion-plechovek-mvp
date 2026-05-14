@@ -1,3 +1,10 @@
+// --- Registrace Service Workera pro PWA stabilitu ---
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('Service Worker registrován'))
+        .catch(err => console.log('Service Worker selhal', err));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
@@ -118,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const numberIcon = L.divIcon({
                     className: 'custom-div-icon',
                     html: `<span>${item.count}</span>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
                 });
 
                 L.marker([item.coords.lat, item.coords.lon], { icon: numberIcon })
@@ -220,12 +227,141 @@ document.addEventListener('DOMContentLoaded', () => {
 
         pickupForm.classList.add('hidden');
         successScreen.classList.remove('hidden');
+        launchConfetti();
     });
 
+    function launchConfetti() {
+        const emojis = ['🥫', '♻️', '✨', '🌍', '💚'];
+        for (let i = 0; i < 20; i++) {
+            const confetti = document.createElement('div');
+            confetti.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            confetti.style.position = 'fixed';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.top = '-20px';
+            confetti.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            confetti.style.zIndex = '1000';
+            confetti.style.transition = `transform ${Math.random() * 2 + 1}s linear, opacity 2s`;
+            document.body.appendChild(confetti);
+
+            setTimeout(() => {
+                confetti.style.transform = `translateY(100vh) rotate(${Math.random() * 360}deg)`;
+                confetti.style.opacity = '0';
+            }, 100);
+
+            setTimeout(() => confetti.remove(), 3000);
+        }
+    }
+
     shareBtn.addEventListener('click', () => {
-        const text = `Právě jsem sebral ${canCountInput.value} plechovek! @milionplechovek`;
-        if (navigator.share) navigator.share({ text: text });
-        else alert("Text zkopírován!");
+        const count = canCountInput.value;
+        const text = `Právě jsem sebral ${count} plechovek a pomáhám vyčistit Česko! Sleduj @milionplechovek a přidej se taky. #milionplechovek ♻️🥫`;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Milion Plechovek',
+                text: text,
+                url: window.location.href
+            }).catch(() => {});
+        } else {
+            navigator.clipboard.writeText(text);
+            alert("Text pro sdílení byl zkopírován do schránky!");
+        }
+    });
+    
+    // --- Záloha a Obnova (Ochrana proti promazání prohlížečem) ---
+    window.exportData = () => {
+        const data = {
+            stats: myStats,
+            global: globalStats,
+            history: myHistory,
+            nick: userNick
+        };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `milion_plechovek_zaloha_${userNick}.json`;
+        a.click();
+    };
+
+    window.importData = (jsonStr) => {
+        try {
+            const data = JSON.parse(jsonStr);
+            if (data.stats !== undefined) {
+                myStats = data.stats;
+                globalStats = data.global;
+                myHistory = data.history;
+                userNick = data.nick;
+                
+                localStorage.setItem('milion_mystats', myStats);
+                localStorage.setItem('milion_globalstats', globalStats);
+                localStorage.setItem('milion_history', JSON.stringify(myHistory));
+                localStorage.setItem('milion_nickname', userNick);
+                
+                alert("Data úspěšně obnovena! Aplikace se restartuje.");
+                window.location.reload();
+            }
+        } catch (e) {
+            alert("Chyba při importu dat.");
+        }
+    };
+
+    window.handleImport = (input) => {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => importData(e.target.result);
+            reader.readAsText(file);
+        }
+    };
+
+    window.toggleSettings = () => {
+        const modal = document.getElementById('settingsModal');
+        modal.classList.toggle('hidden');
+    };
+
+    window.forceRefresh = async () => {
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let registration of registrations) {
+                await registration.unregister();
+            }
+        }
+        const cacheNames = await caches.keys();
+        for (let name of cacheNames) {
+            await caches.delete(name);
+        }
+        window.location.reload(true);
+    };
+
+    // --- PWA Instalační logika ---
+    let deferredPrompt;
+    const installOverlay = document.getElementById('installOverlay');
+    const installBtn = document.getElementById('installBtn');
+    const installInstructions = document.getElementById('installInstructions');
+
+    // Detekce iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (!isStandalone) installOverlay.classList.remove('hidden');
+    });
+
+    if (isIOS && !isStandalone) {
+        installOverlay.classList.remove('hidden');
+        installBtn.classList.add('hidden');
+        installInstructions.innerHTML = "Na iPhone klepni na <strong>Sdílet</strong> <span style='font-size:20px'>⎋</span> a poté na <strong>Přidat na plochu</strong> ⊕.";
+    }
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') installOverlay.classList.add('hidden');
+            deferredPrompt = null;
+        }
     });
 
     newPickupBtn.addEventListener('click', () => { window.location.reload(); });
