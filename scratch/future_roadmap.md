@@ -77,17 +77,36 @@ Tento dokument slouží jako paměť projektu pro budoucí nápady, vylepšení 
 ---
 
 ## 5. Možnosti monetizace a udržitelnosti (Business Model)
-Projekt by měl být ideálně finančně soběstačný nebo generovat zisk. Zde jsou reálné cesty monetizace:
-1.  **Firemní sponzorství a partnerství (B2B):**
-    *   Značky (Kofola, Red Bull, pivovary) platí za to, že jsou „Oficiálním partnerem“ výzev v aplikaci. Např. *„Kofola Výzva tohoto týdne“*. Výměnou získají branding přímo v PWA, na mapě a pozitivní zelené PR (Greenmarketing).
-2.  **Sponzorovaný obsah a loga na festivalech:**
-    *   Značky financují výrobu a logistiku festivalových košů výměnou za to, že na víku/koši bude vedle loga *Milion plechovek* také jejich logo (*„Tento koš sponzoruje [Značka]“*).
-3.  **Provize od recyklačních firem (Lead Generation):**
-    *   Partnerství s velkými výkupy kovů a recyklačními dvory. Sběrači mohou dostat tipy, kam plechovky odevzdat ve velkém, a výkupna zaplatí projektu drobnou provizi za přivedeného klienta nebo sponzorský poplatek.
-4.  **Prodej prémiového eko-merchandisu (B2C):**
-    *   E-shop s kvalitním merchem (trička, kšiltovky, lahve) vyrobeným z recyklovaných materiálů pro fanoušky a nejaktivnější sběrače.
-5.  **Státní a evropské ekologické granty:**
-    *   Ministerstvo životního prostředí (MŽP), kraje nebo EU vypisují obří granty na podporu ekologické osvěty, čištění přírody a digitální inovace v ekologii. Aplikace splňuje všechny parametry pro získání těchto dotací.
+Projekt by měl být ideálně finančně soběstačný nebo generovat zisk. Zde jsou reálné cesty monetizace, jak zpoplatnit partnerství a získat zpět investovaný čas do vývoje aplikace:
+
+### A. Roční partnerské balíčky (B2B Sponzorství)
+Velké korporace nekupují "syrová data" samostatně, ale kupují si ucelenou marketingovou a CSR hodnotu (zelené PR). Geodata, branding a komunitní dopad zabalíme do tří partnerských úrovní:
+
+1.  **Generální partner (např. Kofola nebo Mattoni) – Exkluzivita pro nealko sekci**
+    *   *Doporučená cena:* **150 000 – 300 000 Kč / rok**
+    *   *Co získá:* Exkluzivní branding v nealko výzvách, logo na mapě, PR zmínky ve všech videích, plný přístup ke strukturovaným geodatům (analýza výskytu jejich plechovek dle regionů, tras a času pro ESG reporting) a status „Hlavního ekologického patrona“.
+2.  **Partner kategorie (např. Starobrno / Heineken pro pivo, Big Shock pro energetické nápoje)**
+    *   *Doporučená cena:* **80 000 – 150 000 Kč / rok**
+    *   *Co získá:* Branding a sponzorství výzev ve specifické kategorii (např. pivní sekce), přístup k datům pro svou kategorii.
+3.  **Kampaňový / Festivalový partner (jednorázový event)**
+    *   *Doporučená cena:* **30 000 – 60 000 Kč / akce**
+    *   *Co získá:* Sponzorování sběru na konkrétním festivalu, loga na festivalových sběrných koších, data ze sběru v areálu.
+
+### B. Refinancování času stráveného vývojem (Jak získat peníze na svůj vývoj)
+Proplácení času, který Tomáš strávil návrhem a vývojem MVP verze aplikace, lze vyřešit třemi legitimními způsoby:
+
+1.  **Zahrnutí vývojových nákladů do rozpočtu sponzora (Refinancování MVP):**
+    *   Při vyjednávání s Kofolou/pivovarem se do úvodního rozpočtu spolupráce vloží položka **„Zajištění technické platformy, licencí a MVP vývoje“** v hodnotě např. **60 000 – 90 000 Kč**. 
+    *   *Argument pro firmu:* Vývoj takové aplikace na míru v digitální agentuře by je stál 250 000+ Kč. Zakoupením licence na hotovou, otestovanou platformu ušetří peníze a čas, a vy získáte zpět finance za svůj vývoj.
+2.  **Státní a krajské ekologické granty (MŽP / Krajské úřady):**
+    *   Ministerstvo životního prostředí (MŽP) nebo Jihomoravský kraj vypisují dotační tituly pro „Environmentální vzdělávání a ekologickou osvětu“. 
+    *   V těchto dotacích lze přímo uplatnit **„Osobní náklady (DPČ, dohody o provedení práce nebo fakturace vývojáře)“**. V grantu lze zažádat o 100 000 – 200 000 Kč na vývoj a administraci projektu, přičemž dotace často kryjí až 90 % nákladů.
+3.  **Ekologické akcelerátory a startupové ceny:**
+    *   Účast v programech (např. Impact Hub, ekologické akcelerátory), kde lze vyhrát finanční granty bez nutnosti odevzdávat podíl (equity-free granty) v hodnotě 50 000 – 100 000 Kč na rozjezd nápadu.
+
+### C. Další doplňkové příjmy
+1.  **Provize od recyklačních dvorů:** Provizní model za přivedení velkoobjemových sběračů do smluvních výkupen kovů.
+2.  **Prodej prémiového eko-merchandise:** Prodej triček a lahví z recyklovaných materiálů přes e-shop.
 
 ---
 
