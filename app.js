@@ -6,8 +6,8 @@ if ('serviceWorker' in navigator) {
 }
 
 // --- Konfigurace Supabase Databáze ---
-const SUPABASE_URL = 'https://idxlyjugmeueoxmhaga.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_CR-YuABHB1SvPK6b6sz_WQ_Q6y_8iKx';
+const SUPABASE_URL = 'https://dxlyjugmeucevosmhage.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_CR-YuABHB1SvPK6b6sz-WQ_Q6y_8iKx';
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---
@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userNick = localStorage.getItem('milion_nickname') || '';
     let currentCoords = null;
     let map, markersLayer;
+    let selectedFile = null;
 
     // --- Mock Data pro Žebříček (Fallback) ---
     const mockLeaderboard = [
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData() {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=nickname,count,latitude,longitude,notes,created_at`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=nickname,count,latitude,longitude,notes,created_at,photo_url`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -91,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(item => ({
                     count: item.count,
                     date: new Date(item.created_at).toLocaleString('cs-CZ', {hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit'}),
-                    coords: item.latitude ? { lat: item.latitude, lon: item.longitude } : null
+                    coords: item.latitude ? { lat: item.latitude, lon: item.longitude } : null,
+                    photo_url: item.photo_url || null
                 }));
 
             // Záložní uložení do localStorage pro offline
@@ -236,7 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
             latitude: h.coords ? h.coords.lat : null,
             longitude: h.coords ? h.coords.lon : null,
             created_at: new Date(),
-            notes: ''
+            notes: '',
+            photo_url: h.photo_url || null
         }));
         
         itemsToRender.forEach(item => {
@@ -257,6 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     🥫 <b>${item.count} ks</b><br>
                     ${dateStr}
                     ${item.notes ? `<br><i>${item.notes}</i>` : ''}
+                    ${item.photo_url ? `<br><a href="${item.photo_url}" target="_blank"><img src="${item.photo_url}" style="width:120px; height:120px; object-fit:cover; border-radius:12px; margin-top:8px; display:block; border:1px solid #e2e8f0;"></a>` : ''}
                 `;
 
                 L.marker([item.latitude, item.longitude], { icon: numberIcon })
@@ -275,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         myHistory.slice(0, 5).forEach(item => {
             const li = document.createElement('li');
-            li.innerHTML = `<span>📅 ${item.date}</span> <strong>+${item.count} ks</strong>`;
+            li.innerHTML = `<span>📅 ${item.date}${item.photo_url ? ` <a href="${item.photo_url}" target="_blank" style="text-decoration:none;">📸</a>` : ''}</span> <strong>+${item.count} ks</strong>`;
             historyList.appendChild(li);
         });
     }
@@ -313,9 +317,10 @@ document.addEventListener('DOMContentLoaded', () => {
     [cameraInput, galleryInput].forEach(input => {
         input.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
+                selectedFile = e.target.files[0];
                 const reader = new FileReader();
                 reader.onload = (e) => { photoPreview.src = e.target.result; };
-                reader.readAsDataURL(e.target.files[0]);
+                reader.readAsDataURL(selectedFile);
                 sections.home.classList.add('hidden');
                 document.querySelector('.bottom-nav').classList.add('hidden');
                 pickupForm.classList.remove('hidden');
@@ -345,6 +350,30 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.textContent = "Odesílám...";
         
         try {
+            let photoUrl = null;
+            if (selectedFile) {
+                // Generování unikátního názvu souboru pro zabránění přepsání
+                const fileExt = selectedFile.name.split('.').pop() || 'jpg';
+                const cleanNick = userNick.replace(/[^a-zA-Z0-9]/g, '_');
+                const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
+                
+                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': selectedFile.type
+                    },
+                    body: selectedFile
+                });
+                
+                if (uploadResponse.ok) {
+                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
+                } else {
+                    console.error("Storage upload failed, saving entry without image...");
+                }
+            }
+
             // Uložení do Supabase databáze
             const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups`, {
                 method: 'POST',
@@ -359,7 +388,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     count: count,
                     latitude: currentCoords ? currentCoords.lat : null,
                     longitude: currentCoords ? currentCoords.lon : null,
-                    notes: notes || null
+                    notes: notes || null,
+                    photo_url: photoUrl
                 })
             });
             
