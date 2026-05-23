@@ -44,6 +44,14 @@ Tento dokument slouží jako paměť projektu pro budoucí nápady, vylepšení 
     *   Zobrazení úspory přímo v aplikaci: „Tvé plechovky ušetřily X kWh energie, Y kg CO2 a Z litrů vody oproti výrobě nového hliníku.“
 *   **Pokročilá mapa a Filtry:**
     *   Možnost filtrovat mapu podle času (dnes, tento týden, celkově) nebo zobrazit „Heatmapu“ (teplotní mapu) nejvíce vyčištěných lokalit.
+*   **Rozpoznávání značek pomocí AI (AI Brand Recognition):**
+    *   *Jak to funguje:* Nahraná fotka plechovky se automaticky odešle do Vision AI API (např. Google Gemini nebo OpenAI GPT-4o-mini). Umělá inteligence z obrázku vyčte:
+        1. **Značku** (např. Pilsner Urquell, Red Bull, Semtex, Kofola, Lidl Ginger Shot).
+        2. **Kategorii** (Pivo, Energetický nápoj, Limonáda, Ginger shot).
+        3. **Objem** (0.25l, 0.33l, 0.5l).
+        4. **Verifikaci** (ověří, zda je na fotce opravdu plechovka – prevence podvodů).
+    *   *Real-time vs. Dávkově:* Může to běžet buď ihned při nahrání (Edge funkce), nebo jednou za den/týden na pozadí přes skript (levnější varianta).
+    *   *Dopad na PR a marketing:* Můžete vytvářet statistiky pro média: *„Které značky se nejvíce povalují v českých lesích?“* (obrovský tlak na výrobce k partnerství). Zároveň lze filtrovat mapu: „Zobraz mi na mapě, kde se pije nejvíc piva a kde Red Bullu“.
 
 ---
 
