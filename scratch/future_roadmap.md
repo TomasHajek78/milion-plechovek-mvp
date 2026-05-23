@@ -155,3 +155,53 @@ Při testovacím provozu je na počítadle nastaven plný cíl **1 000 000** ple
 Dokument záměrně uchovává a nesmazává obě zvažované varianty u klíčových technických řešení. Rozhodnutí o finální volbě padne až po vyhodnocení zkušebního provozu:
 *   **AI Rozpoznávání:** Real-time analýza při nahrání (rychlé, ochrana proti spamu) VS. dávková analýza na pozadí (levnější, bez dopadu na rychlost odeslání).
 *   **Správa úložiště fotek:** Lokální automatická archivace na externí disk LaCie (nulové finanční náklady) VS. navýšení cloudového limitu placené sponzorem (nulová technická údržba).
+
+---
+
+## 8. Analýza rizik a jejich řešení (Risk Management)
+
+Každý komunitní a crowdsourcingový projekt s sebou nese rizika zneužití nebo technických bariér. Zde je přehled rizik a jak je řešit:
+
+### A. Riziko: Podvody a spam (Cheatování)
+*   **Kdy hrozí:** Ihned při spuštění pro širší veřejnost. Sběrači mohou zkoušet nahrávat fejkové úlovky kvůli postupu v žebříčku nebo získání sponzorských cen (např. focení plechovek v regálech obchodů, nahrávání cizích fotek z internetu, zadávání nereálných počtů).
+*   **Řešení:**
+    1.  **AI verifikace fotky:** Vision AI zkontroluje, zda fotka obsahuje zmačkanou plechovku v terénu (tráva, hlína, les), nikoliv v regálu obchodu.
+    2.  **GPS a časový limit (Cooldown):** Zamezení odesílání více záznamů z jedné GPS souřadnice v krátkém čase od jednoho uživatele.
+    3.  **Administrátorské schvalování:** Podezřelé nálezy (např. nad 15 plechovek najednou nebo ty označené AI) spadnou do fronty ke schválení moderátorem.
+
+### B. Riziko: Výpadek cloudu při přetížení (Supabase limity)
+*   **Kdy hrozí:** Během Fáze 2 a 3 (50 až 100+ aktivních uživatelů).
+*   **Řešení:**
+    1.  Zavedení povinné klientské komprese fotek před nahráním (max. 1000px, JPG ~70 KB).
+    2.  Včasný přechod na tarif Pro (25 $/měsíc) financovaný oficiálním sponzorem.
+
+### C. Riziko: Ztráta motivace uživatelů v offline oblastech (bez signálu)
+*   **Kdy hrozí:** Při sběru v lesích, horách a údolích. Pokud se nahrávání kvůli chybějícímu signálu zasekne, uživatel aplikaci zavře.
+*   **Řešení:**
+    1.  Implementace offline fronty (IndexedDB / Cache) – aplikace uloží nález s GPS a fotkou do lokální paměti telefonu a odešle jej automaticky na pozadí, jakmile telefon chytí stabilní datové připojení.
+
+---
+
+## 9. Co se stane po dosažení milionu? (The End Game)
+
+Dosažení milionu plechovek je obrovský milník, který by neměl být koncem, ale vyvrcholením projektu s velkým mediálním zásahem:
+
+*   **A. Fyzický památník / Umělecké dílo (Art Installation):**
+    *   Ve spolupráci s recyklační firmou nebo městem se část nasbíraného hliníku roztaví a vytvoří se z něj trvalá socha / památník čisté přírody v Brně (či jiném městě). To má obří potenciál pro PR a televizní reportáže.
+*   **B. Nový, ambicióznější milník:**
+    *   Expanze projektu na další cíle: „Milion kilogramů odpadu“ nebo zaměření na čištění specifických chráněných oblastí (KRNAP, Šumava).
+*   **C. Přerod na stálou ekologickou platformu:**
+    *   Aplikace se transformuje na rozhraní pro různé ekologické výzvy sponzorované firmami (např. sázení stromů, sběr plastů, čištění řek).
+
+---
+
+## 10. Význam projektu v zemích se zálohovým systémem
+
+Slovensko zálohy má, Česká republika je aktuálně připravuje. Má v takovém prostředí projekt smysl? **Ano, a možná ještě větší!**
+
+*   **Lovci pokladů (Reálný zisk pro lidi):**
+    *   Pokud bude mít plechovka zálohu (např. 4 Kč), stává se aplikace doslova detektorem peněz v trávě. Lidé budou mít dvojí motivaci: body v žebříčku aplikace + reálné peníze za vrácení plechovky do automatu.
+*   **Edukace k vracení:**
+    *   Aplikace může uživatele navigovat: „Vyfoť plechovku v lese (vyčisti přírodu) -> získej odznáček -> odnes ji do nejbližšího automatu a peníze si nechej nebo je jedním klikem v aplikaci daruj na charitu.“
+*   **Cenná geodata pro stát a obce:**
+    *   Data o tom, kde se plechovky stále povalují (i přes zálohový systém), jsou nesmírně cenná. Ukazují slabá místa infrastruktury (např. chybějící sběrná místa na turistických stezkách, cyklotrasách či festivalech).
