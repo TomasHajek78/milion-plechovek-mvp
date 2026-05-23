@@ -86,3 +86,43 @@ Projekt by měl být ideálně finančně soběstačný nebo generovat zisk. Zde
 5.  **Státní a evropské ekologické granty:**
     *   Ministerstvo životního prostředí (MŽP), kraje nebo EU vypisují obří granty na podporu ekologické osvěty, čištění přírody a digitální inovace v ekologii. Aplikace splňuje všechny parametry pro získání těchto dotací.
 
+---
+
+## 6. Odhad nákladů při plném měřítku (1 000 000 plechovek)
+
+Při dosažení cíle 1 000 000 nasbíraných plechovek (předpokládáme 1 000 000 odeslaných fotek) budou provozní náklady velmi nízké, pokud se provede optimalizace (komprimace) na straně klienta.
+
+### A. Náklady na diskové úložiště (Supabase Storage)
+
+Uvažujeme Supabase tarif **Pro ($25/měsíc)**, který obsahuje 8 GB Storage zdarma. Nadlimitní úložiště stojí **$0.021 / GB / měsíc**.
+
+*   **Varianta 1: Nekomprimované fotky (běžný stav z mobilu ~3 MB / fotka)**
+    *   *Celkový objem dat:* 1 000 000 × 3 MB = **3 000 GB (3 TB)**
+    *   *Úložiště nad limit:* 3 000 GB - 8 GB = 2 992 GB
+    *   *Měsíční poplatek za storage:* 2 992 × $0.021 = **$62.83 / měsíc** (cca 1 500 Kč)
+    *   *Celkové měsíční náklady:* **$87.83 / měsíc** (cca 2 100 Kč včetně základního Pro tarifu)
+*   **Varianta 2: Automaticky komprimované fotky (šířka 1000px, JPG ~70 KB / fotka) - DOPORUČENO**
+    *   *Celkový objem dat:* 1 000 000 × 70 KB = **70 GB**
+    *   *Úložiště nad limit:* 70 GB - 8 GB = 62 GB
+    *   *Měsíční poplatek za storage:* 62 × $0.021 = **$1.30 / měsíc** (cca 30 Kč)
+    *   *Celkové měsíční náklady:* **$26.30 / měsíc** (cca 620 Kč včetně základního Pro tarifu)
+
+*Poznámka:* Pokud by byl spuštěn archivační Python skript na externí disk a fotky z cloudu se mazaly, náklady na storage budou **$0** (stále se vejdeme do 8 GB limitu).
+
+### B. Náklady na AI rozpoznávání (Vision API)
+
+Uvažujeme analýzu 1 000 000 fotek pomocí API. Porovnání dvou nejlepších modelů na trhu:
+
+*   **Google Gemini 1.5 Flash (Doporučeno: nejrychlejší, nejlevnější)**
+    *   *Ceník:* $0.075 / 1M input tokenů, $0.30 / 1M output tokenů. Obrázek stojí fixně 258 tokenů.
+    *   *Průměrný dotaz:* 400 input tokenů (obrázek + textový prompt), 100 output tokenů.
+    *   *Cena za 1 analýzu:* $0.000060 (cca 0.0014 Kč)
+    *   *Celková cena za 1 000 000 analýz:* **$60.00** (cca 1 400 Kč) – jednorázový náklad rozložený v čase podle toho, jak lidé sbírají.
+*   **OpenAI GPT-4o-mini**
+    *   *Ceník:* $0.150 / 1M input tokenů, $0.600 / 1M output tokenů. Obrázek (high-detail 1000px) stojí ~170 tokenů.
+    *   *Průměrný dotaz:* 320 input tokenů (obrázek + prompt), 100 output tokenů.
+    *   *Cena za 1 analýzu:* $0.000108 (cca 0.0025 Kč)
+    *   *Celková cena za 1 000 000 analýz:* **$108.00** (cca 2 500 Kč)
+
+### Shrnutí pro sponzora
+Celý provoz milionového projektu z pohledu cloudu a AI rozpoznávání značek vyjde na cca **620 Kč měsíčně** (s komprimací) + jednorázový náklad cca **1 400 Kč** za zpracování všech 1 000 000 fotek pomocí umělé inteligence Gemini. Pro sponzora je to zanedbatelná částka s obrovskou marketingovou hodnotou.
