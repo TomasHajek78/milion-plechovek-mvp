@@ -44,12 +44,22 @@ Tento dokument slouží jako paměť projektu pro budoucí nápady, vylepšení 
     *   Zobrazení úspory přímo v aplikaci: „Tvé plechovky ušetřily X kWh energie, Y kg CO2 a Z litrů vody oproti výrobě nového hliníku.“
 *   **Pokročilá mapa a Filtry:**
     *   Možnost filtrovat mapu podle času (dnes, tento týden, celkově) nebo zobrazit „Heatmapu“ (teplotní mapu) nejvíce vyčištěných lokalit.
-*   **Rozpoznávání značek pomocí AI (AI Brand Recognition):**
+*   **Rozpoznávání značek a objemu pomocí AI (AI Brand & Volume Recognition):**
     *   *Jak to funguje:* Nahraná fotka plechovky se automaticky odešle do Vision AI API (např. Google Gemini nebo OpenAI GPT-4o-mini). Umělá inteligence z obrázku vyčte:
         1. **Značku** (např. Pilsner Urquell, Red Bull, Semtex, Kofola, Lidl Ginger Shot).
-        2. **Kategorii** (Pivo, Energetický nápoj, Limonáda, Ginger shot).
-        3. **Objem** (0.25l, 0.33l, 0.5l).
+        2. **Kategorii** (Pivo, Energetický nápoj, Limonáda, Ginger shot, Ledová káva, Víno/Koktejly).
+        3. **Objem** (0.5l, 0.44l, 0.33l, 0.25l, 0.2l, 0.15l). AI jej určí buď z viditelného textu na plechovce (OCR), nebo poměrem stran a typickým objemem dané značky (např. Red Bull = standardně 0.25l, Pilsner Urquell = 0.5l).
         4. **Verifikaci** (ověří, zda je na fotce opravdu plechovka – prevence podvodů).
+    *   *Výpočet hmotnosti hliníku:* Každému objemu se v databázi přiřadí průměrná váha čistého hliníku:
+        *   **0.5 l** = ~16 g hliníku
+        *   **0.4 l / 0.44 l** = ~14 g hliníku
+        *   **0.33 l** = ~12 g hliníku
+        *   **0.25 l** = ~10 g hliníku
+        *   **0.2 l / 0.15 l** = ~8 g hliníku
+        *   *Celková hmotnost* = počet kusů (`count`) × váha podle detekovaného objemu.
+    *   *Ekologická kalkulačka v aplikaci:* Přepočet zachráněného hliníku na reálný dopad:
+        *   **Úspora energie:** Recyklace hliníku ušetří 95 % energie oproti výrobě z bauxitu. 1 kg ušetřeného hliníku = ~14 kWh elektřiny (např. roční provoz LED žárovky).
+        *   **Emise CO2:** 1 kg recyklovaného hliníku zabrání vzniku ~9 kg emisí CO2.
     *   *Real-time vs. Dávkově:* Může to běžet buď ihned při nahrání (Edge funkce), nebo jednou za den/týden na pozadí přes skript (levnější varianta).
     *   *Dopad na PR a marketing:* Můžete vytvářet statistiky pro média: *„Které značky se nejvíce povalují v českých lesích?“* (obrovský tlak na výrobce k partnerství). Zároveň lze filtrovat mapu: „Zobraz mi na mapě, kde se pije nejvíc piva a kde Red Bullu“.
 
