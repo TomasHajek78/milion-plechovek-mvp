@@ -8,9 +8,9 @@
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="logo.png?v=2">
     <link rel="icon" type="image/png" href="logo.png?v=2">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json?v=2">
     <title>Milion Plechovek | Sběrač</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <!-- Leaflet Mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -20,10 +20,36 @@
     <div class="app-container">
         <!-- Hlavička s logem -->
         <header class="header">
-            <a href="index.html">
-                <img src="logo.png" alt="Milion Plechovek Logo" class="brand-logo">
-            </a>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="width: 40px;"></div> <!-- Spacer -->
+                <a href="index.html">
+                    <img src="logo.png" alt="Milion Plechovek Logo" class="brand-logo">
+                </a>
+                <button id="settingsBtn" onclick="toggleSettings()" style="background:none; border:none; font-size: 24px; cursor:pointer; width: 40px;">⚙️</button>
+            </div>
         </header>
+
+        <!-- Modální okno Nastavení (Záloha) -->
+        <div id="settingsModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; width:90%; max-width:400px;">
+            <h3>Nastavení & Záloha</h3>
+            <p class="small-text">Pro jistotu si jednou za čas stáhni zálohu svých dat, aby se ti sběry při promazání telefonu neztratily.</p>
+            <button onclick="exportData()" class="primary-btn-small" style="width:100%; margin-bottom:10px;">📥 Stáhnout zálohu (.json)</button>
+            <button onclick="forceRefresh()" class="secondary-btn" style="width:100%; margin-bottom:10px; font-size: 12px; color: var(--rust-red);">🔄 Vynutit aktualizaci (vymazat mezipaměť)</button>
+            
+            <p class="small-text" style="margin-top:15px;">Obnovit ze souboru:</p>
+            <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(this)">
+            <button onclick="document.getElementById('importFileInput').click()" class="secondary-btn" style="width:100%;">📤 Nahrát zálohu</button>
+            
+            <button onclick="toggleSettings()" class="secondary-btn" style="width:100%; margin-top:20px; color:var(--rust-red);">Zavřít</button>
+        </div>
+
+        <!-- Instalační Overlay (PWA) -->
+        <div id="installOverlay" class="card hidden" style="position:fixed; bottom:20px; left:20px; right:20px; z-index:2000; border: 2px solid var(--rust-red);">
+            <h3>Nainstaluj si Sběrače! 🥫</h3>
+            <p class="small-text" id="installInstructions">Přidej si aplikaci na plochu pro rychlejší přístup a stabilnější ukládání dat.</p>
+            <button id="installBtn" class="primary-btn-small" style="width:100%; margin-top:10px;">Přidat na plochu</button>
+            <button onclick="document.getElementById('installOverlay').classList.add('hidden')" class="secondary-btn" style="width:100%; margin-top:5px;">Možná později</button>
+        </div>
 
         <!-- Registrace Nickname -->
         <div id="loginScreen" class="card hidden">
@@ -37,22 +63,26 @@
         <div id="homeSection" class="view-section">
             <div class="stats-row" id="statsRow">
                 <div class="stat-card" id="myStatsCard">
-                    <h3>MOJE STATISTIKY</h3>
+                    <h3>Moje plechovky</h3>
                     <div class="stat-value" id="myTotal">0</div>
-                    <p><span id="userNickDisplay">...</span></p>
+                    <p id="userNickDisplay">...</p>
                 </div>
                 <div class="stat-card">
-                    <h3>CELKEM ZBÝVÁ</h3>
+                    <h3>Zbývá sebrat</h3>
                     <div class="stat-value highlight" id="globalTotal">999 171</div>
+                    <p>z cílového milionu</p>
                 </div>
             </div>
 
-            <!-- Vycentrované Tlačítko -->
+            <!-- Vycentrované Tlačítko s pulzem -->
             <div class="main-action-center" id="mainAction">
-                <button id="cameraBtn" class="primary-btn-large">
-                    <span class="icon">📸</span><br>FOTIT
-                </button>
-                <button id="galleryBtn" class="gallery-link">📂 nebo z galerie</button>
+                <div class="btn-pulse-wrapper">
+                    <div class="pulse-ring"></div>
+                    <button id="cameraBtn" class="primary-btn-large">
+                        <span class="icon">📸</span><br>FOTIT
+                    </button>
+                </div>
+                <button id="galleryBtn" class="gallery-link">📂 nebo vybrat z galerie</button>
                 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
                 <input type="file" id="galleryInput" accept="image/*" style="display: none;">
             </div>
@@ -98,10 +128,11 @@
         </div>
         
         <div id="successScreen" class="card success-screen hidden">
-            <h2>🎉 Skvělá práce!</h2>
-            <p>Odečteno z celkového milionu.</p>
-            <button id="shareBtn" class="share-btn">Sdílet úlovek</button>
-            <button id="newPickupBtn" class="secondary-btn">Hotovo</button>
+            <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+            <h2>Skvělá práce!</h2>
+            <p style="color: var(--text-dim); margin-bottom: 24px;">Právě jsi planetu zbavil další zátěže. Tvé plechovky byly odečteny z celkového milionu.</p>
+            <button id="shareBtn" class="share-btn">Sdílet na Instagramu</button>
+            <button id="newPickupBtn" class="secondary-btn">Zpět na začátek</button>
         </div>
 
         <!-- SPODNÍ NAVIGACE -->
@@ -121,6 +152,6 @@
         </nav>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>
