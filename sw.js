@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v2';
+const CACHE_NAME = 'milion-plechovek-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -33,6 +33,12 @@ self.addEventListener('activate', (event) => {
 
 // Fetch - strategie "Cache First" pro rychlost, pak Network
 self.addEventListener('fetch', (event) => {
+  // Ignorujeme požadavky, které nejsou typu GET (např. POST pro zápis do databáze)
+  // a také jakékoliv dotazy na Supabase databázi. Ty se musí posílat rovnou na síť.
+  if (event.request.method !== 'GET' || event.request.url.includes('supabase.co')) {
+    return; // Nechá prohlížeč vyřídit požadavek běžnou síťovou cestou bez zásahu Service Workeru
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
