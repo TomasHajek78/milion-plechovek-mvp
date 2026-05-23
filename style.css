@@ -177,6 +177,8 @@ body {
     justify-content: center;
     align-items: center;
     letter-spacing: 1px;
+    line-height: 1.1;
+    gap: 2px;
 }
 
 .primary-btn-large:active {
@@ -186,7 +188,8 @@ body {
 
 .primary-btn-large .icon {
     font-size: 48px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
+    line-height: 1;
 }
 
 .gallery-link {
