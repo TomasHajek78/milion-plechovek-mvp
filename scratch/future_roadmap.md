@@ -129,3 +129,29 @@ Uvažujeme analýzu 1 000 000 fotek pomocí API. Porovnání dvou nejlepších m
 
 ### Shrnutí pro sponzora
 Celý provoz milionového projektu z pohledu cloudu a AI rozpoznávání značek vyjde na cca **620 Kč měsíčně** (s komprimací) + jednorázový náklad cca **1 400 Kč** za zpracování všech 1 000 000 fotek pomocí umělé inteligence Gemini. Pro sponzora je to zanedbatelná částka s obrovskou marketingovou hodnotou.
+
+---
+
+## 7. Fázovaný rollout a spuštění ostrého provozu
+
+Než se projekt otevře široké veřejnosti, je nutné projít fázemi uzavřeného testování pro ověření stability systému, přesnosti dat a chování uživatelů.
+
+### A. Fáze testovacího provozu
+1.  **Fáze 1 (10 lidí):** Interní testování s rodinou a nejbližmi přáteli (stávající stav). Ověření přesnosti zápisů, GPS lokalizace a stability PWA na iOS/Android.
+2.  **Fáze 2 (50 lidí):** Rozšíření na širší okruh známých a komunitu sběračů. Testování rychlosti nahrávání fotek a prvotní analýza vytížení databáze.
+3.  **Fáze 3 (100 lidí):** Poslední zátěžový test před veřejným spuštěním. Sledování limitů bezplatného cloudu a testování chování mapy při větším množství bodů.
+
+### B. Výpočet počáteční hodnoty odpočtu (Ostré spuštění)
+Při testovacím provozu je na počítadle nastaven plný cíl **1 000 000** plechovek. Při přechodu na ostrý (veřejný) provoz se výchozí hodnota v aplikaci upraví (sníží) o historické nálezy a testovací data tak, aby odpočet odpovídal absolutní realitě.
+
+*   **Položky k odečtení ze startovní sumy:**
+    1.  **Historický sběr Tomáše:** Plechovky nasbírané Tomášem osobně od **září 2025** do dne ostrého startu.
+    2.  **Testovací sběr:** Všechny plechovky nasbírané a zapsané uživateli během Fází 1, 2 a 3.
+*   **Vzorec pro výpočet výchozího stavu v kódu:**
+    `Počáteční_stav_počítadla = 1 000 000 - (Plechovky_Tomáš_od_09_2025 + Plechovky_zapsané_v_testu)`
+*   *Příklad:* Pokud Tomáš od září 2025 nasbíral 35 000 plechovek a testeři nasbírají 5 000 plechovek, aplikace bude pro veřejnost startovat na hodnotě **960 000** zbývajících plechovek.
+
+### C. Uchování alternativních variant pro budoucí rozhodnutí
+Dokument záměrně uchovává a nesmazává obě zvažované varianty u klíčových technických řešení. Rozhodnutí o finální volbě padne až po vyhodnocení zkušebního provozu:
+*   **AI Rozpoznávání:** Real-time analýza při nahrání (rychlé, ochrana proti spamu) VS. dávková analýza na pozadí (levnější, bez dopadu na rychlost odeslání).
+*   **Správa úložiště fotek:** Lokální automatická archivace na externí disk LaCie (nulové finanční náklady) VS. navýšení cloudového limitu placené sponzorem (nulová technická údržba).
