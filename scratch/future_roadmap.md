@@ -205,3 +205,25 @@ Slovensko zálohy má, Česká republika je aktuálně připravuje. Má v takov�
     *   Aplikace může uživatele navigovat: „Vyfoť plechovku v lese (vyčisti přírodu) -> získej odznáček -> odnes ji do nejbližšího automatu a peníze si nechej nebo je jedním klikem v aplikaci daruj na charitu.“
 *   **Cenná geodata pro stát a obce:**
     *   Data o tom, kde se plechovky stále povalují (i přes zálohový systém), jsou nesmírně cenná. Ukazují slabá místa infrastruktury (např. chybějící sběrná místa na turistických stezkách, cyklotrasách či festivalech).
+
+---
+
+## 11. Architektura pro škálování (Až na 500 000 uživatelů)
+
+Abychom mohli bezpečně obsloužit statisíce uživatelů bez výpadků a s rozumnými náklady, je třeba architekturu postupně posouvat k následujícím standardům:
+
+### A. Globální CDN a Statický hosting (Vercel)
+*   Stávající hosting na Vercelu je pro statické soubory (HTML, CSS, JS) ideální. Vercel automaticky distribuuje aplikaci do globální sítě serverů (CDN). Zde je kapacita pro 500 000 uživatelů prakticky neomezená a bezplatný/základní tarif to bez problémů zvládne.
+
+### B. Optimalizace PostgreSQL Databáze (Supabase)
+*   **Databázové indexy (Indexing):** Zavedení indexů na nejčastěji dotazovaná pole (`nickname`, `created_at`).
+*   **Prostorová databáze (PostGIS):** Pro vykreslování statisíců bodů na mapě nelze stahovat všechny body naráz do prohlížeče (telefon by se zasekal). Použijeme PostGIS extension v Postgresu pro „shlukování“ (clustering) bodů na serveru podle aktuálního přiblížení mapy.
+*   **Škálování výkonu (Compute scaling):** Supabase umožňuje plynule navyšovat výkon databázového serveru (RAM/CPU) podle zatížení bez nutnosti měnit kód aplikace.
+
+### C. CDN pro fotografie (Storage)
+*   S miliony fotek vzrostou nároky na rychlost načítání mapy a historie.
+*   Před Supabase Storage předřadíme globální CDN (např. Cloudflare) pro kešování obrázků, což zrychlí načítání na mobilech a radikálně sníží síťové náklady (egress).
+
+### D. Pokročilá offline synchronizace
+*   Při statisících uživatelů se zvýší riziko přetížení mobilních sítí (např. na hudebních festivalech).
+*   Použijeme robustní synchronizační knihovnu (např. Workbox Background Sync nebo Dexie.js), která zajistí spolehlivé odesílání dat na pozadí, i když je aplikace zavřená a uživatel má nestabilní 3G/4G připojení.
