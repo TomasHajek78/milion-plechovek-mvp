@@ -256,3 +256,54 @@ Zde jsou 4 cesty, jak to vyřešit, od nejjednodušší po nejrobustnější:
 *   **Jak to funguje:** Uživatel se musí přihlásit (např. jedním kliknutím přes Google, Apple ID nebo zasláním přihlašovacího odkazu na e-mail).
 *   **Výhody:** 100% jistota identity, ochrana proti krádežím přezdívek, možnost detailní správy uživatelských profilů.
 *   **Nevýhody:** Vysoké tření při prvním spuštění – nutnost registrace může odradit až 50 % potenciálních uživatelů, kteří si chtějí aplikaci jen vyzkoušet v lese.
+
+---
+
+## 13. Časový harmonogram rozvoje (Timeline 2026)
+
+Pro zajištění stability a hladkého vývoje navrhujeme tento harmonogram rozvoje aplikace a komunity:
+
+### Fáze 1: Červen 2026 – Testování v úzkém kruhu (10 lidí)
+*   **Technický cíl:** Oprava nalezených chyb z testování, odladění GPS přesnosti a zavedení **automatické komprimace fotek v telefonu** před nahráním (úspora storage).
+*   **Komunitní cíl:** Tomáš a rodina sbírají data, testují mapu a ověřují celkovou stabilitu PWA cache na různých iPhonech a Androidech.
+
+### Fáze 2: Červenec 2026 – Komunitní test (50 lidí)
+*   **Technický cíl:** Vytvoření administrátorského dashboardu pro schvalování fotek. Implementace jednoduchého generátoru grafiky pro sdílení na Instagram Stories přímo z úspěšné obrazovky.
+*   **Komunitní cíl:** Zapojení širšího okruhu známých. Začátek sdílení prvních testovacích příspěvků na sociálních sítích s odkazem na projekt.
+
+### Fáze 3: Srpen 2026 – Generální zkouška (100 lidí)
+*   **Technický cíl:** Nahrazení systémových emoji vlastním grafickým designem a SVG ikonami v barvách a stylu loga. Příprava formuláře na uplatnění výher (Claim Form).
+*   **Komunitní cíl:** Poslední zátěžový test. Hledání sponzora (výrobce nápojů/recyklační firma) na financování Pro verze Supabase a cen pro sběrače.
+
+### Fáze 4: Září 2026 – Veřejné spuštění (Ostrý start)
+*   **Technický cíl:** Kalibrace počítadla (odečtení historických sběrů Tomáše od září 2025 a testovacích dat). Spuštění Týdenních a Víkendových výzev.
+*   **Komunitní cíl:** Veřejný PR start (videa na IG, FB, tisková zpráva). Zapojení prvních škol a zájmových organizací.
+
+### Fáze 5: Podzim / Zima 2026 – AI a expanze
+*   **Technický cíl:** Propojení Gemini Vision API pro automatickou detekci značek, kategorií a objemů plechovek. Vykreslování heatmap značek.
+*   **Komunitní cíl:** První plně sponzorované výzvy (např. „Týden s Kofolou“), spuštění prodejů prémiového recyklovaného merche.
+
+---
+
+## 14. Strategie růstu sociálních sítí (IG & FB Viralita)
+
+Aplikace sama o sobě musí sloužit jako hlavní motor pro růst followerů na Instagramu a Facebooku. Zde jsou virální mechanismy, které do ní integrujeme:
+
+### A. Virální smyčka „Sdílení úspěchu“ (IG Stories Share)
+*   Po odeslání úlovku se zobrazí obrazovka s konfetami a velké tlačítko **„Sdílet na IG Stories“**.
+*   Aplikace vygeneruje vizuálně atraktivní grafickou kartu (např. *„Právě jsem vyčistil park od 12 plechovek! Sleduj @milionplechovek a pomoz nám nasbírat milion.“*).
+*   Pro uživatele je to sociální status („udělal jsem dobrý skutek“), který velmi rádi sdílí se svými přáteli.
+
+### B. Propojení přezdívky s IG Profilem (Social Handles)
+*   V žebříčku a historii budeme aktivně zobrazovat instagramové přezdívky (např. `@pepa_sbira`).
+*   Při týdenním vyhlášení TOP sběračů na vašem IG/FB profilu tyto uživatele označíte (otagujete). Výherci budou tyto posty nadšeně přezdílet na své profily, čímž přivedou své followery k vám.
+
+### C. Komunitní UGC (User Generated Content) kampaně
+*   **Výzva „Plechovkový archeolog“:** Uživatelé budou na sítě dávat fotky nejstarších nebo nejkurióznějších plechovek, které v lese vykopali, s označením `#milionplechovek` a `@milionplechovek`. Tyto příspěvky budete sdílet a komentovat, což vytvoří silnou komunitu.
+*   **Festivalový hon na plechovky:** Během letních festivalů vyhlásíte výzvu: *„Kdo vyfotí nejkreativnější fotku u koše Milion plechovek a označí nás, vyhrává karton nápojů.“*
+
+### D. Tvorba obsahu z dat aplikace (Data-driven content)
+*   Tomáš může tvořit extrémně zajímavá a sdílená videa (Reels/Shorts) přímo na základě dat z mapy:
+    *   *„Dnes se podíváme na heatmapu Brna – kde se vypilo nejvíc energy drinků a kde piv? Výsledky vás překvapí!“*
+    *   *„Představujeme TOP 3 nálezy tohoto týdne z naší mapy. Tenhle kousek ležel v lese od roku 1998!“*
+*   Data a vizualizace přitahují pozornost a lidi baví sledovat, jak se mapa Česka postupně čistí.
