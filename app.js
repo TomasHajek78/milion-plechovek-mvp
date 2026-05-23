@@ -499,6 +499,11 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.toggle('hidden');
     };
 
+    window.toggleDesatero = () => {
+        const modal = document.getElementById('desateroModal');
+        modal.classList.toggle('hidden');
+    };
+
     window.forceRefresh = async () => {
         try {
             if ('serviceWorker' in navigator) {

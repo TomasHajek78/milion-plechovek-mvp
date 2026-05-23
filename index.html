@@ -45,7 +45,29 @@
             <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(this)">
             <button onclick="document.getElementById('importFileInput').click()" class="secondary-btn" style="width:100%;">📤 Nahrát zálohu</button>
             
-            <button onclick="toggleSettings()" class="secondary-btn" style="width:100%; margin-top:20px; color:var(--rust-red);">Zavřít</button>
+            <button onclick="toggleDesatero(); toggleSettings();" class="primary-btn-small" style="width:100%; margin-top:15px; background-color: var(--forest-green);">📖 Desatero sběrače</button>
+            <button onclick="toggleSettings()" class="secondary-btn" style="width:100%; margin-top:10px; color:var(--rust-red);">Zavřít</button>
+        </div>
+
+        <!-- Modální okno Desatero -->
+        <div id="desateroModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1010; width:90%; max-width:400px; max-height:85vh; overflow-y:auto; padding:20px; border: 2px solid var(--forest-green);">
+            <h3 style="margin-bottom:10px;">Desatero správného sběrače 🥫♻️</h3>
+            <p class="small-text" style="color:var(--text-dim); margin-bottom:15px; text-align: center;">Důvěra je základ. Focením se zavazuješ k poctivému, ekologickému a bezpečnému sběru.</p>
+            
+            <ol class="desatero-list" style="padding-left:15px; font-size:12px; line-height:1.5; color:var(--text-light); text-align:left; margin-bottom: 20px;">
+                <li style="margin-bottom:8px;"><strong>Poctivost:</strong> Vyfocení plechovky je závazek ji zvednout a uklidit. Nefoť plechovky, které tam necháš ležet.</li>
+                <li style="margin-bottom:8px;"><strong>Kam s ní? Do recyklace:</strong> Každá plechovka patří do žlutého/šedého kontejneru na plasty/kovy nebo do sběrného dvora.</li>
+                <li style="margin-bottom:8px;"><strong>Chraň si ruce:</strong> Při sběru vždy používej pevné rukavice nebo sběrací kleště. Hliník může být ostrý.</li>
+                <li style="margin-bottom:8px;"><strong>Pozor na hmyz a zvířata:</strong> Plechovky v lese jsou skvělým úkrytem pro vosy, sršně či pavouky. Před sešlápnutím ji zkontroluj.</li>
+                <li style="margin-bottom:8px;"><strong>Vylévej opatrně:</strong> Uvnitř může být zkažená tekutina, plíseň či dešťová voda. Vylévej vždy směrem od těla.</li>
+                <li style="margin-bottom:8px;"><strong>Bezpečnost na prvním místě:</strong> Nesbírej na soukromých pozemcích, staveništích, železničních tratích nebo v jiných nebezpečných místech.</li>
+                <li style="margin-bottom:8px;"><strong>Respektuj přírodu:</strong> Nenič chráněné rostliny a neruš zvěř jen proto, abys dosáhl na plechovku v křoví.</li>
+                <li style="margin-bottom:8px;"><strong>Hygiena:</strong> Po sběru si vždy pečlivě umyj nebo vydezinfikuj ruce. Hygiena je základ zdraví.</li>
+                <li style="margin-bottom:8px;"><strong>Jdi příkladem:</strong> Svým chováním ukazuješ ostatním, že sbírat odpadky není ostuda, ale hrdost.</li>
+                <li style="margin-bottom:8px;"><strong>Hrajeme fér:</strong> Žebříček slouží pro radost a motivaci. Jakékoliv podvody (focení v obchodě) kazí hru celé komunitě.</li>
+            </ol>
+            
+            <button onclick="toggleDesatero()" class="primary-btn-small" style="width:100%;">Rozumím a souhlasím</button>
         </div>
 
         <!-- Instalační Overlay (PWA) -->
