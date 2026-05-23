@@ -227,3 +227,32 @@ Abychom mohli bezpečně obsloužit statisíce uživatelů bez výpadků a s roz
 ### D. Pokročilá offline synchronizace
 *   Při statisících uživatelů se zvýší riziko přetížení mobilních sítí (např. na hudebních festivalech).
 *   Použijeme robustní synchronizační knihovnu (např. Workbox Background Sync nebo Dexie.js), která zajistí spolehlivé odesílání dat na pozadí, i když je aplikace zavřená a uživatel má nestabilní 3G/4G připojení.
+
+---
+
+## 12. Identifikace uživatelů a doručování výher (GDPR & Identita)
+
+V MVP verzi aplikace sběrači nezadávají e-maily ani hesla (jen přezdívku), což extrémně snižuje bariéru pro stažení (žádná registrace). Pokud ale chceme uživateli za přezdívkou (např. `Pepa_sbira`) poslat výhru, musíme vyřešit jeho kontaktování a ověření identity.
+
+Zde jsou 4 cesty, jak to vyřešit, od nejjednodušší po nejrobustnější:
+
+### Varianta 1: Sociální sítě jako přezdívka (Instagram handle) - DOPORUČENO PRO START
+*   **Jak to funguje:** Při prvním spuštění aplikace uživatele vyzve, aby jako přezdívku zadal svůj Instagramový nebo TikTokový handle (např. `@pepa_sbira`).
+*   **Předání výhry:** Správce projektu (Tomáš) napíše Pepovi přímo na Instagramu: *„Ahoj Pepo, vyhrál jsi týdenní výzvu Milion plechovek! Pošli nám sem do zpráv doručovací adresu a screenshot svého profilu z aplikace pro ověření.“*
+*   **Výhody:** Nulová technická náročnost, obří marketingový přínos (lidé přirozeně sdílí projekt na sociálních sítích, sponzor je může označovat ve Stories).
+*   **Nevýhody:** Někteří uživatelé (např. starší lidé nebo velmi malé děti) nemusí mít sociální sítě.
+
+### Varianta 2: Formulář pro uplatnění výhry (Claim Form)
+*   **Jak to funguje:** Jakmile uživatel splní výzvu nebo vyhraje v žebříčku, v aplikaci se mu zobrazí tlačítko *„Vyhrál jsi! Klikni sem pro odeslání adresy“*. Odkaz ho navede na jednoduchý zabezpečený formulář (např. Google Forms / Typeform), kde vyplní své jméno, e-mail a adresu a odešle je.
+*   **Výhody:** Velmi čisté z pohledu **GDPR** – osobní údaje (adresu, e-mail) sbíráte pouze od skutečných výherců, kteří je dobrovolně poskytnou za účelem doručení ceny, nikoliv od všech 500 000 uživatelů. Aplikace jako taková zůstává anonymní.
+*   **Nevýhody:** Sběrač musí sám aktivně kliknout a výhru si nárokovat.
+
+### Varianta 3: Nepovinný e-mail při registraci (Lightweight onboarding)
+*   **Jak to funguje:** Při prvním otevření aplikace uživatel zadá přezdívku a *nepovinně* e-mailovou adresu. E-mail se uloží do databáze k jeho profilu.
+*   **Výhody:** Přímý komunikační kanál na uživatele ihned od začátku.
+*   **Nevýhody:** Aplikace již oficiálně sbírá osobní údaje (PII). Projekt musí mít zpracované Podmínky ochrany osobních údajů (GDPR), vyřešené zabezpečení databáze proti úniku e-mailů a hrozí, že uživatelé budou zadávat neexistující e-maily (pokud nezavedeme ověřovací e-maily).
+
+### Varianta 4: Plná registrace uživatelů (Supabase Auth)
+*   **Jak to funguje:** Uživatel se musí přihlásit (např. jedním kliknutím přes Google, Apple ID nebo zasláním přihlašovacího odkazu na e-mail).
+*   **Výhody:** 100% jistota identity, ochrana proti krádežím přezdívek, možnost detailní správy uživatelských profilů.
+*   **Nevýhody:** Vysoké tření při prvním spuštění – nutnost registrace může odradit až 50 % potenciálních uživatelů, kteří si chtějí aplikaci jen vyzkoušet v lese.
