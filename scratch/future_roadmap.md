@@ -36,6 +36,9 @@ Tento dokument slouží jako paměť projektu pro budoucí nápady, vylepšení 
 ---
 
 ## 3. Funkce Aplikace a UX (Produktový vývoj)
+*   **Vlastní vizuální identita a ikony (Branded Custom Icons):**
+    *   *Nahrazení emoji prvků:* Systémové emotikony (`🏠`, `📍`, `🏆`, `🥫`, `♻️`) nahradíme vlastními 2D vektorovými ikonami (SVG) navrženými v barvách a stylu loga *Milion plechovek*. Tím aplikace získá profesionální, jednotný design (iOS, Android a Windows zobrazují emoji rozdílně).
+    *   *Značkové konfety:* Při úspěšném odeslání budou po obrazovce létat zmenšené vektorové plechovky vycházející přímo z tvaru loga.
 *   **Schvalování úlovků (Anti-Cheat):**
     *   Jednoduché administrační rozhraní (Admin Dashboard) pro Tomáše a moderátory pro schválení/zamítnutí fotek před započtením do žebříčku (prevence podvodů a spamu).
 *   **Offline režim s frontou (Offline Queue):**
