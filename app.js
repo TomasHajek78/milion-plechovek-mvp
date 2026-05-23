@@ -6,7 +6,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // --- Konfigurace Supabase Databáze ---
-const SUPABASE_URL = 'https://idxlyjugneueoxmhapa.supabase.co';
+const SUPABASE_URL = 'https://idxlyjugmeueoxmhage.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_CR-YuABHB1SvPK6b6sz-WQ_Q6y_8iKx';
 
 document.addEventListener('DOMContentLoaded', () => {
