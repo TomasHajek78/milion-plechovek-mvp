@@ -220,6 +220,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Pomocná funkce pro určení barvy plechovky (zelená, modrá, červená) podle souřadnic.
+    // Výsledkem je, že plechovky budou mít různé barvy z loga, ale konkrétní nález bude mít vždy stejnou barvu.
+    function getMarkerColorClass(item) {
+        if (!item || !item.latitude || !item.longitude) return '';
+        // Jednoduchý stabilní hash ze souřadnic
+        const hash = Math.abs(Math.sin(item.latitude * 12.9898 + item.longitude * 78.233) * 43758.5453);
+        const index = Math.floor((hash % 1) * 3); // 0 = zelená (bez třídy), 1 = modrá, 2 = červená
+        const classes = ['', 'can-blue', 'can-red'];
+        return classes[index];
+    }
+
     // --- Mapa ---
     function initMap() {
         map = L.map('map', { maxZoom: 21 }).setView([49.8175, 15.473], 7);
@@ -250,9 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     fontSize = 16;
                 }
                 
+                // Stabilní barva shluku podle jeho středu
+                const latlng = cluster.getLatLng();
+                const colorClass = getMarkerColorClass({ latitude: latlng.lat, longitude: latlng.lng });
+                
                 return L.divIcon({
                     html: `<div style="font-size: ${fontSize}px; font-weight: 900; color: white; text-shadow: 0 0 5px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding-top: 2px;">${sum}</div>`,
-                    className: 'cluster-can-icon',
+                    className: `cluster-can-icon ${colorClass}`,
                     iconSize: [size, size],
                     iconAnchor: [size / 2, size / 2]
                 });
@@ -284,8 +299,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? new Date(item.created_at).toLocaleString('cs-CZ', {hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit', year: 'numeric'})
                     : '';
                 
+                const colorClass = getMarkerColorClass(item);
                 const numberIcon = L.divIcon({
-                    className: 'custom-div-icon',
+                    className: `custom-div-icon ${colorClass}`,
                     html: `${item.count}`,
                     iconSize: [40, 40],
                     iconAnchor: [20, 20]
