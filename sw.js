@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v7';
+const CACHE_NAME = 'milion-plechovek-v9';
 const ASSETS = [
   './',
   './index.html',

@@ -433,7 +433,7 @@ input:focus, textarea:focus {
 }
 
 .can-red {
-    filter: hue-rotate(245deg) saturate(1.3) brightness(1.1) !important;
+    filter: hue-rotate(225deg) saturate(1.5) brightness(0.9) !important;
 }
 
 
