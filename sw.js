@@ -16,6 +16,7 @@ const ASSETS = [
 
 // Instalace - cachování souborů
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Vynutit okamžité převzetí kontroly novým Service Workerem
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
@@ -25,6 +26,7 @@ self.addEventListener('install', (event) => {
 
 // Aktivace - vyčištění staré cache
 self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim()); // Okamžitě převzít kontrolu nad všemi klienty
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
