@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nicknameInput = document.getElementById('nicknameInput');
     const saveNickBtn = document.getElementById('saveNickBtn');
     const userNickDisplay = document.getElementById('userNickDisplay');
+    const myStatsCard = document.getElementById('myStatsCard');
     
     const cameraBtn = document.getElementById('cameraBtn');
     const galleryBtn = document.getElementById('galleryBtn');
@@ -45,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const historyList = document.getElementById('historyList');
     const leaderboardList = document.getElementById('leaderboardList');
+    const settingsNicknameInput = document.getElementById('settingsNickname');
 
     // --- State Aplikace ---
     let myStats = parseInt(localStorage.getItem('milion_mystats')) || 0;
@@ -55,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCoords = null;
     let map, markersLayer;
     let selectedFile = null;
+    let allPickups = []; // Globální pole pro uchování všech stažených úlovků pro galerii
 
     // --- Mock Data pro Žebříček (Fallback) ---
     const mockLeaderboard = [
@@ -73,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData() {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=nickname,count,latitude,longitude,notes,created_at,photo_url`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=nickname,count,latitude,longitude,notes,created_at,photo_url,team_code`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -81,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) throw new Error('Chyba komunikace s databází');
             const data = await response.json();
+            allPickups = data; // Uložení do globálního pole pro galerii
 
             // Sčítání globálních a osobních statistik
             const totalCans = data.reduce((sum, item) => sum + item.count, 0);
@@ -157,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="nick">${user.nick}</span>
                     <span class="count">${user.count} ks</span>
                 `;
+                li.addEventListener('click', () => openUserGallery(user.nick));
                 leaderboardList.appendChild(li);
             });
 
@@ -167,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="nick">${userNick || 'Já'}</span>
                 <span class="count">${myStats} ks</span>
             `;
+            myLi.addEventListener('click', () => { if (userNick) openUserGallery(userNick); });
             leaderboardList.appendChild(myLi);
             return;
         }
@@ -193,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="nick">${user.nick}</span>
                 <span class="count">${user.count} ks</span>
             `;
+            li.addEventListener('click', () => openUserGallery(user.nick));
             leaderboardList.appendChild(li);
         });
 
@@ -206,6 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="nick">${userNick}</span>
                 <span class="count">${userSums[userNick] || 0} ks</span>
             `;
+            myLi.addEventListener('click', () => openUserGallery(userNick));
             leaderboardList.appendChild(myLi);
         } else if (myRankIndex === -1 && userNick) {
             // Pokud ještě nic nenasbíral
@@ -216,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="nick">${userNick}</span>
                 <span class="count">0 ks</span>
             `;
+            myLi.addEventListener('click', () => openUserGallery(userNick));
             leaderboardList.appendChild(myLi);
         }
     }
@@ -302,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const colorClass = getMarkerColorClass(item);
                 const numberIcon = L.divIcon({
                     className: `custom-div-icon ${colorClass}`,
-                    html: `${item.count}`,
+                    html: `<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-weight: 900; font-size: 13px; color: white; text-shadow: 0 0 5px rgba(0,0,0,0.9); padding-top: 2px;">${item.count}</div>`,
                     iconSize: [40, 40],
                     iconAnchor: [20, 20]
                 });
@@ -352,6 +361,25 @@ document.addEventListener('DOMContentLoaded', () => {
         gpsToggle.addEventListener('change', (e) => {
             useGPS = e.target.checked;
             localStorage.setItem('milion_use_gps', useGPS);
+        });
+    }
+
+    // Inicializace a uložení přezdívky z nastavení
+    if (settingsNicknameInput) {
+        settingsNicknameInput.value = userNick;
+        settingsNicknameInput.addEventListener('input', (e) => {
+            userNick = e.target.value.trim();
+            localStorage.setItem('milion_nickname', userNick);
+            userNickDisplay.textContent = userNick;
+        });
+    }
+
+    // Kliknutí na kartu vlastních statistik otevře osobní galerii
+    if (myStatsCard) {
+        myStatsCard.addEventListener('click', () => {
+            if (userNick) {
+                openUserGallery(userNick);
+            }
         });
     }
 
@@ -634,7 +662,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 globalStats = data.global;
                 myHistory = data.history;
                 userNick = data.nick;
-                
                 localStorage.setItem('milion_mystats', myStats);
                 localStorage.setItem('milion_globalstats', globalStats);
                 localStorage.setItem('milion_history', JSON.stringify(myHistory));
@@ -661,6 +688,78 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('settingsModal');
         modal.classList.toggle('hidden');
     };
+
+    // --- LOGIKA INTERAKTIVNÍ GALERIE FOTEK UŽIVATELŮ ---
+    const userGalleryModal = document.getElementById('userGalleryModal');
+    const closeGalleryBtn = document.getElementById('closeGalleryBtn');
+    const galleryGrid = document.getElementById('galleryGrid');
+    const galleryTitle = document.getElementById('galleryTitle');
+    const photoDetailViewer = document.getElementById('photoDetailViewer');
+    const detailImage = document.getElementById('detailImage');
+    const detailCount = document.getElementById('detailCount');
+    const detailDate = document.getElementById('detailDate');
+    const detailNotes = document.getElementById('detailNotes');
+
+    window.openUserGallery = (nickname) => {
+        if (!nickname) return;
+        
+        galleryTitle.textContent = nickname === userNick ? 'Moje galerie fotek' : `Galerie: ${nickname}`;
+        galleryGrid.innerHTML = '';
+        photoDetailViewer.classList.add('hidden'); // Skrýt detail při otevření
+
+        // Filtrování úlovků daného uživatele, které mají fotku
+        const userPickups = allPickups.filter(p => p.nickname === nickname && p.photo_url);
+
+        if (userPickups.length === 0) {
+            galleryGrid.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-dim); padding: 20px 0; font-size: 13px;">Tento uživatel nemá nahrané žádné fotky.</div>';
+        } else {
+            // Seřazení od nejnovějších
+            userPickups.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+            
+            userPickups.forEach(pickup => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'gallery-item';
+                
+                itemDiv.innerHTML = `
+                    <img src="${pickup.photo_url}" alt="Úlovek">
+                    <span class="gallery-badge">+${pickup.count}</span>
+                `;
+                
+                // Kliknutí na náhled v galerii zobrazí velký detail pod mřížkou
+                itemDiv.addEventListener('click', () => {
+                    // Odbavení vizuálního výběru v gridu
+                    document.querySelectorAll('.gallery-item').forEach(el => el.classList.remove('selected'));
+                    itemDiv.classList.add('selected');
+                    
+                    detailImage.src = pickup.photo_url;
+                    detailCount.textContent = `🥫 ${pickup.count} ks`;
+                    detailDate.textContent = pickup.created_at 
+                        ? new Date(pickup.created_at).toLocaleDateString('cs-CZ', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})
+                        : '';
+                    detailNotes.textContent = pickup.notes ? `„${pickup.notes}“` : 'Bez poznámky';
+                    photoDetailViewer.classList.remove('hidden');
+                    
+                    // Odrolovat dolů k detailu pro lepší uživatelský zážitek na mobilu
+                    setTimeout(() => {
+                        userGalleryModal.scrollTo({
+                            top: userGalleryModal.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 100);
+                });
+                
+                galleryGrid.appendChild(itemDiv);
+            });
+        }
+        
+        userGalleryModal.classList.remove('hidden');
+    };
+
+    if (closeGalleryBtn) {
+        closeGalleryBtn.addEventListener('click', () => {
+            userGalleryModal.classList.add('hidden');
+        });
+    }
 
     window.toggleDesatero = () => {
         const modal = document.getElementById('desateroModal');

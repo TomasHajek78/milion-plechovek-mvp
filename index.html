@@ -44,6 +44,11 @@
             <p class="small-text">Pro jistotu si jednou za čas stáhni zálohu svých dat, aby se ti sběry při promazání telefonu neztratily.</p>
             <button onclick="exportData()" class="primary-btn-small" style="width:100%; margin-bottom:10px;">📥 Stáhnout zálohu (.json)</button>
             
+            <div style="margin: 15px 0; text-align: left;">
+                <label for="settingsNickname" style="font-size: 11px; font-weight: 700; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase;">Přezdívka:</label>
+                <input type="text" id="settingsNickname" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; background: var(--bg-card); color: var(--text-dark); box-sizing: border-box;" placeholder="@pepa_sbira">
+            </div>
+            
             <div style="margin: 15px 0 5px 0; display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left;">
                 <input type="checkbox" id="gpsToggle" checked style="width: auto; height: auto; padding: 0; margin: 0; transform: scale(1.2); cursor: pointer;">
                 <label for="gpsToggle" style="font-size: 13px; font-weight: 700; color: var(--text-dark); cursor: pointer;">Zjišťovat GPS polohu automaticky</label>
@@ -190,6 +195,27 @@
                 <span class="nav-label">Žebříček</span>
             </button>
         </nav>
+
+        <!-- Modal Galerie Uživatelů -->
+        <div id="userGalleryModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1020; width:95%; max-width:440px; max-height:85vh; overflow-y:auto; box-shadow: 0 20px 50px rgba(0,0,0,0.15);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+                <h3 id="galleryTitle" style="margin:0; font-size:16px;">Galerie úlovků</h3>
+                <button id="closeGalleryBtn" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-dim); font-weight:bold; padding: 0 5px;">&times;</button>
+            </div>
+            
+            <!-- Mřížka fotek -->
+            <div id="galleryGrid" class="gallery-grid"></div>
+            
+            <!-- Detail konkrétní fotky (výchozí skrytý, zobrazí se po kliknutí v mřížce) -->
+            <div id="photoDetailViewer" class="photo-detail-viewer hidden" style="margin-top:20px; padding-top:15px; border-top:1px solid #e2e8f0; text-align: left;">
+                <img id="detailImage" src="" style="width:100%; border-radius:12px; max-height:250px; object-fit:cover; margin-bottom:10px; border: 1px solid #e2e8f0;">
+                <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--text-dark); margin-bottom:5px;">
+                    <span id="detailCount">🥫 0 ks</span>
+                    <span id="detailDate" style="color:var(--text-dim); font-weight:400;">...</span>
+                </div>
+                <p id="detailNotes" style="font-size:12px; font-style:italic; color:var(--text-dim); margin:0; line-height:1.4;"></p>
+            </div>
+        </div>
     </div>
 
     <script src="app.js?v=3"></script>
