@@ -461,3 +461,64 @@ input:focus, textarea:focus {
     margin-bottom: 8px;
     color: var(--text-dim);
 }
+
+/* --- Galerie Uživatelů --- */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 40vh;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-bottom: 10px;
+}
+
+.gallery-item {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* Čtvercový poměr 1:1 */
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    background-color: #f1f5f9;
+    transition: all 0.2s;
+}
+
+.gallery-item:active, .gallery-item.selected {
+    transform: scale(0.95);
+    border-color: var(--rust-red);
+    box-shadow: 0 0 0 3px rgba(193, 83, 69, 0.2);
+}
+
+.gallery-item img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(15, 23, 42, 0.85);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 8px;
+    z-index: 5;
+}
+
+/* Nastavení řádků v žebříčku jako klikacích */
+.leaderboard-item, #myStatsCard {
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.leaderboard-item:active, #myStatsCard:active {
+    transform: scale(0.98);
+}

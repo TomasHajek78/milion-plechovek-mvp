@@ -14,6 +14,8 @@ Tento dokument slouží jako paměť projektu pro budoucí nápady, vylepšení 
 *   **Školní ligy a Týmy:**
     *   Možnost zakládat skupiny/týmy (třídy, skautské oddíly, rodiny, firmy).
     *   Meziškolní žebříček: „Která škola v ČR vyčistí nejvíce okolí?“ – skvělý virální potenciál.
+*   **Soutěž o nejhezčí/nejkreativnější fotku:**
+    *   Časem by bylo možné uspořádat soutěž o nejhezčí či nejkreativnější fotografii pořízenou při sběru (např. plechovka v zajímavé kompozici v přírodě). Pomůže to tvořit kvalitní obsah pro propagaci a zvýší zapojení uživatelů.
 
 ---
 
@@ -43,6 +45,9 @@ Tento dokument slouží jako paměť projektu pro budoucí nápady, vylepšení 
     *   Jednoduché administrační rozhraní (Admin Dashboard) pro Tomáše a moderátory pro schválení/zamítnutí fotek před započtením do žebříčku (prevence podvodů a spamu).
 *   **Offline režim s frontou (Offline Queue):**
     *   Pokud sběrač nemá v lese nebo v údolí signál, aplikace uloží fotku, souřadnice i počet lokálně (IndexedDB). Jakmile se telefon připojí k internetu, na pozadí data odešle.
+*   **Chytré upozornění při chybějící GPS (Detekce budovy):**
+    *   *Jak to funguje:* Pokud se při odesílání nepodaří zaměřit GPS polohu, zobrazí se uživatelsky přívětivé upozornění: *„Asi jste v budově, protože nemáme GPS souřadnice vaší plechovky. Chcete přesto odeslat? Váš nález se započítá do všech statistik, ale neobjeví se na mapě nálezů.“*
+    *   *Význam:* Zabrání to nechtěnému odesílání bez polohy venku v terénu a zároveň přehledně vysvětlí, proč se daná plechovka neobjeví na mapě, aniž by se uživatel cítil zablokován nebo zmaten.
 *   **Ekologické kalkulačky (Impact Stats):**
     *   Zobrazení úspory přímo v aplikaci: „Tvé plechovky ušetřily X kWh energie, Y kg CO2 a Z litrů vody oproti výrobě nového hliníku.“
 *   **Pokročilá mapa a Filtry:**
@@ -282,8 +287,9 @@ Zde jsou 4 cesty, jak to vyřešit, od nejjednodušší po nejrobustnější:
 
 Pro zajištění stability a hladkého vývoje navrhujeme tento harmonogram rozvoje aplikace a komunity:
 
-### Fáze 1: Červen 2026 – Testování v úzkém kruhu (10 lidí)
+### Fáze 1: Červen 2026 – Testování v úzkém kruhu (10 lidí) [ÚSPĚŠNĚ ZAPOČATO]
 *   **Technický cíl:** Oprava nalezených chyb z testování, odladění GPS přesnosti a zavedení **automatické komprimace fotek v telefonu** před nahráním (úspora storage).
+    *   *Stav k 24. 5. 2026:* **Hotovo!** Byla naimplementována klientská komprese obrázků (max. 1600px, 80% kvalita, výsledná velikost 250–500 KB), zvýšena přesnost a limit GPS (10 sekund, vysoká přesnost) a ošetřeno nahrávání fotek pomocí try-catch (příspěvek se uloží i při výpadku spojení u fotky).
 *   **Komunitní cíl:** Tomáš a rodina sbírají data, testují mapu a ověřují celkovou stabilitu PWA cache na různých iPhonech a Androidech.
 
 ### Fáze 2: Červenec 2026 – Komunitní test (50 lidí)
