@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v3';
+const CACHE_NAME = 'milion-plechovek-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,10 @@ const ASSETS = [
   './can-marker.png',
   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css',
+  'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css',
+  'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js'
 ];
 
 // Instalace - cachování souborů
