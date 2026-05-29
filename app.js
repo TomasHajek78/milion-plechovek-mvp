@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelBtn = document.getElementById('cancelBtn');
     const shareBtn = document.getElementById('shareBtn');
     const newPickupBtn = document.getElementById('newPickupBtn');
+    const gpsToggle = document.getElementById('gpsToggle');
     
     const canCountInput = document.getElementById('canCount');
     const myTotalEl = document.getElementById('myTotal');
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let globalStats = parseInt(localStorage.getItem('milion_globalstats')) || 999171;
     let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
     let userNick = localStorage.getItem('milion_nickname') || '';
+    let useGPS = localStorage.getItem('milion_use_gps') !== 'false';
     let currentCoords = null;
     let map, markersLayer;
     let selectedFile = null;
@@ -220,9 +222,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Mapa ---
     function initMap() {
-        map = L.map('map').setView([49.8175, 15.473], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        markersLayer = L.layerGroup().addTo(map);
+        map = L.map('map', { maxZoom: 21 }).setView([49.8175, 15.473], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 21,
+            maxNativeZoom: 19
+        }).addTo(map);
+        
+        // Inicializace MarkerClusteru se sčítáním celkového počtu plechovek
+        markersLayer = L.markerClusterGroup({
+            disableClusteringAtZoom: 18, // Od přiblížení 18 výše už body neshlukujeme (budou vidět samostatně)
+            spiderfyOnMaxZoom: true,     // Pokud jsou body na stejném místě, rozbalí se do paprsků
+            iconCreateFunction: function(cluster) {
+                const childMarkers = cluster.getAllChildMarkers();
+                let sum = 0;
+                childMarkers.forEach(m => {
+                    sum += m.options.canCount || 1;
+                });
+                
+                let c = ' marker-cluster-';
+                if (sum < 10) {
+                    c += 'small';
+                } else if (sum < 100) {
+                    c += 'medium';
+                } else {
+                    c += 'large';
+                }
+                
+                return L.divIcon({
+                    html: '<div><span>' + sum + '</span></div>',
+                    className: 'marker-cluster' + c,
+                    iconSize: [40, 40]
+                });
+            }
+        }).addTo(map);
+        
         renderMarkers();
     }
 
@@ -263,9 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${item.photo_url ? `<br><a href="${item.photo_url}" target="_blank"><img src="${item.photo_url}" style="width:120px; height:120px; object-fit:cover; border-radius:12px; margin-top:8px; display:block; border:1px solid #e2e8f0;"></a>` : ''}
                 `;
 
-                L.marker([item.latitude, item.longitude], { icon: numberIcon })
-                    .bindPopup(popupText)
-                    .addTo(markersLayer);
+                L.marker([item.latitude, item.longitude], { 
+                    icon: numberIcon,
+                    canCount: item.count
+                })
+                .bindPopup(popupText)
+                .addTo(markersLayer);
             }
         });
     }
@@ -291,6 +327,15 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadData();
 
+    // Nastavení GPS přepínače
+    if (gpsToggle) {
+        gpsToggle.checked = useGPS;
+        gpsToggle.addEventListener('change', (e) => {
+            useGPS = e.target.checked;
+            localStorage.setItem('milion_use_gps', useGPS);
+        });
+    }
+
     // Kontrola nickname
     if (!userNick) {
         loginScreen.classList.remove('hidden');
@@ -310,6 +355,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Pomocná funkce pro kompresi obrázků na straně klienta ---
+    function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.8) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const name = file.name.substring(0, file.name.lastIndexOf('.')) || 'photo';
+                            const compressedFile = new File([blob], `${name}.jpg`, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error('Chyba při konverzi na Blob.'));
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
+
     // --- Akce ---
     cameraBtn.addEventListener('click', () => cameraInput.click());
     galleryBtn.addEventListener('click', () => galleryInput.click());
@@ -317,14 +412,35 @@ document.addEventListener('DOMContentLoaded', () => {
     [cameraInput, galleryInput].forEach(input => {
         input.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
-                selectedFile = e.target.files[0];
+                const originalFile = e.target.files[0];
+                selectedFile = originalFile; // Použít jako zálohu, pokud komprese selže
+                
+                // Okamžitý náhled původního obrázku pro rychlou odezvu UI
                 const reader = new FileReader();
                 reader.onload = (e) => { photoPreview.src = e.target.result; };
-                reader.readAsDataURL(selectedFile);
+                reader.readAsDataURL(originalFile);
+                
                 sections.home.classList.add('hidden');
                 document.querySelector('.bottom-nav').classList.add('hidden');
                 pickupForm.classList.remove('hidden');
-                getGPSLocation();
+                
+                if (useGPS) {
+                    getGPSLocation();
+                } else {
+                    gpsStatus.innerHTML = "📍 Nemáte zapnutou polohu, vaše plechovky se nezobrazí na mapě.";
+                    gpsStatus.style.color = "var(--rust-red)";
+                    currentCoords = null;
+                }
+
+                // Spustit kompresi na pozadí
+                compressImage(originalFile)
+                    .then(compressedFile => {
+                        selectedFile = compressedFile;
+                        console.log(`Obrázek zkomprimován ze ${(originalFile.size / 1024 / 1024).toFixed(2)} MB na ${(compressedFile.size / 1024).toFixed(2)} KB.`);
+                    })
+                    .catch(err => {
+                        console.error("Chyba při kompresi obrázku, použije se originál:", err);
+                    });
             }
         });
     });
@@ -337,8 +453,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 gpsStatus.innerHTML = "📍 Poloha zaměřena!";
                 gpsStatus.style.color = "var(--forest-green)";
             },
-            () => { gpsStatus.innerHTML = "📍 Poloha nezaměřena."; gpsStatus.style.color = "var(--rust-red)"; },
-            { timeout: 5000 }
+            (err) => {
+                console.warn("Chyba GPS:", err);
+                gpsStatus.innerHTML = "📍 Poloha nezaměřena. Zkontroluj oprávnění/GPS.";
+                gpsStatus.style.color = "var(--rust-red)";
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     }
 
@@ -357,20 +477,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cleanNick = userNick.replace(/[^a-zA-Z0-9]/g, '_');
                 const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
                 
-                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': selectedFile.type
-                    },
-                    body: selectedFile
-                });
-                
-                if (uploadResponse.ok) {
-                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
-                } else {
-                    console.error("Storage upload failed, saving entry without image...");
+                try {
+                    const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': selectedFile.type
+                        },
+                        body: selectedFile
+                    });
+                    
+                    if (uploadResponse.ok) {
+                        photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
+                    } else {
+                        console.error("Storage upload failed (status not ok), saving entry without image...");
+                    }
+                } catch (uploadError) {
+                    console.error("Network error during storage upload, saving entry without image:", uploadError);
                 }
             }
 
@@ -432,18 +556,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    shareBtn.addEventListener('click', () => {
+    shareBtn.addEventListener('click', async () => {
         const count = canCountInput.value;
         const text = `Právě jsem sebral ${count} plechovek a pomáhám vyčistit Česko! Sleduj @milionplechovek a přidej se taky. #milionplechovek ♻️🥫`;
+        
+        // Zkopírování textu do schránky pro snadné vložení do Instagramu
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (err) {
+            console.warn("Nepodařilo se automaticky zkopírovat text:", err);
+        }
+
         if (navigator.share) {
-            navigator.share({
+            const shareData = {
                 title: 'Milion Plechovek',
-                text: text,
-                url: window.location.href
-            }).catch(() => {});
+                text: text
+            };
+
+            // Pokud máme obrázek a prohlížeč podporuje sdílení souborů, nasdílíme přímo fotku plechovky
+            if (selectedFile && navigator.canShare && navigator.canShare({ files: [selectedFile] })) {
+                shareData.files = [selectedFile];
+            } else {
+                shareData.url = window.location.href;
+            }
+
+            try {
+                await navigator.share(shareData);
+                alert("Obrázek byl odeslán do sdílení. V Instagramu stačí podržet prst a vložit zkopírovaný popisek příspěvku!");
+            } catch (err) {
+                console.log('Sdílení bylo zrušeno nebo selhalo:', err);
+            }
         } else {
-            navigator.clipboard.writeText(text);
-            alert("Text pro sdílení byl zkopírován do schránky!");
+            alert("Váš prohlížeč nepodporuje přímé sdílení. Text popisku byl alespoň zkopírován do schránky!");
         }
     });
     
