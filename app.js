@@ -239,19 +239,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     sum += m.options.canCount || 1;
                 });
                 
-                let c = ' marker-cluster-';
-                if (sum < 10) {
-                    c += 'small';
-                } else if (sum < 100) {
-                    c += 'medium';
-                } else {
-                    c += 'large';
+                // Dynamická velikost plechovky podle počtu seskupených kusů
+                let size = 42;
+                let fontSize = 12;
+                if (sum >= 10 && sum < 100) {
+                    size = 50;
+                    fontSize = 14;
+                } else if (sum >= 100) {
+                    size = 58;
+                    fontSize = 16;
                 }
                 
                 return L.divIcon({
-                    html: '<div><span>' + sum + '</span></div>',
-                    className: 'marker-cluster' + c,
-                    iconSize: [40, 40]
+                    html: `<div style="font-size: ${fontSize}px; font-weight: 900; color: white; text-shadow: 0 0 5px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding-top: 2px;">${sum}</div>`,
+                    className: 'cluster-can-icon',
+                    iconSize: [size, size],
+                    iconAnchor: [size / 2, size / 2]
                 });
             }
         }).addTo(map);

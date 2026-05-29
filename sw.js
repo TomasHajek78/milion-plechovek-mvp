@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v5';
+const CACHE_NAME = 'milion-plechovek-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './app.js',
   './logo.png',
   './can-marker.png',
+  './can-marker-transparent.png',
   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
