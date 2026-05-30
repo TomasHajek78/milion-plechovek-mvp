@@ -1706,6 +1706,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'Kong Strong',
         'Heineken',
         'Starobrno',
+        'Kozel',
         'Kofola',
         'Frisco',
         'Desperados',
