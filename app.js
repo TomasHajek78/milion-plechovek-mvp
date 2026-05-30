@@ -147,6 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (globalEnergyEl) {
                 globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
             }
+
+            // Zobrazení tlačítka pro Wrapped
+            const openWrappedBtn = document.getElementById('openWrappedBtn');
+            if (openWrappedBtn) {
+                openWrappedBtn.style.display = myStats > 0 ? 'block' : 'none';
+            }
+
             renderHistory();
             renderLeaderboard(data);
             renderMarkers(data);
@@ -173,6 +180,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (globalEnergyEl) {
                 globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
             }
+
+            // Zobrazení tlačítka pro Wrapped v offline fallbacku
+            const openWrappedBtn = document.getElementById('openWrappedBtn');
+            if (openWrappedBtn) {
+                openWrappedBtn.style.display = myStats > 0 ? 'block' : 'none';
+            }
+
             renderHistory();
             renderLeaderboard(); 
             renderMarkers(); 
@@ -1396,6 +1410,271 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Internetové připojení obnoveno, startuji synchronizaci...");
         syncOfflinePickups();
     });
+
+    // --- Sběratelský Wrapped (Spotify / Instagram Stories styl) ---
+    let currentWrappedSlide = 0;
+    let wrappedTimer = null;
+    const slideDuration = 6000; // 6s na slide
+    let timerStartTime = 0;
+    let timerElapsed = 0;
+
+    const openWrappedBtn = document.getElementById('openWrappedBtn');
+    const wrappedModal = document.getElementById('wrappedModal');
+    const closeWrappedBtn = document.getElementById('closeWrappedBtn');
+
+    if (openWrappedBtn) {
+        openWrappedBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Zabrání otevření standardní galerie
+            openWrapped();
+        });
+    }
+
+    if (closeWrappedBtn) {
+        closeWrappedBtn.addEventListener('click', () => {
+            closeWrapped();
+        });
+    }
+
+    function stopWrappedTimer() {
+        if (wrappedTimer) {
+            clearInterval(wrappedTimer);
+            wrappedTimer = null;
+        }
+    }
+
+    function startWrappedTimer() {
+        stopWrappedTimer();
+        const fillElements = document.querySelectorAll('.wrapped-progress-fill');
+        const currentFill = fillElements[currentWrappedSlide];
+        
+        timerStartTime = Date.now();
+        timerElapsed = 0;
+        
+        wrappedTimer = setInterval(() => {
+            timerElapsed = Date.now() - timerStartTime;
+            let percent = (timerElapsed / slideDuration) * 100;
+            if (percent >= 100) {
+                percent = 100;
+                currentFill.style.width = '100%';
+                stopWrappedTimer();
+                window.nextWrappedSlide();
+            } else {
+                currentFill.style.width = `${percent}%`;
+            }
+        }, 50);
+    }
+
+    function showWrappedSlide(index) {
+        currentWrappedSlide = index;
+        const slides = document.querySelectorAll('.wrapped-slide');
+        slides.forEach((slide, idx) => {
+            if (idx === index) {
+                slide.classList.add('active');
+            } else {
+                slide.classList.remove('active');
+            }
+        });
+
+        const fillElements = document.querySelectorAll('.wrapped-progress-fill');
+        fillElements.forEach((fill, idx) => {
+            if (idx < index) {
+                fill.style.width = '100%';
+            } else if (idx > index) {
+                fill.style.width = '0%';
+            } else {
+                fill.style.width = '0%';
+            }
+        });
+
+        startWrappedTimer();
+    }
+
+    window.prevWrappedSlide = () => {
+        if (currentWrappedSlide > 0) {
+            currentWrappedSlide--;
+            showWrappedSlide(currentWrappedSlide);
+        }
+    };
+
+    window.nextWrappedSlide = () => {
+        currentWrappedSlide++;
+        if (currentWrappedSlide >= 5) {
+            closeWrapped();
+        } else {
+            showWrappedSlide(currentWrappedSlide);
+        }
+    };
+
+    function closeWrapped() {
+        stopWrappedTimer();
+        if (wrappedModal) {
+            wrappedModal.classList.add('hidden');
+        }
+    }
+
+    function openWrapped() {
+        if (!allPickups || allPickups.length === 0 || !userNick) return;
+
+        // Osobní sběry přihlášeného uživatele
+        const userPickups = allPickups.filter(item => 
+            item.nickname && item.nickname.trim().toLowerCase() === userNick.trim().toLowerCase()
+        );
+
+        if (userPickups.length === 0) {
+            alert("Musíš nejprve odevzdat alespoň jednu plechovku, abychom ti mohli sestavit report!");
+            return;
+        }
+
+        // Filtrování na 3 měsíce (90 dní)
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        
+        let filteredPickups = userPickups.filter(item => new Date(item.created_at) >= ninetyDaysAgo);
+        let isQuarterly = true;
+
+        if (filteredPickups.length === 0) {
+            filteredPickups = userPickups; // Fallback na celou historii
+            isQuarterly = false;
+        }
+
+        // Třídění chronologicky pro určení první plechovky
+        const sortedChrono = [...filteredPickups].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const firstPickup = sortedChrono[0];
+
+        // Třídění podle počtu pro největší úlovek
+        const sortedCount = [...filteredPickups].sort((a, b) => b.count - a.count);
+        const maxPickup = sortedCount[0];
+
+        // Spočítání nejčastější značky
+        const brandCounts = {};
+        filteredPickups.forEach(p => {
+            if (p.is_analyzed && p.analysis_json) {
+                p.analysis_json.forEach(c => {
+                    const b = c.brand || 'Nerozpoznáno';
+                    brandCounts[b] = (brandCounts[b] || 0) + 1;
+                });
+            }
+        });
+
+        let topBrandName = 'Nerozpoznáno';
+        let topBrandCount = 0;
+        Object.entries(brandCounts).forEach(([name, count]) => {
+            if (name !== 'Nerozpoznáno' && count > topBrandCount) {
+                topBrandName = name;
+                topBrandCount = count;
+            }
+        });
+
+        if (topBrandCount === 0 && brandCounts['Nerozpoznáno']) {
+            topBrandName = 'Nerozpoznáno';
+            topBrandCount = brandCounts['Nerozpoznáno'];
+        }
+
+        // Souhrnné statistiky za dané období
+        const totalCans = filteredPickups.reduce((sum, p) => sum + p.count, 0);
+        const totalWeightKg = filteredPickups.reduce((sum, p) => sum + (parseFloat(p.aluminum_weight_g) || 0), 0) / 1000;
+        const totalEnergyKwh = filteredPickups.reduce((sum, p) => sum + (parseFloat(p.energy_saved_kwh) || 0), 0);
+        const totalCo2Kg = filteredPickups.reduce((sum, p) => sum + (parseFloat(p.co2_saved_kg) || 0), 0);
+
+        // --- PLNĚNÍ DAT DO SLIDŮ ---
+        
+        // Slide 1: Intro text
+        const introSub = document.querySelector('#wrappedSlide1 .wrapped-subtitle');
+        const introText = document.querySelector('#wrappedSlide1 .wrapped-text');
+        if (introSub) {
+            introSub.textContent = isQuarterly ? "Tvůj kvartální přehled" : "Tvůj sběratelský přehled";
+        }
+        if (introText) {
+            introText.textContent = isQuarterly 
+                ? "Podívej se, jak jsi za poslední 3 měsíce pomohl vyčistit naši přírodu!"
+                : "Jelikož jsi v posledních 3 měsících nesbíral, připravili jsme pro tebe tvůj celkový přehled jako dárek za podporu!";
+        }
+
+        // Slide 2: První plechovka
+        const firstDateEl = document.getElementById('wrappedFirstDate');
+        const firstImgEl = document.getElementById('wrappedFirstImage');
+        const firstBrandEl = document.getElementById('wrappedFirstBrand');
+        const firstNotesEl = document.getElementById('wrappedFirstNotes');
+
+        if (firstPickup) {
+            if (firstDateEl) {
+                firstDateEl.textContent = new Date(firstPickup.created_at).toLocaleDateString('cs-CZ', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            }
+            if (firstImgEl) {
+                firstImgEl.src = firstPickup.photo_url || 'can-marker-transparent.png';
+            }
+            if (firstBrandEl) {
+                const bName = firstPickup.analysis_json && firstPickup.analysis_json[0] && firstPickup.analysis_json[0].brand
+                    ? firstPickup.analysis_json[0].brand
+                    : 'Plechovka';
+                firstBrandEl.textContent = `${bName} (${firstPickup.count} ks)`;
+            }
+            if (firstNotesEl) {
+                firstNotesEl.textContent = firstPickup.notes ? `"${firstPickup.notes}"` : "Bez poznámky";
+            }
+        }
+
+        // Slide 3: Největší úlovek
+        const maxImgEl = document.getElementById('wrappedMaxImage');
+        const maxCountEl = document.getElementById('wrappedMaxCount');
+        const maxNotesEl = document.getElementById('wrappedMaxNotes');
+
+        if (maxPickup) {
+            if (maxImgEl) {
+                maxImgEl.src = maxPickup.photo_url || 'can-marker-transparent.png';
+            }
+            if (maxCountEl) {
+                maxCountEl.textContent = `${maxPickup.count} ks`;
+            }
+            if (maxNotesEl) {
+                maxNotesEl.textContent = maxPickup.notes ? `"${maxPickup.notes}"` : "Bez poznámky";
+            }
+        }
+
+        // Slide 4: Nejčastější značka
+        const brandNameEl = document.getElementById('wrappedBrandName');
+        const brandCountEl = document.getElementById('wrappedBrandCount');
+        const brandIconEl = document.getElementById('wrappedBrandCanIcon');
+
+        if (brandNameEl) {
+            brandNameEl.textContent = topBrandName;
+        }
+        if (brandCountEl) {
+            brandCountEl.textContent = `${topBrandCount} ks`;
+        }
+        if (brandIconEl) {
+            brandIconEl.className = 'custom-div-icon large-can-icon';
+            const lowerName = topBrandName.toLowerCase();
+            if (lowerName.includes('birell') || lowerName.includes('monster')) {
+                brandIconEl.style.filter = 'none';
+            } else if (lowerName.includes('coca') || lowerName.includes('frisco') || lowerName.includes('red') || lowerName.includes('pepsi') || lowerName.includes('desperados')) {
+                brandIconEl.style.filter = 'hue-rotate(225deg) saturate(1.5) brightness(0.9)';
+            } else {
+                brandIconEl.style.filter = 'hue-rotate(85deg) saturate(1.2) brightness(0.9)';
+            }
+        }
+
+        // Slide 5: Celkový dopad
+        const totCansEl = document.getElementById('wrappedTotalCans');
+        const totWeightEl = document.getElementById('wrappedTotalWeight');
+        const totEnergyEl = document.getElementById('wrappedTotalEnergy');
+        const totCo2El = document.getElementById('wrappedTotalCo2');
+
+        if (totCansEl) totCansEl.textContent = `${totalCans} ks`;
+        if (totWeightEl) totWeightEl.textContent = `${totalWeightKg.toFixed(2).replace('.', ',')} kg`;
+        if (totEnergyEl) totEnergyEl.textContent = `${totalEnergyKwh.toFixed(1).replace('.', ',')} kWh`;
+        if (totCo2El) totCo2El.textContent = `${totalCo2Kg.toFixed(1).replace('.', ',')} kg`;
+
+        // Zobrazení modálního okna
+        if (wrappedModal) {
+            wrappedModal.classList.remove('hidden');
+            showWrappedSlide(0);
+        }
+    }
 
     newPickupBtn.addEventListener('click', () => { window.location.reload(); });
     cancelBtn.addEventListener('click', () => { window.location.reload(); });

@@ -113,10 +113,11 @@
             </div>
 
             <div class="stats-row" id="statsRow">
-                <div class="stat-card" id="myStatsCard">
+                <div class="stat-card" id="myStatsCard" style="position: relative;">
                     <h3>Moje plechovky</h3>
                     <div class="stat-value" id="myTotal">0</div>
                     <p id="userNickDisplay">...</p>
+                    <button id="openWrappedBtn" class="primary-btn-small" style="margin-top: 8px; width: 100%; display: none; padding: 6px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, var(--forest-green) 0%, #3b82f6 100%); border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.25);">✨ Můj Kvartální Report</button>
                 </div>
                 <div class="stat-card">
                     <h3>Zbývá sebrat</h3>
@@ -299,6 +300,122 @@
         <div id="teamGalleryGrid" class="gallery-grid" style="margin-bottom:10px; display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
     </div>
 
-    <script src="app.js?v=6"></script>
+    <!-- Modální okno Sběratelského Wrapped -->
+    <div id="wrappedModal" class="wrapped-modal hidden">
+        <!-- Progress bar nahoře (Stories styl) -->
+        <div class="wrapped-progress-container">
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+        </div>
+
+        <!-- Tlačítko zavřít -->
+        <button id="closeWrappedBtn" class="wrapped-close-btn">&times;</button>
+
+        <!-- Navigační zóny pro mobilní poklepání -->
+        <div class="wrapped-nav-zone left" onclick="window.prevWrappedSlide()"></div>
+        <div class="wrapped-nav-zone right" onclick="window.nextWrappedSlide()"></div>
+
+        <!-- Kontejner pro slidy (každý slide má 9:16 poměr a vlastní ID) -->
+        <div class="wrapped-slides-wrapper">
+            <!-- SLIDE 1: Intro -->
+            <div class="wrapped-slide active" id="wrappedSlide1">
+                <div class="wrapped-decorations">
+                    <span class="floating-emoji e1">🥫</span>
+                    <span class="floating-emoji e2">♻️</span>
+                    <span class="floating-emoji e3">🌱</span>
+                </div>
+                <div class="wrapped-content">
+                    <span class="wrapped-subtitle">Tvůj sběratelský přehled</span>
+                    <h1 class="wrapped-title-glowing">MILION<br>PLECHOVEK</h1>
+                    <div class="wrapped-tag">DÁREK PRO TEBE 🎁</div>
+                    <p class="wrapped-text">Podívej se, jak jsi za poslední 3 měsíce pomohl vyčistit naši přírodu!</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 2: První plechovka -->
+            <div class="wrapped-slide" id="wrappedSlide2">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">KROK 1</span>
+                    <h2>Tvoje první plechovka</h2>
+                    <p class="wrapped-slide-date" id="wrappedFirstDate">...</p>
+                    <div class="polaroid-wrapper">
+                        <img id="wrappedFirstImage" src="can-marker-transparent.png" class="polaroid-image">
+                    </div>
+                    <p class="wrapped-highlight" id="wrappedFirstBrand">...</p>
+                    <p class="wrapped-slide-notes" id="wrappedFirstNotes">...</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 3: Největší úlovek -->
+            <div class="wrapped-slide" id="wrappedSlide3">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">TVŮJ REKORD</span>
+                    <h2>Největší úlovek</h2>
+                    <div class="polaroid-wrapper">
+                        <img id="wrappedMaxImage" src="can-marker-transparent.png" class="polaroid-image">
+                    </div>
+                    <div class="wrapped-giant-number" id="wrappedMaxCount">0 ks</div>
+                    <p class="wrapped-text">plechovek na jediné fotce!</p>
+                    <p class="wrapped-slide-notes" id="wrappedMaxNotes">...</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 4: Nejčastější značka -->
+            <div class="wrapped-slide" id="wrappedSlide4">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">NEJČASTĚJŠÍ ZNAČKA</span>
+                    <h2>Tvoje slabost</h2>
+                    <div class="wrapped-can-avatar-container">
+                        <div id="wrappedBrandCanIcon" class="custom-div-icon large-can-icon" style="background-image: url('can-marker-transparent.png');"></div>
+                    </div>
+                    <div class="wrapped-brand-title" id="wrappedBrandName">...</div>
+                    <p class="wrapped-text">Byla to tvá nejčastěji sbíraná plechovka. Celkem jsi jich odevzdal:</p>
+                    <div class="wrapped-giant-number" id="wrappedBrandCount">0 ks</div>
+                </div>
+            </div>
+
+            <!-- SLIDE 5: Celkový dopad & Poděkování -->
+            <div class="wrapped-slide" id="wrappedSlide5">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">CELKOVÝ DOPAD</span>
+                    <h2>Tvůj zelený otisk</h2>
+                    
+                    <div class="wrapped-impact-grid">
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalCans">0 ks</span>
+                            <span class="lbl">nasbíráno</span>
+                        </div>
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalWeight">0 kg</span>
+                            <span class="lbl">hliníku</span>
+                        </div>
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalEnergy">0 kWh</span>
+                            <span class="lbl">energie ušetřeno</span>
+                        </div>
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalCo2">0 kg</span>
+                            <span class="lbl">CO₂ ušetřeno</span>
+                        </div>
+                    </div>
+                    
+                    <div class="wrapped-gift-box">
+                        <span class="gift-icon">💚</span>
+                        <p class="wrapped-thanks-text">Ze srdce děkujeme za podporu projektu!</p>
+                        <p class="wrapped-thanks-sub">Díky tobě je svět o kousek čistší.</p>
+                    </div>
+                    
+                    <div class="wrapped-share-tip">
+                        📸 Udělej si screenshot a nasdílej ho na sítě s tagem #MilionPlechovek
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=7"></script>
 </body>
 </html>

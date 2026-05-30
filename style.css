@@ -577,4 +577,414 @@ input:focus, textarea:focus {
     transform: scale(1.4);
 }
 
+/* --- Sběratelský Wrapped (Spotify / Instagram Stories styl) --- */
+.wrapped-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #090d16 0%, #15102a 50%, #220b2d 100%);
+    z-index: 20000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: white;
+}
+
+.wrapped-modal.hidden {
+    display: none !important;
+}
+
+/* Progress bar nahoře */
+.wrapped-progress-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    gap: 5px;
+    z-index: 20020;
+}
+
+.wrapped-progress-bar {
+    height: 3px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.wrapped-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: white;
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+
+/* Tlačítko zavřít */
+.wrapped-close-btn {
+    position: absolute;
+    top: 35px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 32px;
+    font-weight: 300;
+    cursor: pointer;
+    z-index: 20030;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.wrapped-close-btn:hover {
+    color: white;
+}
+
+/* Navigační zóny */
+.wrapped-nav-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 35%;
+    z-index: 20015;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.wrapped-nav-zone.left {
+    left: 0;
+}
+
+.wrapped-nav-zone.right {
+    right: 0;
+    width: 65%; /* Větší zóna pro posun vpřed */
+}
+
+/* Kontejner slidů */
+.wrapped-slides-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20010;
+}
+
+/* Jednotlivý slide */
+.wrapped-slide {
+    position: absolute;
+    width: 90%;
+    max-width: 360px;
+    height: 80vh;
+    max-height: 640px; /* Aby se vešel do formátu 9:16 na všech displejích */
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px;
+    padding: 30px 24px;
+    box-sizing: border-box;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.wrapped-slide.active {
+    display: flex !important;
+    animation: wrappedSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes wrappedSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Obsah slidu */
+.wrapped-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Dekorativní prvky */
+.wrapped-decorations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.floating-emoji {
+    position: absolute;
+    font-size: 40px;
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+    animation: floatAnim 6s ease-in-out infinite;
+}
+
+.floating-emoji.e1 { top: 15%; left: 10%; animation-delay: 0s; }
+.floating-emoji.e2 { top: 60%; right: 10%; animation-delay: 2s; }
+.floating-emoji.e3 { top: 40%; left: 80%; animation-delay: 4s; }
+
+@keyframes floatAnim {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(10deg); }
+}
+
+/* Polaroid fotorámeček */
+.polaroid-wrapper {
+    background: white;
+    padding: 10px 10px 30px 10px;
+    border-radius: 4px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+    transform: rotate(-3deg);
+    width: 80%;
+    max-width: 220px;
+    margin: 15px auto;
+}
+
+.polaroid-image {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Typografie Wrapped */
+.wrapped-subtitle {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #a855f7;
+    margin-top: 15px;
+    display: block;
+}
+
+.wrapped-slide-badge {
+    font-size: 10px;
+    font-weight: 900;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.wrapped-title-glowing {
+    font-size: 38px;
+    font-weight: 900;
+    line-height: 1.1;
+    margin: 20px 0;
+    background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 15px rgba(59,130,246,0.3));
+    letter-spacing: -1px;
+}
+
+.wrapped-tag {
+    font-size: 13px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 50px;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2);
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.wrapped-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 15px;
+}
+
+.wrapped-slide h2 {
+    font-size: 24px;
+    font-weight: 900;
+    margin: 10px 0 5px 0;
+    letter-spacing: -0.5px;
+}
+
+.wrapped-slide-date {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 10px;
+}
+
+.wrapped-highlight {
+    font-size: 18px;
+    font-weight: 800;
+    color: #10b981;
+    margin: 10px 0 5px 0;
+}
+
+.wrapped-slide-notes {
+    font-size: 12px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.4;
+    max-width: 90%;
+    margin: 0 auto 10px auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.wrapped-giant-number {
+    font-size: 54px;
+    font-weight: 900;
+    background: linear-gradient(to bottom, #ffffff 30%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    line-height: 1;
+    margin: 10px 0;
+    letter-spacing: -2px;
+}
+
+.wrapped-can-avatar-container {
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 15px 0;
+}
+
+.large-can-icon {
+    width: 90px;
+    height: 130px;
+    font-size: 24px;
+    text-shadow: 0 0 8px rgba(0,0,0,0.8);
+    background-size: contain;
+    animation: pulseCan 2s infinite ease-in-out;
+}
+
+@keyframes pulseCan {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06) rotate(3deg); }
+}
+
+.wrapped-brand-title {
+    font-size: 26px;
+    font-weight: 900;
+    color: #10b981;
+    margin: 5px 0 10px 0;
+    text-shadow: 0 0 10px rgba(16,185,129,0.3);
+}
+
+/* Impact Grid */
+.wrapped-impact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin: 15px 0;
+}
+
+.wrapped-impact-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.wrapped-impact-card .val {
+    font-size: 20px;
+    font-weight: 900;
+    color: #10b981;
+}
+
+.wrapped-impact-card .lbl {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+/* Gift Box */
+.wrapped-gift-box {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 18px;
+    padding: 15px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    box-shadow: 0 10px 20px rgba(16,185,129,0.05);
+}
+
+.gift-icon {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 6px;
+    animation: bounceGift 1.5s infinite;
+}
+
+@keyframes bounceGift {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.wrapped-thanks-text {
+    font-size: 14px;
+    font-weight: 800;
+    color: #10b981;
+    margin: 0 0 4px 0;
+}
+
+.wrapped-thanks-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+}
+
+.wrapped-share-tip {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
 
