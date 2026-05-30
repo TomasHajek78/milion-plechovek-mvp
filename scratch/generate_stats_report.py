@@ -869,7 +869,7 @@ def generate_html_report(stats, output_path):
             }} catch (e) {{
                 console.error(e);
                 if (listContainer) {{
-                    listContainer.innerHTML = `<div class="text-center py-8 text-red-400">Chyba: \${{e.message}}</div>`;
+                    listContainer.innerHTML = `<div class="text-center py-8 text-red-400">Chyba: ${{e.message}}</div>`;
                 }}
             }}
         }}
