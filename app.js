@@ -1641,7 +1641,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const brandIconEl = document.getElementById('wrappedBrandCanIcon');
 
         if (brandNameEl) {
-            brandNameEl.textContent = topBrandName;
+            const textEl = document.querySelector('#wrappedSlide4 .wrapped-text');
+            if (topBrandName === 'Nerozpoznáno' || topBrandName === 'Unknown') {
+                brandNameEl.textContent = 'Záhadná značka 🕵️‍♂️';
+                if (textEl) {
+                    textEl.textContent = 'Tvé odevzdané plechovky byly pro AI příliš zmačkané na to, abychom určili značku, ale stále se počítají! Celkem jsi jich odevzdal:';
+                }
+            } else {
+                brandNameEl.textContent = topBrandName;
+                if (textEl) {
+                    textEl.textContent = 'Byla to tvá nejčastěji sbíraná plechovka. Celkem jsi jich odevzdal:';
+                }
+            }
         }
         if (brandCountEl) {
             brandCountEl.textContent = `${topBrandCount} ks`;
