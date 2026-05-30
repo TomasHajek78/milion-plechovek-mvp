@@ -596,8 +596,8 @@ def generate_html_report(stats, output_path):
         let adminEditCansLocal = [];
         const POPULAR_BRANDS = [
             'Birell', 'Pilsner Urquell', 'Radegast', 'Staropramen', 'Coca-Cola', 
-            'Pepsi', 'Monster', 'Red Bull', 'Tiger', 'Heineken', 'Starobrno', 
-            'Kofola', 'Frisco', 'Desperados', 'Jiná / Ostatní', 'Nerozpoznáno'
+            'Pepsi', 'Monster', 'Red Bull', 'Tiger', 'Kong Strong', 'Heineken', 
+            'Starobrno', 'Kofola', 'Frisco', 'Desperados', 'Jiná / Ostatní', 'Nerozpoznáno'
         ];
         const CAN_WEIGHTS = {{
             0.5: 16.5,

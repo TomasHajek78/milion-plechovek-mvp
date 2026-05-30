@@ -1703,6 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'Monster',
         'Red Bull',
         'Tiger',
+        'Kong Strong',
         'Heineken',
         'Starobrno',
         'Kofola',
