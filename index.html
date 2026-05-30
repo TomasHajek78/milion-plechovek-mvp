@@ -101,8 +101,10 @@
         <div id="loginScreen" class="card hidden">
             <h3>Jak ti máme říkat?</h3>
             <p class="small-text">Vymysli si přezdívku nebo zadej svůj IG, ať se najdeš v žebříčku.</p>
-            <input type="text" id="nicknameInput" placeholder="@pepa_sbira">
-            <button id="saveNickBtn" class="primary-btn-small">Uložit</button>
+            <p class="small-text" style="color: var(--text-dim); margin-top: -6px;">💡 Už jsi tu byl? Zadej svou původní přezdívku a tvé sběry se načtou.</p>
+            <input type="text" id="nicknameInput" placeholder="@pepa_sbira" autocomplete="off" autocorrect="off" autocapitalize="off">
+            <p id="nickErrorMsg" style="color: var(--rust-red); font-size: 12px; margin: 4px 0 0 0; display: none;"></p>
+            <button id="saveNickBtn" class="primary-btn-small" style="margin-top: 10px;">Uložit a pokračovat</button>
         </div>
 
         <!-- HLAVNÍ SEKCE (HOME) -->
@@ -511,6 +513,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=19"></script>
 </body>
 </html>

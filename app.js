@@ -59,6 +59,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let globalEnergy = parseFloat(localStorage.getItem('milion_globalenergy')) || 0;
     let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
     let userNick = localStorage.getItem('milion_nickname') || '';
+    // UUID zařízení – jedinečný identifikátor zařízení, přežije změnu přezdívky
+    let deviceId = localStorage.getItem('milion_device_id');
+    if (!deviceId) {
+        deviceId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+        localStorage.setItem('milion_device_id', deviceId);
+    }
     let useGPS = localStorage.getItem('milion_use_gps') !== 'false';
     let currentCoords = null;
     let map, markersLayer;
@@ -471,15 +477,40 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.bottom-nav').classList.add('hidden');
     }
 
-    saveNickBtn.addEventListener('click', () => {
-        if(nicknameInput.value.trim() !== '') {
-            userNick = nicknameInput.value.trim();
+    saveNickBtn.addEventListener('click', async () => {
+        const val = nicknameInput.value.trim();
+        if (!val) return;
+        const errorEl = document.getElementById('nickErrorMsg');
+        saveNickBtn.disabled = true;
+        saveNickBtn.textContent = 'Kontroluji...';
+        try {
+            // Zkontroluj jestli přezdívka existuje v DB
+            const resp = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=nickname&nickname=eq.${encodeURIComponent(val)}&limit=1`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            });
+            const existing = await resp.json();
+            // Přezdívka existuje v DB – pravděpodobně tvoje vlastní, načteme data
+            // (duplicita jiného uživatele se nedá bez účtu ověřit – přijmeme ji)
+            userNick = val;
+            localStorage.setItem('milion_nickname', userNick);
+            userNickDisplay.textContent = userNick;
+            if (errorEl) errorEl.style.display = 'none';
+            loginScreen.classList.add('hidden');
+            sections.home.classList.remove('hidden');
+            document.querySelector('.bottom-nav').classList.remove('hidden');
+            loadData();
+        } catch (e) {
+            // Offline – ulož přezdívku a pokračuj
+            userNick = val;
             localStorage.setItem('milion_nickname', userNick);
             userNickDisplay.textContent = userNick;
             loginScreen.classList.add('hidden');
             sections.home.classList.remove('hidden');
             document.querySelector('.bottom-nav').classList.remove('hidden');
             loadData();
+        } finally {
+            saveNickBtn.disabled = false;
+            saveNickBtn.textContent = 'Uložit a pokračovat';
         }
     });
 
