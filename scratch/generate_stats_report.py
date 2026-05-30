@@ -152,6 +152,8 @@ def aggregate_data(pickups):
             cans_array = p.get('analysis_json') or []
             for can in cans_array:
                 brand = can.get('brand') or 'Nerozpoznáno'
+                if brand in ['Unknown', 'unknown', '']:
+                    brand = 'Nerozpoznáno'
                 vol = can.get('volume_liters') or 'Unknown'
 
                 brands[brand] = brands.get(brand, 0) + 1

@@ -129,7 +129,10 @@ function aggregateData(pickups) {
 
             const cansArray = p.analysis_json || [];
             cansArray.forEach(can => {
-                const brand = can.brand || 'Nerozpoznáno';
+                let brand = can.brand || 'Nerozpoznáno';
+                if (brand === 'Unknown' || brand === 'unknown') {
+                    brand = 'Nerozpoznáno';
+                }
                 const vol = can.volume_liters || 'Unknown';
 
                 brands[brand] = (brands[brand] || 0) + 1;
