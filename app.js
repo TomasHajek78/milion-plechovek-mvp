@@ -1550,7 +1550,10 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredPickups.forEach(p => {
             if (p.is_analyzed && p.analysis_json) {
                 p.analysis_json.forEach(c => {
-                    const b = c.brand || 'Nerozpoznáno';
+                    let b = c.brand || 'Nerozpoznáno';
+                    if (b === 'Unknown' || b === 'unknown') {
+                        b = 'Nerozpoznáno';
+                    }
                     brandCounts[b] = (brandCounts[b] || 0) + 1;
                 });
             }
@@ -1686,6 +1689,380 @@ document.addEventListener('DOMContentLoaded', () => {
             showWrappedSlide(0);
         }
     }
+
+    // --- Administrátorský panel (Admin Editor) ---
+    let adminSelectedPickup = null;
+    let adminEditCansLocal = [];
+    const POPULAR_BRANDS = [
+        'Birell',
+        'Pilsner Urquell',
+        'Radegast',
+        'Staropramen',
+        'Coca-Cola',
+        'Pepsi',
+        'Monster',
+        'Red Bull',
+        'Tiger',
+        'Heineken',
+        'Starobrno',
+        'Kofola',
+        'Frisco',
+        'Desperados',
+        'Jiná / Ostatní',
+        'Nerozpoznáno'
+    ];
+    const CAN_WEIGHTS = {
+        0.5: 16.5,
+        0.33: 13.5,
+        0.25: 10.0,
+        0.2: 8.0,
+        'Unknown': 14.0
+    };
+    const ENERGY_SAVED_KWH_PER_KG = 14;
+    const SCRAP_VALUE_RAW_PER_KG = 20;
+    const CO2_SAVED_KG_PER_KG = 6.2;
+
+    window.openAdminEditorPasscode = function() {
+        const pw = prompt("Zadejte administrátorské heslo:");
+        if (pw === "milion2026") {
+            window.openAdminPanel();
+        } else if (pw !== null) {
+            alert("Nesprávné heslo!");
+        }
+    };
+
+    window.openAdminPanel = function() {
+        const modal = document.getElementById('adminPanelModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            window.filterAdminPickups();
+        }
+    };
+
+    window.closeAdminPanel = function() {
+        const modal = document.getElementById('adminPanelModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    };
+
+    window.filterAdminPickups = function() {
+        const searchInput = document.getElementById('adminSearchNick');
+        const statusSelect = document.getElementById('adminStatusFilter');
+        const listContainer = document.getElementById('adminPickupsList');
+        
+        if (!listContainer) return;
+        listContainer.innerHTML = '';
+        
+        const searchNick = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const statusFilter = statusSelect ? statusSelect.value : 'all';
+        
+        // Seřadíme od nejnovějších
+        const sorted = [...allPickups].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        const filtered = sorted.filter(p => {
+            const nick = (p.nickname || '').toLowerCase();
+            if (searchNick && !nick.includes(searchNick)) return false;
+            
+            if (statusFilter === 'unanalyzed') {
+                return !p.is_analyzed;
+            } else if (statusFilter === 'unknown') {
+                if (!p.is_analyzed) return false;
+                if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
+                return p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
+            }
+            return true;
+        });
+        
+        if (filtered.length === 0) {
+            listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px;">Žádné nahrávky neodpovídají filtrům.</div>';
+            return;
+        }
+        
+        filtered.forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'admin-pickup-row';
+            
+            const dateStr = new Date(p.created_at).toLocaleDateString('cs-CZ', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            let badgeHtml = '';
+            if (!p.is_analyzed) {
+                badgeHtml = '<span class="admin-badge warning">Čeká</span>';
+            } else {
+                const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
+                    p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
+                if (hasUnknown) {
+                    badgeHtml = '<span class="admin-badge error">Neznámé</span>';
+                } else {
+                    badgeHtml = '<span class="admin-badge success">Hotovo</span>';
+                }
+            }
+            
+            row.innerHTML = `
+                <span class="date">${dateStr}</span>
+                <span class="nick" title="${p.nickname || '@anonym'}">${p.nickname || '@anonym'}</span>
+                <span class="count">${p.count || 0} ks</span>
+                <span class="badge-cell">${badgeHtml}</span>
+                <button onclick="window.openAdminEditModal(${p.id})" class="admin-edit-btn" title="Upravit">✏️</button>
+            `;
+            listContainer.appendChild(row);
+        });
+    };
+
+    window.openAdminEditModal = function(pickupId) {
+        const pickup = allPickups.find(p => p.id === pickupId);
+        if (!pickup) return;
+        
+        adminSelectedPickup = pickup;
+        adminEditCansLocal = [];
+        
+        if (pickup.analysis_json && Array.isArray(pickup.analysis_json)) {
+            adminEditCansLocal = JSON.parse(JSON.stringify(pickup.analysis_json));
+            // Sjednocení: převést 'Unknown' a 'unknown' na 'Nerozpoznáno'
+            adminEditCansLocal.forEach(can => {
+                if (can.brand === 'Unknown' || can.brand === 'unknown' || !can.brand) {
+                    can.brand = 'Nerozpoznáno';
+                }
+            });
+        }
+        
+        if (adminEditCansLocal.length === 0 && pickup.count > 0) {
+            for (let i = 0; i < pickup.count; i++) {
+                adminEditCansLocal.push({ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null });
+            }
+        }
+        
+        const nickEl = document.getElementById('adminEditNick');
+        const dateEl = document.getElementById('adminEditDate');
+        const notesEl = document.getElementById('adminEditNotes');
+        const photoEl = document.getElementById('adminEditPhoto');
+        
+        if (nickEl) nickEl.textContent = pickup.nickname || '@anonym';
+        if (dateEl) dateEl.textContent = new Date(pickup.created_at).toLocaleString('cs-CZ');
+        if (notesEl) notesEl.textContent = pickup.notes ? `"${pickup.notes}"` : 'Bez poznámky';
+        if (photoEl) photoEl.src = pickup.photo_url || 'can-marker-transparent.png';
+        
+        window.renderAdminCansEditList();
+        
+        const editModal = document.getElementById('adminEditPickupModal');
+        if (editModal) {
+            editModal.classList.remove('hidden');
+        }
+    };
+
+    window.closeAdminEditModal = function() {
+        const editModal = document.getElementById('adminEditPickupModal');
+        if (editModal) {
+            editModal.classList.add('hidden');
+        }
+        adminSelectedPickup = null;
+        adminEditCansLocal = [];
+    };
+
+    window.renderAdminCansEditList = function() {
+        const container = document.getElementById('adminCansList');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        adminEditCansLocal.forEach((can, index) => {
+            const row = document.createElement('div');
+            row.className = 'admin-can-edit-row';
+            
+            let brandOptions = '';
+            POPULAR_BRANDS.forEach(b => {
+                const selected = (can.brand === b) ? 'selected' : '';
+                brandOptions += `<option value="${b}" ${selected}>${b}</option>`;
+            });
+            if (can.brand && !POPULAR_BRANDS.includes(can.brand)) {
+                brandOptions = `<option value="${can.brand}" selected>${can.brand}</option>` + brandOptions;
+            }
+            
+            const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
+            let volOptions = '';
+            vols.forEach(v => {
+                const isMatch = (can.volume_liters == v || (v === 'Unknown' && (can.volume_liters === 'Unknown' || !can.volume_liters)));
+                volOptions += `<option value="${v}" ${isMatch ? 'selected' : ''}>${v === 'Unknown' ? 'Neznámý' : v + ' L'}</option>`;
+            });
+            
+            row.innerHTML = `
+                <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); width: 20px;">#${index + 1}</span>
+                <select class="can-brand" style="flex: 1; min-width: 0;" onchange="window.updateLocalCanBrand(${index}, this.value)">
+                    ${brandOptions}
+                </select>
+                <select class="can-volume" style="width: 90px;" onchange="window.updateLocalCanVolume(${index}, this.value)">
+                    ${volOptions}
+                </select>
+                <button onclick="window.removeCanFromEditList(${index})" class="delete-btn" title="Odstranit">🗑️</button>
+            `;
+            container.appendChild(row);
+        });
+        
+        window.recalculateAdminStats();
+    };
+
+    window.updateLocalCanBrand = function(index, value) {
+        if (adminEditCansLocal[index]) {
+            adminEditCansLocal[index].brand = value;
+        }
+    };
+
+    window.updateLocalCanVolume = function(index, value) {
+        if (adminEditCansLocal[index]) {
+            adminEditCansLocal[index].volume_liters = (value === 'Unknown') ? 'Unknown' : parseFloat(value);
+            window.recalculateAdminStats();
+        }
+    };
+
+    window.removeCanFromEditList = function(index) {
+        adminEditCansLocal.splice(index, 1);
+        window.renderAdminCansEditList();
+    };
+
+    window.addCanToEditList = function() {
+        adminEditCansLocal.push({ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null });
+        window.renderAdminCansEditList();
+    };
+
+    window.recalculateAdminStats = function() {
+        let totalWeightG = 0;
+        adminEditCansLocal.forEach(can => {
+            const vol = can.volume_liters;
+            let weight = CAN_WEIGHTS['Unknown'];
+            if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
+            else if (vol === 0.33 || vol === '0.33') weight = CAN_WEIGHTS[0.33];
+            else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
+            else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
+            totalWeightG += weight;
+        });
+        
+        const weightKg = totalWeightG / 1000.0;
+        const energySaved = weightKg * ENERGY_SAVED_KWH_PER_KG;
+        const co2Saved = weightKg * CO2_SAVED_KG_PER_KG;
+        
+        const liveCountEl = document.getElementById('liveCansCount');
+        const liveWeightEl = document.getElementById('liveWeight');
+        const liveEnergyEl = document.getElementById('liveEnergy');
+        const liveCo2El = document.getElementById('liveCo2');
+        
+        if (liveCountEl) liveCountEl.textContent = `${adminEditCansLocal.length} ks`;
+        if (liveWeightEl) liveWeightEl.textContent = `${totalWeightG.toFixed(1)} g`;
+        if (liveEnergyEl) liveEnergyEl.textContent = `${energySaved.toFixed(3).replace('.', ',')} kWh`;
+        if (liveCo2El) liveCo2El.textContent = `${co2Saved.toFixed(2).replace('.', ',')} kg`;
+    };
+
+    window.saveAdminEditChanges = async function() {
+        if (!adminSelectedPickup) return;
+        
+        const saveBtn = document.getElementById('adminSaveBtn');
+        if (!saveBtn) return;
+        
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'Ukládám...';
+        saveBtn.disabled = true;
+        
+        let totalWeightG = 0;
+        adminEditCansLocal.forEach(can => {
+            const vol = can.volume_liters;
+            let weight = CAN_WEIGHTS['Unknown'];
+            if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
+            else if (vol === 0.33 || vol === '0.33') weight = CAN_WEIGHTS[0.33];
+            else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
+            else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
+            totalWeightG += weight;
+        });
+        
+        const weightKg = totalWeightG / 1000.0;
+        const energySaved = parseFloat((weightKg * ENERGY_SAVED_KWH_PER_KG).toFixed(4));
+        const moneySaved = parseFloat((weightKg * SCRAP_VALUE_RAW_PER_KG).toFixed(2));
+        const co2Saved = parseFloat((weightKg * CO2_SAVED_KG_PER_KG).toFixed(3));
+        const count = adminEditCansLocal.length;
+        
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${adminSelectedPickup.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                    count: count,
+                    is_analyzed: true,
+                    analysis_json: adminEditCansLocal,
+                    aluminum_weight_g: totalWeightG,
+                    energy_saved_kwh: energySaved,
+                    money_saved_czk: moneySaved,
+                    co2_saved_kg: co2Saved
+                })
+            });
+            
+            if (!response.ok) throw new Error('Uložení do databáze selhalo.');
+            
+            const idx = allPickups.findIndex(p => p.id === adminSelectedPickup.id);
+            if (idx !== -1) {
+                allPickups[idx].count = count;
+                allPickups[idx].is_analyzed = true;
+                allPickups[idx].analysis_json = adminEditCansLocal;
+                allPickups[idx].aluminum_weight_g = totalWeightG;
+                allPickups[idx].energy_saved_kwh = energySaved;
+                allPickups[idx].money_saved_czk = moneySaved;
+                allPickups[idx].co2_saved_kg = co2Saved;
+            }
+            
+            window.recalculateGlobalStatsAfterAdminEdit();
+            alert('Změny byly úspěšně uloženy!');
+            window.closeAdminEditModal();
+            window.filterAdminPickups();
+        } catch (e) {
+            console.error(e);
+            alert('Chyba při ukládání: ' + e.message);
+        } finally {
+            saveBtn.textContent = originalText;
+            saveBtn.disabled = false;
+        }
+    };
+
+    window.recalculateGlobalStatsAfterAdminEdit = function() {
+        const totalCans = allPickups.reduce((sum, item) => sum + item.count, 0);
+        globalStats = 1000000 - totalCans;
+        myStats = allPickups.filter(item => item.nickname === userNick).reduce((sum, item) => sum + item.count, 0);
+        
+        const totalEnergy = allPickups.reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
+        globalEnergy = totalEnergy;
+        
+        myHistory = allPickups.filter(item => item.nickname === userNick)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 5)
+            .map(item => ({
+                count: item.count,
+                date: new Date(item.created_at).toLocaleString('cs-CZ', {hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit'}),
+                coords: item.latitude ? { lat: item.latitude, lon: item.longitude } : null,
+                photo_url: item.photo_url || null
+            }));
+        
+        myTotalEl.textContent = myStats;
+        if (globalTotalEl) {
+            globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
+        }
+        if (globalEnergyEl) {
+            globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
+        }
+        
+        const openWrappedBtn = document.getElementById('openWrappedBtn');
+        if (openWrappedBtn) {
+            openWrappedBtn.style.display = myStats > 0 ? 'block' : 'none';
+        }
+        
+        renderHistory();
+        renderLeaderboard(allPickups);
+        renderMarkers(allPickups);
+    };
 
     newPickupBtn.addEventListener('click', () => { window.location.reload(); });
     cancelBtn.addEventListener('click', () => { window.location.reload(); });
