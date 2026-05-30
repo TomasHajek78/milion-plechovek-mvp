@@ -1,241 +1,4 @@
-# -*- coding: utf-8 -*-
-import os
-import sys
-import json
-import random
-import requests
-
-# Skript pro výpočet statistik, tvorbu HTML reportu s grafy a generování "Víte, že..." zajímavostí (Python verze)
-# Spuštění: GEMINI_API_KEY="váš_klíč_zde" python3 scratch/generate_stats_report.py
-
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://dxlyjugmeucevosmhage.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'sb_publishable_CR-YuABHB1SvPK6b6sz-WQ_Q6y_8iKx')
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-
-if not GEMINI_API_KEY:
-    print("⚠️ Upozornění: Chybí GEMINI_API_KEY. Skript vygeneruje HTML report s grafy, ale přeskočí AI texty pro sítě.")
-
-# 30 ověřených faktů o plechovkách (integrovaných přímo ve skriptu)
-VERIFIED_FACTS = [
-    {"cat": "Ekologie", "txt": "Hliníková plechovka se v přírodě rozkládá až 500 let."},
-    {"cat": "Ekologie", "txt": "Odhozené plechovky v přírodě fungují jako smrtící past pro drobný hmyz a ještěrky, kteří vlezou dovnitř za zbytkem sladkého pití a už nedokážou vylézt ven."},
-    {"cat": "Ekologie", "txt": "Pohozená plechovka v trávě může při sečení luk rozsekat zemědělskou techniku a její ostré střepy pak v krmivu usmrtit dobytek (vnitřní krvácení)."},
-    {"cat": "Ekologie", "txt": "Hliník se sice v přírodě nerozpustí, ale lak a barvy z pohozené plechovky se postupně loupou a kontaminují mikročásticemi půdu."},
-    {"cat": "Ekologie", "txt": "Volně pohozené plechovky s ostrými hranami jsou v lesích jednou z nejčastějších příčin řezných poranění divoké zvěře."},
-    {"cat": "Ekologie", "txt": "Výroba hliníku z panenské suroviny (bauxitu) extrémně devastuje deštné pralesy, kde se tato ruda nejčastěji těží (Austrálie, Brazílie, Guinea)."},
-    {"cat": "Ekologie", "txt": "Pohozená plechovka na přímém slunci dokáže fungovat jako lupa a může odrazem paprsků způsobit lesní požár."},
-    {"cat": "Ekologie", "txt": "Lidstvo ročně vyhodí na skládky a do přírody tolik hliníku, že by to stačilo na obnovu celého světového leteckého parku."},
-    {"cat": "Ekologie", "txt": "Hliník je sice třetím nejrozšířenějším prvkem v zemské kůře, ale v čisté formě se v přírodě vůbec nevyskytuje a jeho výroba je extrémně náročná."},
-    {"cat": "Ekologie", "txt": "Sesbíráním plechovek z přírody nezachraňujeme jen vzhled lesa, ale vracíme do oběhu cennou surovinu, kvůli které se nemusí drancovat planeta."},
-    
-    {"cat": "Recyklace", "txt": "Hliník je stoprocentně a nekonečně recyklovatelný, aniž by při tom ztratil cokoli ze své kvality."},
-    {"cat": "Recyklace", "txt": "Recyklace hliníkové plechovky ušetří až 95 % energie ve srovnání s výrobou nové plechovky z bauxitu."},
-    {"cat": "Recyklace", "txt": "Energie ušetřená recyklací jediné plechovky dokáže pohánět běžnou televizi až po dobu tří hodin."},
-    {"cat": "Recyklace", "txt": "Zrecyklovaná plechovka se dokáže vrátit zpět do regálu obchodu jako úplně nová už za pouhých 60 dní."},
-    {"cat": "Recyklace", "txt": "Recyklace hliníku vyprodukuje o 95 % méně emisí CO2 než jeho primární výroba."},
-    {"cat": "Recyklace", "txt": "Přibližně 75 % veškerého hliníku, který byl kdy na světě vyroben, se díky recyklaci používá dodnes."},
-    {"cat": "Recyklace", "txt": "Energie ušetřená recyklací jedné plechovky dokáže udržet v chodu průměrný notebook déle než tři hodiny."},
-    {"cat": "Recyklace", "txt": "Vytěžit tunu hliníku vyžaduje zhruba čtyřikrát více energie než vytěžit tunu mědi."},
-    {"cat": "Recyklace", "txt": "Recyklace jedné tuny hliníku ušetří víc než 4 tuny bauxitové rudy a tuny chemických látek."},
-    {"cat": "Recyklace", "txt": "Recyklací pouhých deseti plechovek ušetříte tolik energie, kolik spotřebuje moderní LED žárovka za stovky hodin svícení."},
-    
-    {"cat": "Historie", "txt": "Úplně první plechovky na potraviny (z oceli) byly tak masivní, že návod doporučoval otevírat je dlátem a kladivem."},
-    {"cat": "Historie", "txt": "Mechanický otvírák na plechovky byl vynalezen až skoro 50 let po samotné plechovce."},
-    {"cat": "Historie", "txt": "První celohliníková nápojová plechovka byla vyrobena až v roce 1958 společností Primo Beer."},
-    {"cat": "Historie", "txt": "Dnešní hliníkové plechovky jsou díky technologickému pokroku o více než 30 % lehčí než před třicet lety."},
-    {"cat": "Historie", "txt": "Stěna moderní hliníkové plechovky je tenčí než lidský vlas (kolem 0,09 mm), a přesto bezpečně udrží tlak syceného nápoje."},
-    {"cat": "Historie", "txt": "V 19. století byl čistý hliník tak vzácný a drahý, že z něj francouzský císař Napoleon III. nechal vyrobit příbory pro nejvzácnější hosty, zatímco ostatní jedli na zlatě."},
-    {"cat": "Historie", "txt": "Integrované otevírací očko (které z plechovky neodpadne) bylo vynalezeno až v roce 1989, aby se zabránilo zbytečnému pohození malých ostrých plíšků."},
-    {"cat": "Historie", "txt": "První nápojové plechovky měly ploché vršky a lidé do nich museli prorážet dvě díry speciálním propichovátkem, aby se z nich dalo pít."},
-    {"cat": "Historie", "txt": "Na světě se každou minutu spotřebuje a vyhodí zhruba 400 000 nápojových plechovek."},
-    {"cat": "Historie", "txt": "Při posbírání 1 000 000 plechovek zachráníme zhruba 16 tun čistého hliníku, který může znovu sloužit."}
-]
-
-def generate_fun_facts(stats_summary):
-    # V roce 2026 používáme kombinaci modelů pro obcházení limitů bezplatného účtu
-    models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash"]
-    
-    # Vybereme náhodně 5 ověřených faktů pro AI
-    shuffled_facts = random.sample(VERIFIED_FACTS, 5)
-    
-    notebook_hours = round(stats_summary['overall']['total_energy_saved_kwh'] / 0.03)
-    most_common_brand = stats_summary['brands_breakdown'][0]['name'] if stats_summary['brands_breakdown'] else 'Neznámá'
-    most_common_brand_count = stats_summary['brands_breakdown'][0]['count'] if stats_summary['brands_breakdown'] else 0
-
-    facts_prompt_list = []
-    for i, f in enumerate(shuffled_facts):
-        facts_prompt_list.append(f"{i+1}. [{f['cat']}] {f['txt']}")
-    facts_prompt_str = "\n".join(facts_prompt_list)
-
-    prompt = f"""Jsi kreativní copywriter pro ekologický a komunitní projekt "Milion Plechovek". 
-Tvým úkolem je vytvořit 5 velmi zajímavých a chytlavých příspěvků (nebo scénářů pro krátká videa) na sociální sítě.
-
-U každého příspěvku musíš SPOJIT reálná statistická data našeho projektu s obecnými ověřenými fakty o recyklaci/ekologii. 
-
-Zde jsou reálná data z naší databáze:
-- Celkem nasbíraných plechovek: {stats_summary['overall']['total_cans_collected']} ks
-- Celková váha hliníku: {stats_summary['overall']['total_weight_kg']} kg
-- Celkem ušetřeno energie: {stats_summary['overall']['total_energy_saved_kwh']} kWh (což odpovídá {notebook_hours} hodinám chodu notebooku nebo svícení LED žárovky)
-- Celkem ušetřeno peněz (hodnota kovu): {stats_summary['overall']['total_money_saved_czk']} Kč
-- Celkem ušetřeno emisí CO2: {stats_summary['overall']['total_co2_saved_kg']} kg
-- Nejčastější značka: {most_common_brand} (celkem {most_common_brand_count} ks)
-
-Zde je 5 vybraných ověřených faktů, které použij jako inspiraci k propojení s našimi čísly:
-{facts_prompt_str}
-
-Požadavky:
-- Používej silné české hooky na začátku (např. "Nikdy bych nevěřil...", "Tipnuli byste si...", "Netušil jsem...").
-- Propoj teorii (např. recyklace ušetří 95 % energie) s naší praxí (např. našich nasbíraných X plechovek ušetřilo Y kWh, což by pohánělo televizi po dobu Z let).
-- U každého příspěvku uveď krátký "Vizuální tip" pro video.
-- Výstup napiš česky a strukturovaně."""
-
-    request_body = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
-
-    for model in models:
-        endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-        
-        try:
-            response = requests.post(endpoint, json=request_body, headers={'Content-Type': 'application/json'}, timeout=60)
-            
-            if response.status_code == 429 and ("limit: 0" in response.text or "limit: 0.0" in response.text):
-                print(f"  ⚠️ Model {model} má limit 0. Přepínám na další model pro generování Reels textů...")
-                continue
-                
-            if response.status_code != 200:
-                print(f"  ⚠️ Volání modelu {model} selhalo (status {response.status_code}). Zkouším další...")
-                continue
-                
-            result = response.json()
-            return result['candidates'][0]['content']['parts'][0]['text']
-        except Exception as e:
-            print(f"  ❌ Chyba při volání modelu {model}: {str(e)}")
-            continue
-
-    raise Exception("Všechny modely Gemini selhaly při generování Reels textů.")
-
-def aggregate_data(pickups):
-    total_cans = 0
-    analyzed_cans_count = 0
-    total_weight_g = 0.0
-    total_energy_kwh = 0.0
-    total_money_czk = 0.0
-    total_co2_kg = 0.0
-    
-    brands = {}
-    volumes = {}
-    teams = {}
-    timeline = {}
-    user_sums = {}
-
-    for p in pickups:
-        count = p.get('count') or 1
-        total_cans += count
-
-        # Uživatelé
-        nick = p.get('nickname') or 'Anonymní Sběrač'
-        user_sums[nick] = user_sums.get(nick, 0) + count
-
-        # Vytvoření časové osy (YYYY-MM)
-        if p.get('created_at'):
-            date_str = p['created_at'][:7]
-            timeline[date_str] = timeline.get(date_str, 0) + count
-
-        if p.get('is_analyzed'):
-            analyzed_cans_count += count
-            total_weight_g += float(p.get('aluminum_weight_g') or 0)
-            total_energy_kwh += float(p.get('energy_saved_kwh') or 0)
-            total_money_czk += float(p.get('money_saved_czk') or 0)
-            total_co2_kg += float(p.get('co2_saved_kg') or 0)
-
-            cans_array = p.get('analysis_json') or []
-            for can in cans_array:
-                brand = can.get('brand') or 'Nerozpoznáno'
-                if brand in ['Unknown', 'unknown', '']:
-                    brand = 'Nerozpoznáno'
-                vol = can.get('volume_liters') or 'Unknown'
-
-                if brand != 'Nerozpoznáno':
-                    brands[brand] = brands.get(brand, 0) + 1
-                volumes[vol] = volumes.get(vol, 0) + 1
-
-        if p.get('team_code'):
-            team = p['team_code']
-            teams[team] = teams.get(team, 0) + count
-
-    # Seskupení drobností
-    raw_brands = [{'name': name, 'count': count} for name, count in brands.items()]
-    raw_brands.sort(key=lambda x: x['count'], reverse=True)
-
-    top_brands = []
-    other_count = 0
-    
-    for index, b in enumerate(raw_brands):
-        if index < 15 and b['count'] >= 2:
-            top_brands.append({
-                'name': b['name'],
-                'count': b['count'],
-                'percentage': round((b['count'] / (analyzed_cans_count or 1)) * 100, 1)
-            })
-        else:
-            other_count += b['count']
-
-    if other_count > 0:
-        top_brands.append({
-            'name': "Ostatní značky",
-            'count': other_count,
-            'percentage': round((other_count / (analyzed_cans_count or 1)) * 100, 1)
-        })
-
-    full_brands_list = []
-    for index, b in enumerate(raw_brands):
-        full_brands_list.append({
-            'name': b['name'],
-            'count': b['count'],
-            'percentage': round((b['count'] / (analyzed_cans_count or 1)) * 100, 1)
-        })
-
-    # Objem
-    sorted_volumes = []
-    for size, count in volumes.items():
-        size_str = 'Neznámý' if size == 'Unknown' else f"{size} L"
-        sorted_volumes.append({'size': size_str, 'count': count})
-    # Třídíme tak, aby Neznámý byl vždy na konci, a ostatní podle count sestupně
-    sorted_volumes.sort(key=lambda x: (x['size'] == 'Neznámý', -x['count']))
-
-    # Týmy
-    sorted_teams = [{'code': code, 'count': count} for code, count in teams.items()]
-    sorted_teams.sort(key=lambda x: x['count'], reverse=True)
-
-    # Uživatelé - oprava ReferenceError: sortedUsers
-    sorted_users = [{'nick': nick, 'count': count} for nick, count in user_sums.items()]
-    sorted_users.sort(key=lambda x: x['count'], reverse=True)
-
-    # Časová osa
-    sorted_timeline = [{'date': date, 'count': count} for date, count in timeline.items()]
-    sorted_timeline.sort(key=lambda x: x['date'])
-
-    return {
-        'overall': {
-            'total_cans_collected': total_cans,
-            'analyzed_cans_count': analyzed_cans_count,
-            'total_weight_kg': round(total_weight_g / 1000.0, 2),
-            'total_energy_saved_kwh': round(total_energy_kwh, 1),
-            'total_money_saved_czk': round(total_money_czk, 0),
-            'total_co2_saved_kg': round(total_co2_kg, 1)
-        },
-        'brands_breakdown': top_brands,
-        'all_brands': full_brands_list,
-        'raw_brands_count': len(raw_brands),
-        'volumes_breakdown': sorted_volumes,
-        'teams_leaderboard': sorted_teams,
-        'users_leaderboard': sorted_users,
-        'timeline': sorted_timeline
-    }
-
-def generate_html_report(stats, output_path):
-    html_content = f"""<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
@@ -245,8 +8,8 @@ def generate_html_report(stats, output_path):
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body {{ font-family: 'Montserrat', sans-serif; background-color: #0f172a; color: #f8fafc; }}
-        .glass-card {{ background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }}
+        body { font-family: 'Montserrat', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
 <body class="p-6 md:p-12">
@@ -261,7 +24,7 @@ def generate_html_report(stats, output_path):
                 <button onclick="openAdminEditorPasscode()" class="px-4 py-2 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 text-xs font-bold rounded-xl transition duration-200">🛠️ Administrace</button>
                 <div class="glass-card px-6 py-3 rounded-2xl text-center">
                     <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Celkem nasbíráno</span>
-                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">{stats['overall']['total_cans_collected']:,} ks</span>
+                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">61 ks</span>
                 </div>
             </div>
         </header>
@@ -271,25 +34,25 @@ def generate_html_report(stats, output_path):
             <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 text-7xl opacity-5 select-none">⚖️</div>
                 <h3 class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Hmotnost hliníku</h3>
-                <p id="overallWeight" class="text-3xl font-extrabold mt-2 text-emerald-400">{stats['overall']['total_weight_kg']} kg</p>
+                <p id="overallWeight" class="text-3xl font-extrabold mt-2 text-emerald-400">0.8 kg</p>
                 <p class="text-slate-400 text-[10px] mt-1">zachráněného z přírody</p>
             </div>
             <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 text-7xl opacity-5 select-none">⚡</div>
                 <h3 class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Ušetřená energie</h3>
-                <p id="overallEnergy" class="text-3xl font-extrabold mt-2 text-teal-400">{stats['overall']['total_energy_saved_kwh']:,} kWh</p>
-                <p id="overallEnergyNote" class="text-slate-400 text-[10px] mt-1">odpovídá {round(stats['overall']['total_energy_saved_kwh'] / 0.03):,} hod. notebooku</p>
+                <p id="overallEnergy" class="text-3xl font-extrabold mt-2 text-teal-400">11.2 kWh</p>
+                <p id="overallEnergyNote" class="text-slate-400 text-[10px] mt-1">odpovídá 373 hod. notebooku</p>
             </div>
             <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 text-7xl opacity-5 select-none">🌱</div>
                 <h3 class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Ušetřeno CO₂ emisí</h3>
-                <p id="overallCo2" class="text-3xl font-extrabold mt-2 text-indigo-400">{stats['overall']['total_co2_saved_kg']:,} kg</p>
+                <p id="overallCo2" class="text-3xl font-extrabold mt-2 text-indigo-400">4.9 kg</p>
                 <p class="text-slate-400 text-[10px] mt-1">uhlíková stopa, která nevznikla</p>
             </div>
             <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 text-7xl opacity-5 select-none">💰</div>
                 <h3 class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Hodnota ve sběrně</h3>
-                <p id="overallMoney" class="text-3xl font-extrabold mt-2 text-sky-400">{stats['overall']['total_money_saved_czk']:,} Kč</p>
+                <p id="overallMoney" class="text-3xl font-extrabold mt-2 text-sky-400">16.0 Kč</p>
                 <p class="text-slate-400 text-[10px] mt-1">odhad (20 Kč/kg)</p>
             </div>
         </section>
@@ -316,11 +79,11 @@ def generate_html_report(stats, output_path):
                 <div class="mt-6 pt-6 border-t border-slate-800 grid grid-cols-2 gap-4 text-center">
                     <div class="p-3 bg-slate-800/40 rounded-xl">
                         <span class="text-slate-400 text-xs">Počet unikátních značek</span>
-                        <span id="overallUniqueBrands" class="text-2xl font-bold block text-emerald-400">{stats['raw_brands_count']}</span>
+                        <span id="overallUniqueBrands" class="text-2xl font-bold block text-emerald-400">20</span>
                     </div>
                     <div class="p-3 bg-slate-800/40 rounded-xl">
                         <span class="text-slate-400 text-xs">Analyzováno AI</span>
-                        <span id="overallAnalyzedCount" class="text-2xl font-bold block text-teal-400">{stats['overall']['analyzed_cans_count']} ks</span>
+                        <span id="overallAnalyzedCount" class="text-2xl font-bold block text-teal-400">54 ks</span>
                     </div>
                 </div>
             </div>
@@ -340,16 +103,8 @@ def generate_html_report(stats, output_path):
             <div class="glass-card p-6 rounded-2xl">
                 <h3 class="text-lg font-bold mb-4 text-slate-300">Žebříček Tříd / Týmů (TOP 10)</h3>
                 <ul id="teamsLeaderboardList" class="space-y-2">
-                    {"".join([f'''
-                        <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
-                            <span class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-bold w-4">{idx + 1}.</span>
-                                <span class="font-semibold text-slate-300">{team['code']}</span>
-                            </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">{team['count']} ks</span>
-                        </li>
-                    ''' for idx, team in enumerate(stats['teams_leaderboard'][:10])])}
-                    {'''<li class="text-slate-500 text-sm text-center py-6">Zatím žádné týmy.</li>''' if not stats['teams_leaderboard'] else ''}
+                    
+                    <li class="text-slate-500 text-sm text-center py-6">Zatím žádné týmy.</li>
                 </ul>
             </div>
 
@@ -357,16 +112,64 @@ def generate_html_report(stats, output_path):
             <div class="glass-card p-6 rounded-2xl">
                 <h3 class="text-lg font-bold mb-4 text-slate-300">Žebříček Jednotlivců (TOP 10)</h3>
                 <ul id="usersLeaderboardList" class="space-y-2">
-                    {"".join([f'''
+                    
                         <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
                             <span class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-bold w-4">{idx + 1}.</span>
-                                <span class="font-semibold text-slate-300">{user['nick']}</span>
+                                <span class="text-xs text-slate-500 font-bold w-4">1.</span>
+                                <span class="font-semibold text-slate-300">Tom</span>
                             </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">{user['count']} ks</span>
+                            <span class="text-emerald-400 font-extrabold text-sm">34 ks</span>
                         </li>
-                    ''' for idx, user in enumerate(stats['users_leaderboard'][:10])])}
-                    {'''<li class="text-slate-500 text-sm text-center py-6">Zatím žádní sběratelé.</li>''' if not stats['users_leaderboard'] else ''}
+                    
+                        <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-bold w-4">2.</span>
+                                <span class="font-semibold text-slate-300">King Kong</span>
+                            </span>
+                            <span class="text-emerald-400 font-extrabold text-sm">10 ks</span>
+                        </li>
+                    
+                        <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-bold w-4">3.</span>
+                                <span class="font-semibold text-slate-300">Spiedy</span>
+                            </span>
+                            <span class="text-emerald-400 font-extrabold text-sm">9 ks</span>
+                        </li>
+                    
+                        <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-bold w-4">4.</span>
+                                <span class="font-semibold text-slate-300">tom.fiala1</span>
+                            </span>
+                            <span class="text-emerald-400 font-extrabold text-sm">4 ks</span>
+                        </li>
+                    
+                        <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-bold w-4">5.</span>
+                                <span class="font-semibold text-slate-300">Jana</span>
+                            </span>
+                            <span class="text-emerald-400 font-extrabold text-sm">2 ks</span>
+                        </li>
+                    
+                        <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-bold w-4">6.</span>
+                                <span class="font-semibold text-slate-300">@Nas_domecek_</span>
+                            </span>
+                            <span class="text-emerald-400 font-extrabold text-sm">1 ks</span>
+                        </li>
+                    
+                        <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-bold w-4">7.</span>
+                                <span class="font-semibold text-slate-300">Tomas Hajek</span>
+                            </span>
+                            <span class="text-emerald-400 font-extrabold text-sm">1 ks</span>
+                        </li>
+                    
+                    
                 </ul>
             </div>
         </section>
@@ -375,7 +178,7 @@ def generate_html_report(stats, output_path):
         <section class="glass-card p-6 rounded-2xl mt-8">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-bold text-slate-300">Kompletní adresář značek plechovek</h3>
-                <span id="brandsDirectoryHeader" class="text-xs text-slate-400 font-semibold bg-slate-800 px-3 py-1 rounded-full">{len(stats['all_brands'])} unikátních typů</span>
+                <span id="brandsDirectoryHeader" class="text-xs text-slate-400 font-semibold bg-slate-800 px-3 py-1 rounded-full">20 unikátních typů</span>
             </div>
             <div class="max-h-[300px] overflow-y-auto pr-2">
                 <table class="w-full text-left border-collapse">
@@ -388,14 +191,147 @@ def generate_html_report(stats, output_path):
                         </tr>
                     </thead>
                     <tbody id="brandsDirectoryBody" class="text-sm text-slate-300">
-                        {"".join([f'''
+                        
                             <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
-                                <td class="py-2 font-mono text-slate-500">{idx + 1}.</td>
-                                <td class="py-2 font-semibold text-slate-200">{brand['name']}</td>
-                                <td class="py-2 text-right font-bold text-emerald-400">{brand['count']} ks</td>
-                                <td class="py-2 text-right text-slate-400">{brand['percentage']} %</td>
+                                <td class="py-2 font-mono text-slate-500">1.</td>
+                                <td class="py-2 font-semibold text-slate-200">Monster</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">6 ks</td>
+                                <td class="py-2 text-right text-slate-400">11.1 %</td>
                             </tr>
-                        ''' for idx, brand in enumerate(stats['all_brands'])])}
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">2.</td>
+                                <td class="py-2 font-semibold text-slate-200">Red Bull</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">5 ks</td>
+                                <td class="py-2 text-right text-slate-400">9.3 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">3.</td>
+                                <td class="py-2 font-semibold text-slate-200">Birell</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">5 ks</td>
+                                <td class="py-2 text-right text-slate-400">9.3 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">4.</td>
+                                <td class="py-2 font-semibold text-slate-200">Pepsi</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">4 ks</td>
+                                <td class="py-2 text-right text-slate-400">7.4 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">5.</td>
+                                <td class="py-2 font-semibold text-slate-200">Frisco</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">4 ks</td>
+                                <td class="py-2 text-right text-slate-400">7.4 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">6.</td>
+                                <td class="py-2 font-semibold text-slate-200">Coca-Cola</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">2 ks</td>
+                                <td class="py-2 text-right text-slate-400">3.7 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">7.</td>
+                                <td class="py-2 font-semibold text-slate-200">Starobrno</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">2 ks</td>
+                                <td class="py-2 text-right text-slate-400">3.7 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">8.</td>
+                                <td class="py-2 font-semibold text-slate-200">Kozel</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">2 ks</td>
+                                <td class="py-2 text-right text-slate-400">3.7 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">9.</td>
+                                <td class="py-2 font-semibold text-slate-200">Staropramen</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">2 ks</td>
+                                <td class="py-2 text-right text-slate-400">3.7 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">10.</td>
+                                <td class="py-2 font-semibold text-slate-200">Radegast</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">2 ks</td>
+                                <td class="py-2 text-right text-slate-400">3.7 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">11.</td>
+                                <td class="py-2 font-semibold text-slate-200">Tiger</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">12.</td>
+                                <td class="py-2 font-semibold text-slate-200">Pilsner Urquell</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">13.</td>
+                                <td class="py-2 font-semibold text-slate-200">CANS</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">14.</td>
+                                <td class="py-2 font-semibold text-slate-200">Hertog Jan</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">15.</td>
+                                <td class="py-2 font-semibold text-slate-200">Crazy Wolf</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">16.</td>
+                                <td class="py-2 font-semibold text-slate-200">Kofola</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">17.</td>
+                                <td class="py-2 font-semibold text-slate-200">Republica Bozkov</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">18.</td>
+                                <td class="py-2 font-semibold text-slate-200">Firebird</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">19.</td>
+                                <td class="py-2 font-semibold text-slate-200">Fanta</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
+                            <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
+                                <td class="py-2 font-mono text-slate-500">20.</td>
+                                <td class="py-2 font-semibold text-slate-200">Gran-Arsus</td>
+                                <td class="py-2 text-right font-bold text-emerald-400">1 ks</td>
+                                <td class="py-2 text-right text-slate-400">1.9 %</td>
+                            </tr>
+                        
                     </tbody>
                 </table>
             </div>
@@ -498,8 +434,8 @@ def generate_html_report(stats, output_path):
 
     <!-- Script pro administraci a komunikaci se Supabase -->
     <script>
-        const SUPABASE_URL = "{SUPABASE_URL}";
-        const SUPABASE_KEY = "{SUPABASE_KEY}";
+        const SUPABASE_URL = "https://dxlyjugmeucevosmhage.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_CR-YuABHB1SvPK6b6sz-WQ_Q6y_8iKx";
         
         let allPickups = [];
         let adminSelectedPickup = null;
@@ -513,43 +449,43 @@ def generate_html_report(stats, output_path):
             'Pepsi', 'Monster', 'Red Bull', 'Tiger', 'Kong Strong', 'Heineken', 
             'Starobrno', 'Kozel', 'Kofola', 'Frisco', 'Desperados', 'Jiná / Ostatní', 'Nerozpoznáno'
         ];
-        const CAN_WEIGHTS = {{
+        const CAN_WEIGHTS = {
             0.5: 16.0,
             0.33: 13.5,
             0.25: 10.0,
             0.2: 8.0,
             'Unknown': 14.0
-        }};
+        };
         const ENERGY_SAVED_KWH_PER_KG = 14;
-        const SCRAP_VALUE_RAW_PER_KG = 14;
+        const SCRAP_VALUE_RAW_PER_KG = 20;
         const CO2_SAVED_KG_PER_KG = 6.2;
 
-        document.addEventListener('DOMContentLoaded', () => {{
+        document.addEventListener('DOMContentLoaded', () => {
             loadDashboardData();
-        }});
+        });
 
-        async function loadDashboardData() {{
-            try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
-                    headers: {{
+        async function loadDashboardData() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {
+                    headers: {
                         'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${{SUPABASE_KEY}}`
-                    }}
-                }});
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
                 if (!response.ok) throw new Error('Načítání dat ze Supabase selhalo');
                 allPickups = await response.json();
                 recalculateStatsAndReplot();
-            }} catch (e) {{
+            } catch (e) {
                 console.error("Chyba při načítání dat:", e);
-            }}
-        }}
+            }
+        }
 
-        function recalculateStatsAndReplot() {{
+        function recalculateStatsAndReplot() {
             const stats = aggregateDataJS(allPickups);
             updateDashboardUI(stats);
-        }}
+        }
 
-        function aggregateDataJS(pickups) {{
+        function aggregateDataJS(pickups) {
             let total_cans = 0;
             let analyzed_cans_count = 0;
             let total_weight_g = 0.0;
@@ -557,25 +493,25 @@ def generate_html_report(stats, output_path):
             let total_money_czk = 0.0;
             let total_co2_kg = 0.0;
             
-            const brands = {{}};
-            const volumes = {{}};
-            const teams = {{}};
-            const timeline = {{}};
-            const user_sums = {{}};
+            const brands = {};
+            const volumes = {};
+            const teams = {};
+            const timeline = {};
+            const user_sums = {};
 
-            pickups.forEach(p => {{
+            pickups.forEach(p => {
                 const count = p.count || 1;
                 total_cans += count;
 
                 const nick = p.nickname || 'Anonymní Sběrač';
                 user_sums[nick] = (user_sums[nick] || 0) + count;
 
-                if (p.created_at) {{
+                if (p.created_at) {
                     const date_str = p.created_at.substring(0, 7);
                     timeline[date_str] = (timeline[date_str] || 0) + count;
-                }}
+                }
 
-                if (p.is_analyzed) {{
+                if (p.is_analyzed) {
                     analyzed_cans_count += count;
                     total_weight_g += parseFloat(p.aluminum_weight_g) || 0;
                     total_energy_kwh += parseFloat(p.energy_saved_kwh) || 0;
@@ -583,86 +519,86 @@ def generate_html_report(stats, output_path):
                     total_co2_kg += parseFloat(p.co2_saved_kg) || 0;
 
                     const cans_array = p.analysis_json || [];
-                    cans_array.forEach(can => {{
+                    cans_array.forEach(can => {
                         let brand = can.brand || 'Nerozpoznáno';
-                        if (brand === 'Unknown' || brand === 'unknown' || brand === '') {{
+                        if (brand === 'Unknown' || brand === 'unknown' || brand === '') {
                             brand = 'Nerozpoznáno';
-                        }}
+                        }
                         const vol = can.volume_liters || 'Unknown';
 
-                        if (brand !== 'Nerozpoznáno') {{
+                        if (brand !== 'Nerozpoznáno') {
                             brands[brand] = (brands[brand] || 0) + 1;
-                        }}
+                        }
                         volumes[vol] = (volumes[vol] || 0) + 1;
-                    }});
-                }}
+                    });
+                }
 
-                if (p.team_code) {{
+                if (p.team_code) {
                     const team = p.team_code;
                     teams[team] = (teams[team] || 0) + count;
-                }}
-            }});
+                }
+            });
 
-            const raw_brands = Object.keys(brands).map(name => ({{ name, count: brands[name] }}));
+            const raw_brands = Object.keys(brands).map(name => ({ name, count: brands[name] }));
             raw_brands.sort((a, b) => b.count - a.count);
 
             const top_brands = [];
             let other_count = 0;
             
-            raw_brands.forEach((b, index) => {{
-                if (index < 15 && b.count >= 2) {{
-                    top_brands.push({{
+            raw_brands.forEach((b, index) => {
+                if (index < 15 && b.count >= 2) {
+                    top_brands.push({
                         name: b.name,
                         count: b.count,
                         percentage: parseFloat(((b.count / (analyzed_cans_count || 1)) * 100).toFixed(1))
-                    }});
-                }} else {{
+                    });
+                } else {
                     other_count += b.count;
-                }}
-            }});
+                }
+            });
 
-            if (other_count > 0) {{
-                top_brands.push({{
+            if (other_count > 0) {
+                top_brands.push({
                     name: "Ostatní značky",
                     count: other_count,
                     percentage: parseFloat(((other_count / (analyzed_cans_count || 1)) * 100).toFixed(1))
-                }});
-            }}
+                });
+            }
 
-            const full_brands_list = raw_brands.map(b => ({{
+            const full_brands_list = raw_brands.map(b => ({
                 name: b.name,
                 count: b.count,
                 percentage: parseFloat(((b.count / (analyzed_cans_count || 1)) * 100).toFixed(1))
-            }}));
+            }));
 
-            const sorted_volumes = Object.keys(volumes).map(size => {{
+            const sorted_volumes = Object.keys(volumes).map(size => {
                 const size_str = (size === 'Unknown' || size === 'unknown') ? 'Neznámý' : size + " L";
-                return {{ size: size_str, count: volumes[size] }};
-            }});
-            sorted_volumes.sort((a, b) => {{
+                return { size: size_str, count: volumes[size] };
+            });
+            sorted_volumes.sort((a, b) => {
                 if (a.size === 'Neznámý' && b.size !== 'Neznámý') return 1;
                 if (a.size !== 'Neznámý' && b.size === 'Neznámý') return -1;
                 return b.count - a.count;
-            }});
+            });
 
-            const sorted_teams = Object.keys(teams).map(code => ({{ code, count: teams[code] }}));
+            const sorted_teams = Object.keys(teams).map(code => ({ code, count: teams[code] }));
             sorted_teams.sort((a, b) => b.count - a.count);
 
-            const sorted_users = Object.keys(user_sums).map(nick => ({{ nick, count: user_sums[nick] }}));
+            const sorted_users = Object.keys(user_sums).map(nick => ({ nick, count: user_sums[nick] }));
             sorted_users.sort((a, b) => b.count - a.count);
 
-            const sorted_timeline = Object.keys(timeline).map(date => ({{ date, count: timeline[date] }}));
+            const sorted_timeline = Object.keys(timeline).map(date => ({ date, count: timeline[date] }));
             sorted_timeline.sort((a, b) => a.date.localeCompare(b.date));
 
-            return {{
-                overall: {{
+            return {
+                overall: {
                     total_cans_collected: total_cans,
                     analyzed_cans_count: analyzed_cans_count,
                     total_weight_kg: parseFloat((total_weight_g / 1000.0).toFixed(2)),
                     total_energy_saved_kwh: parseFloat(total_energy_kwh.toFixed(1)),
                     total_money_saved_czk: Math.round(total_money_czk),
                     total_co2_saved_kg: parseFloat(total_co2_kg.toFixed(1))
-                }},
+                },
                 brands_breakdown: top_brands,
                 all_brands: full_brands_list,
                 raw_brands_count: raw_brands.length,
@@ -670,91 +606,91 @@ def generate_html_report(stats, output_path):
                 teams_leaderboard: sorted_teams,
                 users_leaderboard: sorted_users,
                 timeline: sorted_timeline
-            }};
-        }}
+            };
+        }
 
-        function updateDashboardUI(stats) {{
+        function updateDashboardUI(stats) {
             document.getElementById('overallTotalCans').textContent = stats.overall.total_cans_collected.toLocaleString('cs-CZ') + ' ks';
             document.getElementById('overallWeight').textContent = stats.overall.total_weight_kg.toFixed(2).replace('.', ',') + ' kg';
             document.getElementById('overallEnergy').textContent = stats.overall.total_energy_saved_kwh.toFixed(1).replace('.', ',') + ' kWh';
-            document.getElementById('overallEnergyNote').textContent = `odpovídá ${{Math.round(stats.overall.total_energy_saved_kwh / 0.03).toLocaleString('cs-CZ')}} hod. notebooku`;
+            document.getElementById('overallEnergyNote').textContent = `odpovídá ${Math.round(stats.overall.total_energy_saved_kwh / 0.03).toLocaleString('cs-CZ')} hod. notebooku`;
             document.getElementById('overallCo2').textContent = stats.overall.total_co2_saved_kg.toFixed(1).replace('.', ',') + ' kg';
             document.getElementById('overallMoney').textContent = stats.overall.total_money_saved_czk.toLocaleString('cs-CZ') + ' Kč';
             document.getElementById('overallUniqueBrands').textContent = stats.raw_brands_count;
             document.getElementById('overallAnalyzedCount').textContent = stats.overall.analyzed_cans_count.toLocaleString('cs-CZ') + ' ks';
 
             const teamsList = document.getElementById('teamsLeaderboardList');
-            if (teamsList) {{
+            if (teamsList) {
                 teamsList.innerHTML = '';
                 const topTeams = stats.teams_leaderboard.slice(0, 10);
-                if (topTeams.length === 0) {{
+                if (topTeams.length === 0) {
                     teamsList.innerHTML = '<li class="text-slate-500 text-sm text-center py-6">Zatím žádné týmy.</li>';
-                }} else {{
-                    topTeams.forEach((team, idx) => {{
+                } else {
+                    topTeams.forEach((team, idx) => {
                         const li = document.createElement('li');
                         li.className = 'flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30';
                         li.innerHTML = `
                             <span class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-bold w-4">\${{idx + 1}}.</span>
-                                <span class="font-semibold text-slate-300">\${{team.code}}</span>
+                                <span class="text-xs text-slate-500 font-bold w-4">\${idx + 1}.</span>
+                                <span class="font-semibold text-slate-300">\${team.code}</span>
                             </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">\${{team.count}} ks</span>
+                            <span class="text-emerald-400 font-extrabold text-sm">\${team.count} ks</span>
                         `;
                         teamsList.appendChild(li);
-                    }});
-                }}
-            }}
+                    });
+                }
+            }
 
             const usersList = document.getElementById('usersLeaderboardList');
-            if (usersList) {{
+            if (usersList) {
                 usersList.innerHTML = '';
                 const topUsers = stats.users_leaderboard.slice(0, 10);
-                if (topUsers.length === 0) {{
+                if (topUsers.length === 0) {
                     usersList.innerHTML = '<li class="text-slate-500 text-sm text-center py-6">Zatím žádní sběratelé.</li>';
-                }} else {{
-                    topUsers.forEach((user, idx) => {{
+                } else {
+                    topUsers.forEach((user, idx) => {
                         const li = document.createElement('li');
                         li.className = 'flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30';
                         li.innerHTML = `
                             <span class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-bold w-4">\${{idx + 1}}.</span>
-                                <span class="font-semibold text-slate-300">\${{user.nick}}</span>
+                                <span class="text-xs text-slate-500 font-bold w-4">\${idx + 1}.</span>
+                                <span class="font-semibold text-slate-300">\${user.nick}</span>
                             </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">\${{user.count}} ks</span>
+                            <span class="text-emerald-400 font-extrabold text-sm">\${user.count} ks</span>
                         `;
                         usersList.appendChild(li);
-                    }});
-                }}
-            }}
+                    });
+                }
+            }
 
             const brandsHeader = document.getElementById('brandsDirectoryHeader');
-            if (brandsHeader) {{
-                brandsHeader.textContent = `\${{stats.all_brands.length}} unikátních typů`;
-            }}
+            if (brandsHeader) {
+                brandsHeader.textContent = `\${stats.all_brands.length} unikátních typů`;
+            }
             const brandsBody = document.getElementById('brandsDirectoryBody');
-            if (brandsBody) {{
+            if (brandsBody) {
                 brandsBody.innerHTML = '';
-                stats.all_brands.forEach((brand, idx) => {{
+                stats.all_brands.forEach((brand, idx) => {
                     const tr = document.createElement('tr');
                     tr.className = 'border-b border-slate-800/40 hover:bg-slate-800/20';
                     tr.innerHTML = `
-                        <td class="py-2 font-mono text-slate-500">\${{idx + 1}}.</td>
-                        <td class="py-2 font-semibold text-slate-200">\${{brand.name}}</td>
-                        <td class="py-2 text-right font-bold text-emerald-400">\${{brand.count}} ks</td>
-                        <td class="py-2 text-right text-slate-400">\${{brand.percentage.toFixed(1).replace('.', ',')}} %</td>
+                        <td class="py-2 font-mono text-slate-500">\${idx + 1}.</td>
+                        <td class="py-2 font-semibold text-slate-200">\${brand.name}</td>
+                        <td class="py-2 text-right font-bold text-emerald-400">\${brand.count} ks</td>
+                        <td class="py-2 text-right text-slate-400">\${brand.percentage.toFixed(1).replace('.', ',')} %</td>
                     `;
                     brandsBody.appendChild(tr);
-                }});
-            }}
+                });
+            }
 
             // Graf značek (Doughnut)
             const brandsCtx = document.getElementById('brandsChart').getContext('2d');
             if (brandsChart) brandsChart.destroy();
-            brandsChart = new Chart(brandsCtx, {{
+            brandsChart = new Chart(brandsCtx, {
                 type: 'doughnut',
-                data: {{
+                data: {
                     labels: stats.brands_breakdown.map(b => b.name),
-                    datasets: [{{
+                    datasets: [{
                         data: stats.brands_breakdown.map(b => b.count),
                         backgroundColor: [
                             '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', 
@@ -763,55 +699,55 @@ def generate_html_report(stats, output_path):
                         ],
                         borderWidth: 2,
                         borderColor: '#1e293b'
-                    }}]
-                }},
-                options: {{
+                    }]
+                },
+                options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {{
-                        legend: {{
+                    plugins: {
+                        legend: {
                             position: 'right',
-                            labels: {{ color: '#94a3b8', font: {{ family: 'Montserrat', size: 10, weight: 600 }} }}
-                        }}
-                    }}
-                }}
-            }});
+                            labels: { color: '#94a3b8', font: { family: 'Montserrat', size: 10, weight: 600 } }
+                        }
+                    }
+                }
+            });
 
             // Graf velikostí (Bar)
             const volumesCtx = document.getElementById('volumesChart').getContext('2d');
             if (volumesChart) volumesChart.destroy();
-            volumesChart = new Chart(volumesCtx, {{
+            volumesChart = new Chart(volumesCtx, {
                 type: 'bar',
-                data: {{
+                data: {
                     labels: stats.volumes_breakdown.map(v => v.size),
-                    datasets: [{{
+                    datasets: [{
                         label: 'Počet kusů',
                         data: stats.volumes_breakdown.map(v => v.count),
                         backgroundColor: '#14b8a6',
                         borderRadius: 8
-                    }}]
-                }},
-                options: {{
+                    }]
+                },
+                options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {{
-                        x: {{ ticks: {{ color: '#94a3b8' }}, grid: {{ display: false }} }},
-                        y: {{ ticks: {{ color: '#94a3b8' }}, grid: {{ color: '#334155' }} }}
-                    }},
-                    plugins: {{
-                        legend: {{ display: false }}
-                    }}
-                }}
-            }});
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
 
             // Graf časové osy (Line)
             const timelineCtx = document.getElementById('timelineChart').getContext('2d');
             if (timelineChart) timelineChart.destroy();
-            timelineChart = new Chart(timelineCtx, {{
+            timelineChart = new Chart(timelineCtx, {
                 type: 'line',
-                data: {{
+                data: {
                     labels: stats.timeline.map(t => t.date),
-                    datasets: [{{
+                    datasets: [{
                         label: 'Nasbíráno plechovek',
                         data: stats.timeline.map(t => t.count),
                         borderColor: '#10b981',
@@ -819,70 +755,70 @@ def generate_html_report(stats, output_path):
                         fill: true,
                         tension: 0.3,
                         borderWidth: 3
-                    }}]
-                }},
-                options: {{
+                    }]
+                },
+                options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {{
-                        x: {{ ticks: {{ color: '#94a3b8' }}, grid: {{ display: false }} }},
-                        y: {{ ticks: {{ color: '#94a3b8' }}, grid: {{ color: '#334155' }} }}
-                    }},
-                    plugins: {{
-                        legend: {{ display: false }}
-                    }}
-                }}
-            }});
-        }}
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
 
-        window.openAdminEditorPasscode = function() {{
+        window.openAdminEditorPasscode = function() {
             const pw = prompt("Zadejte administrátorské heslo:");
-            if (pw === "milion2026") {{
+            if (pw === "milion2026") {
                 openAdminPanel();
-            }} else if (pw !== null) {{
+            } else if (pw !== null) {
                 alert("Nesprávné heslo!");
-            }}
-        }};
+            }
+        };
 
-        async function openAdminPanel() {{
+        async function openAdminPanel() {
             const modal = document.getElementById('adminPanelModal');
-            if (modal) {{
+            if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
-            }}
+            }
             
             const listContainer = document.getElementById('adminPickupsList');
-            if (listContainer) {{
+            if (listContainer) {
                 listContainer.innerHTML = '<div class="text-center py-8 text-slate-400">Načítám data z databáze...</div>';
-            }}
+            }
             
-            try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
-                    headers: {{
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {
+                    headers: {
                         'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${{SUPABASE_KEY}}`
-                    }}
-                }});
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
                 if (!response.ok) throw new Error('Načítání selhalo');
                 allPickups = await response.json();
                 filterAdminPickups();
-            }} catch (e) {{
+            } catch (e) {
                 console.error(e);
-                if (listContainer) {{
-                    listContainer.innerHTML = `<div class="text-center py-8 text-red-400">Chyba: \${{e.message}}</div>`;
-                }}
-            }}
-        }}
+                if (listContainer) {
+                    listContainer.innerHTML = `<div class="text-center py-8 text-red-400">Chyba: \${e.message}</div>`;
+                }
+            }
+        }
 
-        window.closeAdminPanel = function() {{
+        window.closeAdminPanel = function() {
             const modal = document.getElementById('adminPanelModal');
-            if (modal) {{
+            if (modal) {
                 modal.classList.add('hidden');
                 modal.style.display = 'none';
-            }}
-        }};
+            }
+        };
 
-        window.filterAdminPickups = function() {{
+        window.filterAdminPickups = function() {
             const searchInput = document.getElementById('adminSearchNick');
             const statusSelect = document.getElementById('adminStatusFilter');
             const listContainer = document.getElementById('adminPickupsList');
@@ -895,204 +831,204 @@ def generate_html_report(stats, output_path):
             
             const sorted = [...allPickups].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             
-            const filtered = sorted.filter(p => {{
+            const filtered = sorted.filter(p => {
                 const nick = (p.nickname || '').toLowerCase();
                 if (searchNick && !nick.includes(searchNick)) return false;
                 
-                if (statusFilter === 'unanalyzed') {{
+                if (statusFilter === 'unanalyzed') {
                     return !p.is_analyzed;
-                }} else if (statusFilter === 'unknown') {{
+                } else if (statusFilter === 'unknown') {
                     if (!p.is_analyzed) return false;
                     if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
-                    return p.analysis_json.some(c => {{
+                    return p.analysis_json.some(c => {
                         const b = c.brand || 'Nerozpoznáno';
                         return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
-                    }});
-                }}
+                    });
+                }
                 return true;
-            }});
+            });
             
-            if (filtered.length === 0) {{
+            if (filtered.length === 0) {
                 listContainer.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">Žádné nahrávky neodpovídají filtrům.</div>';
                 return;
-            }}
+            }
             
-            filtered.forEach(p => {{
+            filtered.forEach(p => {
                 const row = document.createElement('div');
                 row.className = 'grid grid-cols-[80px_1fr_60px_80px_50px] gap-2 items-center px-4 py-3 border-b border-slate-800/60 hover:bg-slate-800/30 text-xs text-slate-300';
                 
-                const dateStr = new Date(p.created_at).toLocaleDateString('cs-CZ', {{
+                const dateStr = new Date(p.created_at).toLocaleDateString('cs-CZ', {
                     day: '2-digit',
                     month: '2-digit',
                     hour: '2-digit',
                     minute: '2-digit'
-                }});
+                });
                 
                 let badgeHtml = '';
-                if (!p.is_analyzed) {{
+                if (!p.is_analyzed) {
                     badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">Čeká</span>';
-                }} else {{
+                } else {
                     const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
-                        p.analysis_json.some(c => {{
+                        p.analysis_json.some(c => {
                             const b = c.brand || 'Nerozpoznáno';
                             return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
-                        }});
-                    if (hasUnknown) {{
+                        });
+                    if (hasUnknown) {
                         badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-wider">Neznámé</span>';
-                    }} else {{
+                    } else {
                         badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">Hotovo</span>';
-                    }}
-                }}
+                    }
+                }
                 
                 row.innerHTML = `
-                    <span class="text-slate-500 font-bold">\${{dateStr}}</span>
-                    <span class="font-bold text-slate-200 truncate" title="\${{p.nickname || '@anonym'}}">\${{p.nickname || '@anonym'}}</span>
-                    <span class="font-extrabold text-emerald-400 text-right pr-2">\${{p.count || 0}} ks</span>
-                    <span class="flex justify-center">\${{badgeHtml}}</span>
-                    <button onclick="openAdminEditModal('\${{p.id}}')" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
+                    <span class="text-slate-500 font-bold">\${dateStr}</span>
+                    <span class="font-bold text-slate-200 truncate" title="\${p.nickname || '@anonym'}">\${p.nickname || '@anonym'}</span>
+                    <span class="font-extrabold text-emerald-400 text-right pr-2">\${p.count || 0} ks</span>
+                    <span class="flex justify-center">\${badgeHtml}</span>
+                    <button onclick="openAdminEditModal('\${p.id}')" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
                 `;
                 listContainer.appendChild(row);
-            }});
-        }};
+            });
+        };
 
-        window.openAdminEditModal = function(pickupId) {{
+        window.openAdminEditModal = function(pickupId) {
             const pickup = allPickups.find(p => p.id === pickupId);
             if (!pickup) return;
             
             adminSelectedPickup = pickup;
             adminEditCansLocal = [];
             
-            if (pickup.analysis_json && Array.isArray(pickup.analysis_json)) {{
+            if (pickup.analysis_json && Array.isArray(pickup.analysis_json)) {
                 adminEditCansLocal = JSON.parse(JSON.stringify(pickup.analysis_json));
-                adminEditCansLocal.forEach(can => {{
-                    if (can.brand === 'Unknown' || can.brand === 'unknown' || !can.brand) {{
+                adminEditCansLocal.forEach(can => {
+                    if (can.brand === 'Unknown' || can.brand === 'unknown' || !can.brand) {
                         can.brand = 'Nerozpoznáno';
-                    }}
-                }});
-            }}
+                    }
+                });
+            }
             
-            if (adminEditCansLocal.length === 0 && pickup.count > 0) {{
-                for (let i = 0; i < pickup.count; i++) {{
-                    adminEditCansLocal.push({{ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null }});
-                }}
-            }}
+            if (adminEditCansLocal.length === 0 && pickup.count > 0) {
+                for (let i = 0; i < pickup.count; i++) {
+                    adminEditCansLocal.push({ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null });
+                }
+            }
             
             document.getElementById('adminEditNickInput').value = pickup.nickname || '';
             document.getElementById('adminEditTeamInput').value = pickup.team_code || '';
             document.getElementById('adminEditDate').textContent = new Date(pickup.created_at).toLocaleString('cs-CZ');
-            document.getElementById('adminEditNotes').textContent = pickup.notes ? `"\${{pickup.notes}}"` : 'Bez poznámky';
+            document.getElementById('adminEditNotes').textContent = pickup.notes ? `"\${pickup.notes}"` : 'Bez poznámky';
             document.getElementById('adminEditPhoto').src = pickup.photo_url || 'can-marker-transparent.png';
             
             renderAdminCansEditList();
             
             const editModal = document.getElementById('adminEditPickupModal');
-            if (editModal) {{
+            if (editModal) {
                 editModal.classList.remove('hidden');
                 editModal.style.display = 'flex';
-            }}
-        }};
+            }
+        };
 
-        window.closeAdminEditModal = function() {{
+        window.closeAdminEditModal = function() {
             const editModal = document.getElementById('adminEditPickupModal');
-            if (editModal) {{
+            if (editModal) {
                 editModal.classList.add('hidden');
                 editModal.style.display = 'none';
-            }}
+            }
             adminSelectedPickup = null;
             adminEditCansLocal = [];
-        }};
+        };
 
-        function renderAdminCansEditList() {{
+        function renderAdminCansEditList() {
             const container = document.getElementById('adminCansList');
             if (!container) return;
             container.innerHTML = '';
             
-            adminEditCansLocal.forEach((can, index) => {{
+            adminEditCansLocal.forEach((can, index) => {
                 const row = document.createElement('div');
                 row.className = 'flex flex-col gap-1 pb-2 border-b border-slate-800/40 mb-2';
                 
                 const isCustom = can.brand && !POPULAR_BRANDS.includes(can.brand) && can.brand !== 'Nerozpoznáno';
                 
                 let brandOptions = '';
-                POPULAR_BRANDS.forEach(b => {{
+                POPULAR_BRANDS.forEach(b => {
                     const selected = (!isCustom && can.brand === b) ? 'selected' : '';
-                    brandOptions += `<option value="\${{b}}" \${{selected}}>\${{b}}</option>`;
-                }});
+                    brandOptions += `<option value="\${b}" \${selected}>\${b}</option>`;
+                });
                 
                 const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
                 let volOptions = '';
-                vols.forEach(v => {{
+                vols.forEach(v => {
                     const isMatch = (can.volume_liters == v || (v === 'Unknown' && (can.volume_liters === 'Unknown' || !can.volume_liters)));
-                    volOptions += `<option value="\${{v}}" \${{isMatch ? 'selected' : ''}}>\${{v === 'Unknown' ? 'Neznámý' : v + ' L'}}</option>`;
-                }});
+                    volOptions += `<option value="\${v}" \${isMatch ? 'selected' : ''}>\${v === 'Unknown' ? 'Neznámý' : v + ' L'}</option>`;
+                });
                 
                 row.innerHTML = `
                     <div class="flex gap-2 items-center w-full">
-                        <span class="text-[10px] font-bold text-slate-500 w-5">#\${{index + 1}}</span>
-                        <select onchange="onBrandSelectChange(\${{index}}, this)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
-                            \${{brandOptions}}
-                            <option value="CUSTOM_BRAND" \${{isCustom ? 'selected' : ''}}>✍️ Vlastní značka...</option>
+                        <span class="text-[10px] font-bold text-slate-500 w-5">#\${index + 1}</span>
+                        <select onchange="onBrandSelectChange(\${index}, this)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
+                            \${brandOptions}
+                            <option value="CUSTOM_BRAND" \${isCustom ? 'selected' : ''}>✍️ Vlastní značka...</option>
                         </select>
-                        <select onchange="updateLocalCanVolume(\${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
-                            \${{volOptions}}
+                        <select onchange="updateLocalCanVolume(\${index}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
+                            \${volOptions}
                         </select>
-                        <button onclick="removeCanFromEditList(\${{index}})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
+                        <button onclick="removeCanFromEditList(\${index})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
                     </div>
-                    <div id="customBrandContainer_\${{index}}" style="display: \${{isCustom ? 'flex' : 'none'}}; padding-left: 28px; width: 100%;">
-                        <input type="text" placeholder="Napište název značky..." value="\${{isCustom ? can.brand : ''}}" oninput="updateLocalCanBrandCustom(\${{index}}, this.value)" class="flex-1 bg-slate-800 border border-slate-700 text-slate-100 rounded px-2.5 py-1 text-xs outline-none focus:border-emerald-500" />
+                    <div id="customBrandContainer_\${index}" style="display: \${isCustom ? 'flex' : 'none'}; padding-left: 28px; width: 100%;">
+                        <input type="text" placeholder="Napište název značky..." value="\${isCustom ? can.brand : ''}" oninput="updateLocalCanBrandCustom(\${index}, this.value)" class="flex-1 bg-slate-800 border border-slate-700 text-slate-100 rounded px-2.5 py-1 text-xs outline-none focus:border-emerald-500" />
                     </div>
                 `;
                 container.appendChild(row);
-            }});
+            });
             
             recalculateAdminStats();
-        }}
+        }
 
-        window.onBrandSelectChange = function(index, selectEl) {{
+        window.onBrandSelectChange = function(index, selectEl) {
             const val = selectEl.value;
-            const container = document.getElementById(`customBrandContainer_\${{index}}`);
+            const container = document.getElementById(`customBrandContainer_\${index}`);
             
-            if (val === 'CUSTOM_BRAND') {{
+            if (val === 'CUSTOM_BRAND') {
                 if (container) container.style.display = 'flex';
                 const input = container ? container.querySelector('input') : null;
                 const customVal = input ? input.value.trim() : '';
-                if (adminEditCansLocal[index]) {{
+                if (adminEditCansLocal[index]) {
                     adminEditCansLocal[index].brand = customVal || 'Vlastní';
-                }}
-            }} else {{
+                }
+            } else {
                 if (container) container.style.display = 'none';
-                if (adminEditCansLocal[index]) {{
+                if (adminEditCansLocal[index]) {
                     adminEditCansLocal[index].brand = val;
-                }}
-            }}
-        }};
+                }
+            }
+        };
 
-        window.updateLocalCanBrandCustom = function(index, value) {{
-            if (adminEditCansLocal[index]) {{
+        window.updateLocalCanBrandCustom = function(index, value) {
+            if (adminEditCansLocal[index]) {
                 adminEditCansLocal[index].brand = value.trim() || 'Vlastní';
-            }}
-        }};
+            }
+        };
 
-        window.updateLocalCanVolume = function(index, value) {{
-            if (adminEditCansLocal[index]) {{
+        window.updateLocalCanVolume = function(index, value) {
+            if (adminEditCansLocal[index]) {
                 adminEditCansLocal[index].volume_liters = (value === 'Unknown') ? 'Unknown' : parseFloat(value);
                 recalculateAdminStats();
-            }}
-        }};
+            }
+        };
 
-        window.removeCanFromEditList = function(index) {{
+        window.removeCanFromEditList = function(index) {
             adminEditCansLocal.splice(index, 1);
             renderAdminCansEditList();
-        }};
+        };
 
-        window.addCanToEditList = function() {{
-            adminEditCansLocal.push({{ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null }});
+        window.addCanToEditList = function() {
+            adminEditCansLocal.push({ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null });
             renderAdminCansEditList();
-        }};
+        };
 
-        function recalculateAdminStats() {{
+        function recalculateAdminStats() {
             let totalWeightG = 0;
-            adminEditCansLocal.forEach(can => {{
+            adminEditCansLocal.forEach(can => {
                 const vol = can.volume_liters;
                 let weight = CAN_WEIGHTS['Unknown'];
                 if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
@@ -1100,19 +1036,19 @@ def generate_html_report(stats, output_path):
                 else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
                 else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
                 totalWeightG += weight;
-            }});
+            });
             
             const weightKg = totalWeightG / 1000.0;
             const energySaved = weightKg * ENERGY_SAVED_KWH_PER_KG;
             const co2Saved = weightKg * CO2_SAVED_KG_PER_KG;
             
-            document.getElementById('liveCansCount').textContent = `\${{adminEditCansLocal.length}} ks`;
-            document.getElementById('liveWeight').textContent = `\${{totalWeightG.toFixed(1)}} g`;
-            document.getElementById('liveEnergy').textContent = `\${{energySaved.toFixed(3).replace('.', ',')}} kWh`;
-            document.getElementById('liveCo2').textContent = `\${{co2Saved.toFixed(2).replace('.', ',')}} kg`;
-        }}
+            document.getElementById('liveCansCount').textContent = `\${adminEditCansLocal.length} ks`;
+            document.getElementById('liveWeight').textContent = `\${totalWeightG.toFixed(1)} g`;
+            document.getElementById('liveEnergy').textContent = `\${energySaved.toFixed(3).replace('.', ',')} kWh`;
+            document.getElementById('liveCo2').textContent = `\${co2Saved.toFixed(2).replace('.', ',')} kg`;
+        }
 
-        window.saveAdminEditChanges = async function() {{
+        window.saveAdminEditChanges = async function() {
             if (!adminSelectedPickup) return;
             
             const saveBtn = document.getElementById('adminSaveBtn');
@@ -1123,7 +1059,7 @@ def generate_html_report(stats, output_path):
             saveBtn.disabled = true;
             
             let totalWeightG = 0;
-            adminEditCansLocal.forEach(can => {{
+            adminEditCansLocal.forEach(can => {
                 const vol = can.volume_liters;
                 let weight = CAN_WEIGHTS['Unknown'];
                 if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
@@ -1131,7 +1067,7 @@ def generate_html_report(stats, output_path):
                 else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
                 else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
                 totalWeightG += weight;
-            }});
+            });
             
             const weightKg = totalWeightG / 1000.0;
             const energySaved = parseFloat((weightKg * ENERGY_SAVED_KWH_PER_KG).toFixed(4));
@@ -1142,16 +1078,16 @@ def generate_html_report(stats, output_path):
             const newNick = document.getElementById('adminEditNickInput')?.value.trim() || '';
             const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
             
-            try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?id=eq.\${{adminSelectedPickup.id}}`, {{
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.\${adminSelectedPickup.id}`, {
                     method: 'PATCH',
-                    headers: {{
+                    headers: {
                         'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${{SUPABASE_KEY}}`,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
                         'Content-Type': 'application/json',
                         'Prefer': 'return=minimal'
-                    }},
-                    body: JSON.stringify({{
+                    },
+                    body: JSON.stringify({
                         nickname: newNick || null,
                         team_code: newTeam || null,
                         count: count,
@@ -1162,13 +1098,13 @@ def generate_html_report(stats, output_path):
                         energy_saved_kwh: energySaved,
                         money_saved_czk: moneySaved,
                         co2_saved_kg: co2Saved
-                    }})
-                }});
+                    })
+                });
                 
                 if (!response.ok) throw new Error('Uložení do databáze selhalo.');
                 
                 const idx = allPickups.findIndex(p => p.id === adminSelectedPickup.id);
-                if (idx !== -1) {{
+                if (idx !== -1) {
                     allPickups[idx].nickname = newNick || null;
                     allPickups[idx].team_code = newTeam || null;
                     allPickups[idx].count = count;
@@ -1179,78 +1115,20 @@ def generate_html_report(stats, output_path):
                     allPickups[idx].energy_saved_kwh = energySaved;
                     allPickups[idx].money_saved_czk = moneySaved;
                     allPickups[idx].co2_saved_kg = co2Saved;
-                }}
+                }
                 
                 alert('Změny byly úspěšně uloženy do databáze a grafy byly aktualizovány!');
                 closeAdminEditModal();
                 filterAdminPickups();
                 recalculateStatsAndReplot();
-            }} catch (e) {{
+            } catch (e) {
                 console.error(e);
                 alert('Chyba při ukládání: ' + e.message);
-            }} finally {{
+            } finally {
                 saveBtn.textContent = originalText;
                 saveBtn.disabled = false;
-            }}
-        }};
+            }
+        };
     </script>
 </body>
-</html>"""
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-
-def main():
-    print("🚀 Spouštím generování statistik...")
-    
-    try:
-        query_url = f"{SUPABASE_URL}/rest/v1/pickups?select=count,is_analyzed,analysis_json,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,team_code,nickname,created_at"
-        headers = {
-            'apikey': SUPABASE_KEY,
-            'Authorization': f"Bearer {SUPABASE_KEY}"
-        }
-        
-        response = requests.get(query_url, headers=headers, timeout=30)
-        if response.status_code != 200:
-            raise Exception(f"Supabase query failed: Status {response.status_code}")
-
-        pickups = response.json()
-        print(f"📊 Staženo {len(pickups)} záznamů o sběrech.")
-
-        if len(pickups) == 0:
-            print("⚠️ Databáze je prázdná. Report nelze generovat.")
-            return
-
-        stats = aggregate_data(pickups)
-        
-        # Cesta pro uložení HTML reportu
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        report_path = os.path.join(script_dir, 'report.html')
-        generate_html_report(stats, report_path)
-        print(f"\n📈 Nádherný HTML report s interaktivními grafy byl uložen do:")
-        print(f"   👉 file://{report_path}")
-        print("   (Stačí na soubor dvakrát kliknout na vašem Macu a otevře se v Safari/Chrome)")
-
-        print(f"\n==================================================")
-        print(f"🧠 GENERUJI PŘÍSPĚVKY NA SOCIÁLNÍ SÍTĚ POMOCÍ AI...")
-        print(f"==================================================\n")
-
-        if GEMINI_API_KEY:
-            try:
-                facts_text = generate_fun_facts(stats)
-                print(facts_text)
-            except Exception as ai_err:
-                print(f"⚠️ Nepodařilo se vygenerovat AI příspěvky na sociální sítě kvůli dočasnému limitu API (429).")
-                print(f"   (HTML report s grafy byl ale úspěšně vygenerován!)")
-                print(f"   Tip: Zkuste skript spustit znovu za 1 minutu, až se uvolní kvóta.")
-        else:
-            print("ℹ️ Generování Reels/Instagram textů přeskočeno (chybí GEMINI_API_KEY).")
-
-        print(f"\n==================================================")
-        print(f"✅ Skript úspěšně dokončen.")
-
-    except Exception as e:
-        print("❌ Kritická chyba skriptu:", str(e))
-
-if __name__ == '__main__':
-    main()
+</html>

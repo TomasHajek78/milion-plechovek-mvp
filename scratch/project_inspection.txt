@@ -1,0 +1,284 @@
+Inspecting Milion_plechovek project at: /Volumes/LaCie 2025/PROJEKTY VAJB/Organiazce Tomáš Hájek/06_Side_Projekty/Milion_plechovek
+
+--- FILE STRUCTURE ---
+[D] Milion_plechovek
+  [F] Projekt_Plan.md (891 bytes)
+  [F] Checklist_Milion_Plechovek.md (1429 bytes)
+  [F] Pocitadlo_Historie.md (736 bytes)
+  [F] Navrh_Aplikace.md (1973 bytes)
+  [F] Nabidka_Pilotni_Kos_Rajhradice.md (1815 bytes)
+  [F] Strihovy_Plan_Futurum.md (2070 bytes)
+  [F] Technicka_Specifikace_App.md (2323 bytes)
+  [D] SUROVA_DATA
+    [F] Video Futurum 8.MOV (28571769 bytes)
+    [F] Video Futurum 7.MOV (20598058 bytes)
+    [F] Video Futurum 6.MOV (44473109 bytes)
+    [F] Video Futurum 5.MOV (31492247 bytes)
+    [F] Video Futurum 4.MOV (32972970 bytes)
+    [F] Video Futurum 3.MOV (9504354 bytes)
+    [F] Video Futurum 2.MOV (6710137 bytes)
+    [F] Video Futurum 1.MOV (34763684 bytes)
+    [F] Video Futurum 9.MOV (37519282 bytes)
+    [F] Video Futurum 10.MOV (24103463 bytes)
+    [F] Video Futurum 11.MOV (45202752 bytes)
+    [F] Video Futurum 12.MOV (23994641 bytes)
+    [F] Video Futurum 13.MOV (39755143 bytes)
+    [F] Video Futurum 14.MOV (4192930 bytes)
+    [F] Video Futurum 15.MOV (36903283 bytes)
+    [F] test_video.mp4 (34763684 bytes)
+    [F] Video Futurum 1.MOV.png (937242 bytes)
+    [F] Video Futurum 2.MOV.png (1167942 bytes)
+    [F] Video Futurum 3.MOV.png (965190 bytes)
+    [F] Video Futurum 4.MOV.png (1252989 bytes)
+    [F] Video Futurum 5.MOV.png (1450032 bytes)
+    [F] Video Futurum 6.MOV.png (1266942 bytes)
+    [F] Video Futurum 7.MOV.png (1254555 bytes)
+    [F] Video Futurum 8.MOV.png (1170467 bytes)
+    [F] Video Futurum 9.MOV.png (1183132 bytes)
+    [F] Video Futurum 10.MOV.png (1199774 bytes)
+    [F] Video Futurum 11.MOV.png (888012 bytes)
+    [F] Video Futurum 12.MOV.png (1132260 bytes)
+    [F] Video Futurum 13.MOV.png (1256476 bytes)
+    [F] Video Futurum 14.MOV.png (1336822 bytes)
+    [F] audio_test.m4a (402203 bytes)
+    [F] Video Futurum 15.MOV.png (1129153 bytes)
+    [F] analyze_video.sh (922 bytes)
+    [F] transcribe.swift (1274 bytes)
+    [D] ANALYSIS_V1
+      [F] Video Futurum 1.MOV_snap_0.png (4163425 bytes)
+      [F] Video Futurum 1.MOV_snap_5.png (5308131 bytes)
+      [F] Video Futurum 1.MOV_snap_10.png (5812403 bytes)
+      [F] Video Futurum 1.MOV_snap_15.png (5615585 bytes)
+    [D] ANALYSIS_V6
+      [F] Video Futurum 6.MOV_snap_0.png (8617342 bytes)
+      [F] Video Futurum 6.MOV_snap_5.png (8899934 bytes)
+      [F] Video Futurum 6.MOV_snap_10.png (8078492 bytes)
+      [F] Video Futurum 6.MOV_snap_15.png (4469938 bytes)
+      [F] Video Futurum 6.MOV_snap_20.png (6629283 bytes)
+    [D] ANALYSIS_V11
+      [F] Video Futurum 11.MOV_snap_0.png (9787220 bytes)
+      [F] Video Futurum 11.MOV_snap_5.png (8324459 bytes)
+      [F] Video Futurum 11.MOV_snap_10.png (3818733 bytes)
+      [F] Video Futurum 11.MOV_snap_15.png (6041964 bytes)
+      [F] Video Futurum 11.MOV_snap_20.png (7582869 bytes)
+    [D] ANALYSIS_V15
+      [F] Video Futurum 15.MOV_snap_0.png (4542917 bytes)
+      [F] Video Futurum 15.MOV_snap_5.png (6229278 bytes)
+      [F] Video Futurum 15.MOV_snap_10.png (7585932 bytes)
+      [F] Video Futurum 15.MOV_snap_15.png (3244693 bytes)
+  [D] MOCKUPY
+    [F] media__1778317709789.png (319711 bytes)
+    [F] media__1778318148468.png (145161 bytes)
+    [F] media__1778318165484.png (106296 bytes)
+    [F] media__1778318179531.png (227346 bytes)
+    [F] media__1778318193284.png (136157 bytes)
+    [F] media__1778318776298.png (116751 bytes)
+    [F] media__1778318801310.png (39591 bytes)
+    [F] media__1778318809057.png (67220 bytes)
+    [F] media__1778321550649.png (525587 bytes)
+    [F] media__1778321637423.png (752356 bytes)
+    [F] media__1778321785499.png (406588 bytes)
+    [F] media__1778321837580.png (304644 bytes)
+    [F] media__1778321916382.png (486226 bytes)
+    [F] media__1778321994740.png (798152 bytes)
+    [F] media__1778321994742.png (863700 bytes)
+    [F] media__1778323684222.png (803880 bytes)
+    [F] media__1778324186824.png (791885 bytes)
+    [F] media__1778327585475.png (75582 bytes)
+    [F] mockup_green_bin_final_1778321945777.png (867697 bytes)
+    [F] mockup_green_final_v2_1778322094649.png (889449 bytes)
+    [F] mockup_green_fullwrap_1778323603372.png (766723 bytes)
+    [F] mockup_green_v3_1778323366858.png (784809 bytes)
+    [F] mockup_lid_fullwrap_orig_1778326329650.png (559250 bytes)
+    [F] mockup_meva_70l_final_attempt_v2_1778326198919.png (758610 bytes)
+    [F] mockup_meva_70l_fullwrap_1778324255404.png (783763 bytes)
+    [F] mockup_meva_bin_final_1778321914981.png (944830 bytes)
+    [F] mockup_meva_final_v2_1778322076229.png (940894 bytes)
+    [F] mockup_meva_fullwrap_1778323584065.png (825274 bytes)
+    [F] mockup_meva_fullwrap_v2_1778323788010.png (696094 bytes)
+    [F] mockup_meva_v3_1778323347122.png (827292 bytes)
+    [F] mockup_plastic_final_v2_1778322112330.png (946886 bytes)
+    [F] mockup_plastic_lid_fullwrap_1778323622796.png (796767 bytes)
+    [F] mockup_plastic_v3_1778323383855.png (697247 bytes)
+    [F] trash_can_mockup_rajhradice_1778319454935.png (831633 bytes)
+  [D] LOGA Milion Plechovek
+    [F] 5.10.2025 (3).png (3188336 bytes)
+    [F] Logo Milion plechovek bez pozadí.png (3161969 bytes)
+    [F] Logo Milion plechovek na bílém pozadí.png (3480600 bytes)
+    [F] Kreslené logo Milion plechovek.mp4 (5844291 bytes)
+  [D] Popelnice k polepu
+    [F] Snímek obrazovky 2026-05-09 v 13.29.03.png (700748 bytes)
+    [F] Snímek obrazovky 2026-05-09 v 13.28.52.png (860347 bytes)
+  [D] MVP_Aplikace
+    [F] index.html (8353 bytes)
+    [F] logo.png (3526945 bytes)
+    [F] style.css (8187 bytes)
+    [F] manifest.json (570 bytes)
+    [F] app.js (14517 bytes)
+    [F] can-marker.png (12920 bytes)
+    [F] sw.js (1068 bytes)
+    [F] can-marker-transparent.png (461484 bytes)
+    [F] logo-transparent.png (3259233 bytes)
+
+--- IMPORTANT FILE CONTENTS ---
+
+=== File: /Volumes/LaCie 2025/PROJEKTY VAJB/Organiazce Tomáš Hájek/06_Side_Projekty/Milion_plechovek/MVP_Aplikace/index.html ===
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="logo.png?v=2">
+    <link rel="icon" type="image/png" href="logo.png?v=2">
+    <link rel="manifest" href="manifest.json?v=2">
+    <title>Milion Plechovek | Sběrač</title>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Leaflet Mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Hlavička s logem -->
+        <header class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="width: 40px;"></div> <!-- Spacer -->
+                <a href="index.html">
+                    <img src="logo.png" alt="Milion Plechovek Logo" class="brand-logo">
+                </a>
+                <button id="settingsBtn" onclick="toggleSettings()" style="background:none; border:none; font-size: 24px; cursor:pointer; width: 40px;">⚙️</button>
+            </div>
+        </header>
+
+        <!-- Modální okno Nastavení (Záloha) -->
+        <div id="settingsModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; width:90%; max-width:400px;">
+            <h3>Nastavení & Záloha</h3>
+            <p class="small-text">Pro jistotu si jednou za čas stáhni zálohu svých dat, aby se ti sběry při promazání telefonu neztratily.</p>
+            <button onclick="exportData()" class="primary-btn-small" style="width:100%; margin-bottom:10px;">📥 Stáhnout zálohu (.json)</button>
+            <button onclick="forceRefresh()" class="secondary-btn" style="width:100%; margin-bottom:10px; font-size: 12px; color: var(--rust-red);">🔄 Vynutit aktualizaci (vymazat mezipaměť)</button>
+            
+            <p class="small-text" style="margin-top:15px;">Obnovit ze souboru:</p>
+            <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(this)">
+            <button onclick="document.getElementById('importFileInput').click()" class="secondary-btn" style="width:100%;">📤 Nahrát zálohu</button>
+            
+            <button onclick="toggleSettings()" class="secondary-btn" style="width:100%; margin-top:20px; color:var(--rust-red);">Zavřít</button>
+        </div>
+
+        <!-- Instalační Overlay (PWA) -->
+        <div id="installOverlay" class="card hidden" style="position:fixed; bottom:20px; left:20px; right:20px; z-index:2000; border: 2px solid var(--rust-red);">
+            <h3>Nainstaluj si Sběrače! 🥫</h3>
+            <p class="small-text" id="installInstructions">Přidej si aplikaci na plochu pro rychlejší přístup a stabilnější ukládání dat.</p>
+            <button id="installBtn" class="primary-btn-small" style="width:100%; margin-top:10px;">Přidat na plochu</button>
+            <button onclick="document.getElementById('installOverlay').classList.add('hidden')" class="secondary-btn" style="width:100%; margin-top:5px;">Možná později</button>
+        </div>
+
+        <!-- Registrace Nickname -->
+        <div id="loginScreen" class="card hidden">
+            <h3>Jak ti máme říkat?</h3>
+            <p class="small-text">Vymysli si přezdívku nebo zadej svůj IG, ať se najdeš v žebříčku.</p>
+            <input type="text" id="nicknameInput" placeholder="@pepa_sbira">
+            <button id="saveNickBtn" class="primary-btn-small">Uložit</button>
+        </div>
+
+        <!-- HLAVNÍ SEKCE (HOME) -->
+        <div id="homeSection" class="view-section">
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card" id="myStatsCard">
+                    <h3>Moje plechovky</h3>
+                    <div class="stat-value" id="myTotal">0</div>
+                    <p id="userNickDisplay">...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Zbývá sebrat</h3>
+                    <div class="stat-value highlight" id="globalTotal">999 171</div>
+                    <p>z cílového milionu</p>
+                </div>
+            </div>
+
+            <!-- Vycentrované Tlačítko s pulzem -->
+            <div class="main-action-center" id="mainAction">
+                <div class="btn-pulse-wrapper">
+                    <div class="pulse-ring"></div>
+                    <button id="cameraBtn" class="primary-btn-large">
+                        <span class="icon">📸</span><br>FOTIT
+                    </button>
+                </div>
+                <button id="galleryBtn" class="gallery-link">📂 nebo vybrat z galerie</button>
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+                <input type="file" id="galleryInput" accept="image/*" style="display: none;">
+            </div>
+
+            <div id="historyPanel" class="card history-card">
+                <h3>Poslední úlovky</h3>
+                <ul id="historyList" class="history-list"></ul>
+            </div>
+        </div>
+
+        <!-- SEKCE MAPA -->
+        <div id="mapSection" class="view-section hidden">
+            <div class="card map-full-card">
+                <h3>Mapa nálezů</h3>
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <!-- SEKCE ŽEBŘÍČEK -->
+        <div id="leaderboardSection" class="view-section hidden">
+            <div class="card leaderboard-card">
+                <h3>Žebříček sběračů</h3>
+                <ul id="leaderboardList" class="leaderboard-list">
+                    <!-- Tady bude TOP 10 + uživatel -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- FORMULÁŘE (MIMO HLAVNÍ NAVIGACI) -->
+        <div id="pickupForm" class="card pickup-form hidden">
+            <img id="photoPreview" alt="Náhled úlovku" class="photo-preview">
+            <div class="form-group">
+                <label for="canCount">Kolik plechovek je na fotce?</label>
+                <input type="number" id="canCount" value="1" min="1" max="500">
+            </div>
+            <div class="form-group">
+                <label for="notes">Poznámka:</label>
+                <textarea id="notes" placeholder="Kde jsi to našel?"></textarea>
+            </div>
+            <div class="gps-status" id="gpsStatus">📍 Zjišťuji polohu...</div>
+            <button id="submitBtn" class="submit-btn">Odeslat do odpočtu</button>
+            <button id="cancelBtn" class="secondary-btn">Zrušit</button>
+        </div>
+        
+        <div id="successScreen" class="card success-screen hidden">
+            <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+            <h2>Skvělá práce!</h2>
+            <p style="color: var(--text-dim); margin-bottom: 24px;">Právě jsi planetu zbavil další zátěže. Tvé plechovky byly odečteny z celkového milionu.</p>
+            <button id="shareBtn" class="share-btn">Sdílet na Instagramu</button>
+            <button id="newPickupBtn" class="secondary-btn">Zpět na začátek</button>
+        </div>
+
+        <!-- SPODNÍ NAVIGACE -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-view="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Domů</span>
+            </button>
+            <button class="nav-item" data-view="map">
+                <span class="nav-icon">📍</span>
+                <span class="nav-label">Mapa</span>
+            </button>
+            <button class="nav-item" data-view="leaderboard">
+                <span class="nav-icon">🏆</span>
+                <span class="nav-label">Žebříček</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="app.js?v=2"></script>
+</body>
+</html>
+
+========================================

@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData() {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,is_verified`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -1714,14 +1714,14 @@ document.addEventListener('DOMContentLoaded', () => {
         'Nerozpoznáno'
     ];
     const CAN_WEIGHTS = {
-        0.5: 16.5,
+        0.5: 16.0,
         0.33: 13.5,
         0.25: 10.0,
         0.2: 8.0,
         'Unknown': 14.0
     };
     const ENERGY_SAVED_KWH_PER_KG = 14;
-    const SCRAP_VALUE_RAW_PER_KG = 20;
+    const SCRAP_VALUE_RAW_PER_KG = 14;
     const CO2_SAVED_KG_PER_KG = 6.2;
 
     window.openAdminEditorPasscode = function() {
@@ -1733,11 +1733,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.openAdminPanel = function() {
+    window.openAdminPanel = async function() {
         const modal = document.getElementById('adminPanelModal');
         if (modal) {
             modal.classList.remove('hidden');
+        }
+        
+        const listContainer = document.getElementById('adminPickupsList');
+        if (listContainer) {
+            listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px;">Načítám data z databáze...</div>';
+        }
+        
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude`, {
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+            if (!response.ok) throw new Error('Načítání selhalo');
+            allPickups = await response.json();
             window.filterAdminPickups();
+        } catch (e) {
+            console.error(e);
+            if (listContainer) {
+                listContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--rust-red); font-size: 12px;">Chyba: ${e.message}</div>`;
+            }
         }
     };
 
@@ -1766,12 +1787,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const nick = (p.nickname || '').toLowerCase();
             if (searchNick && !nick.includes(searchNick)) return false;
             
+            const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
+                p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
+                
             if (statusFilter === 'unanalyzed') {
                 return !p.is_analyzed;
-            } else if (statusFilter === 'unknown') {
-                if (!p.is_analyzed) return false;
-                if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
-                return p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
+            } else if (statusFilter === 'unverified_unknown') {
+                return p.is_analyzed && !p.is_verified && hasUnknown;
+            } else if (statusFilter === 'unverified_ai') {
+                return p.is_analyzed && !p.is_verified && !hasUnknown;
+            } else if (statusFilter === 'verified') {
+                return p.is_verified;
             }
             return true;
         });
@@ -1795,13 +1821,15 @@ document.addEventListener('DOMContentLoaded', () => {
             let badgeHtml = '';
             if (!p.is_analyzed) {
                 badgeHtml = '<span class="admin-badge warning">Čeká</span>';
+            } else if (p.is_verified) {
+                badgeHtml = '<span class="admin-badge success">Ověřeno</span>';
             } else {
                 const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
                     p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
                 if (hasUnknown) {
                     badgeHtml = '<span class="admin-badge error">Neznámé</span>';
                 } else {
-                    badgeHtml = '<span class="admin-badge success">Hotovo</span>';
+                    badgeHtml = '<span class="admin-badge info">Pouze AI</span>';
                 }
             }
             
@@ -1875,16 +1903,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         adminEditCansLocal.forEach((can, index) => {
             const row = document.createElement('div');
-            row.className = 'admin-can-edit-row';
+            row.className = 'admin-can-row-wrapper';
+            row.style.display = 'flex';
+            row.style.flexDirection = 'column';
+            row.style.gap = '6px';
+            row.style.paddingBottom = '8px';
+            row.style.borderBottom = '1px solid var(--border-color, #e2e8f0)';
+            row.style.marginBottom = '6px';
+            
+            const isCustom = can.brand && !POPULAR_BRANDS.includes(can.brand) && can.brand !== 'Nerozpoznáno';
             
             let brandOptions = '';
             POPULAR_BRANDS.forEach(b => {
-                const selected = (can.brand === b) ? 'selected' : '';
+                const selected = (!isCustom && can.brand === b) ? 'selected' : '';
                 brandOptions += `<option value="${b}" ${selected}>${b}</option>`;
             });
-            if (can.brand && !POPULAR_BRANDS.includes(can.brand)) {
-                brandOptions = `<option value="${can.brand}" selected>${can.brand}</option>` + brandOptions;
-            }
             
             const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
             let volOptions = '';
@@ -1894,14 +1927,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             row.innerHTML = `
-                <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); width: 20px;">#${index + 1}</span>
-                <select class="can-brand" style="flex: 1; min-width: 0;" onchange="window.updateLocalCanBrand(${index}, this.value)">
-                    ${brandOptions}
-                </select>
-                <select class="can-volume" style="width: 90px;" onchange="window.updateLocalCanVolume(${index}, this.value)">
-                    ${volOptions}
-                </select>
-                <button onclick="window.removeCanFromEditList(${index})" class="delete-btn" title="Odstranit">🗑️</button>
+                <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+                    <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); width: 20px;">#${index + 1}</span>
+                    <select class="can-brand" style="flex: 1; min-width: 0;" onchange="window.onBrandSelectChange(${index}, this)">
+                        ${brandOptions}
+                        <option value="CUSTOM_BRAND" ${isCustom ? 'selected' : ''}>✍️ Vlastní značka...</option>
+                    </select>
+                    <select class="can-volume" style="width: 90px;" onchange="window.updateLocalCanVolume(${index}, this.value)">
+                        ${volOptions}
+                    </select>
+                    <button onclick="window.removeCanFromEditList(${index})" class="delete-btn" style="background: none; border: none; cursor: pointer; color: var(--rust-red, #ef4444); font-size: 14px; padding: 4px;" title="Odstranit">🗑️</button>
+                </div>
+                <div id="customBrandContainer_${index}" style="display: ${isCustom ? 'flex' : 'none'}; padding-left: 28px; width: 100%;">
+                    <input type="text" placeholder="Napište název značky..." value="${isCustom ? can.brand : ''}" oninput="window.updateLocalCanBrandCustom(${index}, this.value)" style="flex: 1; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; background: #fff;" />
+                </div>
             `;
             container.appendChild(row);
         });
@@ -1909,9 +1948,28 @@ document.addEventListener('DOMContentLoaded', () => {
         window.recalculateAdminStats();
     };
 
-    window.updateLocalCanBrand = function(index, value) {
+    window.onBrandSelectChange = function(index, selectEl) {
+        const val = selectEl.value;
+        const container = document.getElementById(`customBrandContainer_${index}`);
+        
+        if (val === 'CUSTOM_BRAND') {
+            if (container) container.style.display = 'flex';
+            const input = container ? container.querySelector('input') : null;
+            const customVal = input ? input.value.trim() : '';
+            if (adminEditCansLocal[index]) {
+                adminEditCansLocal[index].brand = customVal || 'Vlastní';
+            }
+        } else {
+            if (container) container.style.display = 'none';
+            if (adminEditCansLocal[index]) {
+                adminEditCansLocal[index].brand = val;
+            }
+        }
+    };
+
+    window.updateLocalCanBrandCustom = function(index, value) {
         if (adminEditCansLocal[index]) {
-            adminEditCansLocal[index].brand = value;
+            adminEditCansLocal[index].brand = value.trim() || 'Vlastní';
         }
     };
 
@@ -2003,6 +2061,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     team_code: newTeam || null,
                     count: count,
                     is_analyzed: true,
+                    is_verified: true,
                     analysis_json: adminEditCansLocal,
                     aluminum_weight_g: totalWeightG,
                     energy_saved_kwh: energySaved,
@@ -2019,6 +2078,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 allPickups[idx].team_code = newTeam || null;
                 allPickups[idx].count = count;
                 allPickups[idx].is_analyzed = true;
+                allPickups[idx].is_verified = true;
                 allPickups[idx].analysis_json = adminEditCansLocal;
                 allPickups[idx].aluminum_weight_g = totalWeightG;
                 allPickups[idx].energy_saved_kwh = energySaved;
