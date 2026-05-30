@@ -58,6 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let globalStats = parseInt(localStorage.getItem('milion_globalstats')) || 999171;
     let globalEnergy = parseFloat(localStorage.getItem('milion_globalenergy')) || 0;
     let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
+    // Podpora URL parametru ?nick=Tom pro obnovení přezdívky bez login screenu
+    const _urlNick = new URLSearchParams(window.location.search).get('nick');
+    if (_urlNick) {
+        localStorage.setItem('milion_nickname', _urlNick);
+        // Odstraň parametr z URL (čistší adresa)
+        window.history.replaceState({}, '', window.location.pathname);
+    }
     let userNick = localStorage.getItem('milion_nickname') || '';
     // UUID zařízení – jedinečný identifikátor zařízení, přežije změnu přezdívky
     let deviceId = localStorage.getItem('milion_device_id');
