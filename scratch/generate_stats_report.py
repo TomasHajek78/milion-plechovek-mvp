@@ -720,11 +720,11 @@ def generate_html_report(stats, output_path):
                 }}
                 
                 row.innerHTML = `
-                    <span class="text-slate-500 font-bold">\${{dateStr}}</span>
-                    <span class="font-bold text-slate-200 truncate" title="\${{p.nickname || '@anonym'}}">\${{p.nickname || '@anonym'}}</span>
-                    <span class="font-extrabold text-emerald-400 text-right pr-2">\${{p.count || 0}} ks</span>
-                    <span class="flex justify-center">\${{badgeHtml}}</span>
-                    <button onclick="openAdminEditModal(\${{p.id}})" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
+                    <span class="text-slate-500 font-bold">${{dateStr}}</span>
+                    <span class="font-bold text-slate-200 truncate" title="${{p.nickname || '@anonym'}}">${{p.nickname || '@anonym'}}</span>
+                    <span class="font-extrabold text-emerald-400 text-right pr-2">${{p.count || 0}} ks</span>
+                    <span class="flex justify-center">${{badgeHtml}}</span>
+                    <button onclick="openAdminEditModal(${{p.id}})" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
                 `;
                 listContainer.appendChild(row);
             }});
@@ -755,7 +755,7 @@ def generate_html_report(stats, output_path):
             document.getElementById('adminEditNickInput').value = pickup.nickname || '';
             document.getElementById('adminEditTeamInput').value = pickup.team_code || '';
             document.getElementById('adminEditDate').textContent = new Date(pickup.created_at).toLocaleString('cs-CZ');
-            document.getElementById('adminEditNotes').textContent = pickup.notes ? `"\${{pickup.notes}}"` : 'Bez poznámky';
+            document.getElementById('adminEditNotes').textContent = pickup.notes ? `"${{pickup.notes}}"` : 'Bez poznámky';
             document.getElementById('adminEditPhoto').src = pickup.photo_url || 'can-marker-transparent.png';
             
             renderAdminCansEditList();
@@ -789,34 +789,34 @@ def generate_html_report(stats, output_path):
                 let brandOptions = '';
                 POPULAR_BRANDS.forEach(b => {{
                     const selected = (can.brand === b) ? 'selected' : '';
-                    brandOptions += `<option value="\${{b}}" \${{selected}}>\text-slate-100 \${{b}}</option>`;
+                    brandOptions += `<option value="${{b}}" ${{selected}}>\text-slate-100 ${{b}}</option>`;
                 }});
                 // Oprava pro popular_brands v selectu
                 brandOptions = '';
                 POPULAR_BRANDS.forEach(b => {{
                     const selected = (can.brand === b) ? 'selected' : '';
-                    brandOptions += `<option value="\${{b}}" \${{selected}}>\${{b}}</option>`;
+                    brandOptions += `<option value="${{b}}" ${{selected}}>${{b}}</option>`;
                 }});
                 if (can.brand && !POPULAR_BRANDS.includes(can.brand)) {{
-                    brandOptions = `<option value="\${{can.brand}}" selected>\${{can.brand}}</option>` + brandOptions;
+                    brandOptions = `<option value="${{can.brand}}" selected>${{can.brand}}</option>` + brandOptions;
                 }}
                 
                 const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
                 let volOptions = '';
                 vols.forEach(v => {{
                     const isMatch = (can.volume_liters == v || (v === 'Unknown' && (can.volume_liters === 'Unknown' || !can.volume_liters)));
-                    volOptions += `<option value="\${{v}}" \${{isMatch ? 'selected' : ''}}>\${{v === 'Unknown' ? 'Neznámý' : v + ' L'}}</option>`;
+                    volOptions += `<option value="${{v}}" ${{isMatch ? 'selected' : ''}}>${{v === 'Unknown' ? 'Neznámý' : v + ' L'}}</option>`;
                 }});
                 
                 row.innerHTML = `
-                    <span class="text-[10px] font-bold text-slate-500 w-5">#\${{index + 1}}</span>
-                    <select onchange="updateLocalCanBrand(\${{index}}, this.value)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
-                        \${{brandOptions}}
+                    <span class="text-[10px] font-bold text-slate-500 w-5">#${{index + 1}}</span>
+                    <select onchange="updateLocalCanBrand(${{index}}, this.value)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
+                        ${{brandOptions}}
                     </select>
-                    <select onchange="updateLocalCanVolume(\${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
-                        \${{volOptions}}
+                    <select onchange="updateLocalCanVolume(${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
+                        ${{volOptions}}
                     </select>
-                    <button onclick="removeCanFromEditList(\${{index}})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
+                    <button onclick="removeCanFromEditList(${{index}})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
                 `;
                 container.appendChild(row);
             }});
@@ -863,10 +863,10 @@ def generate_html_report(stats, output_path):
             const energySaved = weightKg * ENERGY_SAVED_KWH_PER_KG;
             const co2Saved = weightKg * CO2_SAVED_KG_PER_KG;
             
-            document.getElementById('liveCansCount').textContent = `\${{adminEditCansLocal.length}} ks`;
-            document.getElementById('liveWeight').textContent = `\${{totalWeightG.toFixed(1)}} g`;
-            document.getElementById('liveEnergy').textContent = `\${{energySaved.toFixed(3).replace('.', ',')}} kWh`;
-            document.getElementById('liveCo2').textContent = `\${{co2Saved.toFixed(2).replace('.', ',')}} kg`;
+            document.getElementById('liveCansCount').textContent = `${{adminEditCansLocal.length}} ks`;
+            document.getElementById('liveWeight').textContent = `${{totalWeightG.toFixed(1)}} g`;
+            document.getElementById('liveEnergy').textContent = `${{energySaved.toFixed(3).replace('.', ',')}} kWh`;
+            document.getElementById('liveCo2').textContent = `${{co2Saved.toFixed(2).replace('.', ',')}} kg`;
         }}
 
         window.saveAdminEditChanges = async function() {{
@@ -900,11 +900,11 @@ def generate_html_report(stats, output_path):
             const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
             
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?id=eq.\${{adminSelectedPickup.id}}`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?id=eq.${{adminSelectedPickup.id}}`, {{
                     method: 'PATCH',
                     headers: {{
                         'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer \${{SUPABASE_KEY}}`,
+                        'Authorization': `Bearer ${{SUPABASE_KEY}}`,
                         'Content-Type': 'application/json',
                         'Prefer': 'return=minimal'
                     }},
