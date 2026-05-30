@@ -469,8 +469,15 @@
                 
                 <!-- Informace a formulář pro plechovky -->
                 <div class="admin-edit-form">
-                    <div class="admin-pickup-meta">
-                        <p><strong>Uživatel:</strong> <span id="adminEditNick">...</span></p>
+                    <div class="admin-pickup-meta" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                            <strong style="width: 80px; text-align: left;">Uživatel:</strong>
+                            <input type="text" id="adminEditNickInput" style="flex: 1; min-width: 0; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff;" />
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                            <strong style="width: 80px; text-align: left;">Třída / Tým:</strong>
+                            <input type="text" id="adminEditTeamInput" style="flex: 1; min-width: 0; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff;" placeholder="Např. 8.A" />
+                        </div>
                         <p><strong>Datum:</strong> <span id="adminEditDate">...</span></p>
                         <p><strong>Poznámka:</strong> <span id="adminEditNotes">...</span></p>
                     </div>

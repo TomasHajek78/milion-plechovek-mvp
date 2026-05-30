@@ -257,9 +257,12 @@ def generate_html_report(stats, output_path):
                 <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400">MILION PLECHOVEK</h1>
                 <p class="text-slate-400 text-sm mt-1">Kompletní statistický report projektu a dopadu na životní prostředí</p>
             </div>
-            <div class="glass-card px-6 py-3 rounded-2xl text-center">
-                <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Celkem nasbíráno</span>
-                <span class="text-3xl font-black text-emerald-400">{stats['overall']['total_cans_collected']:,} ks</span>
+            <div class="flex items-center gap-4">
+                <button onclick="openAdminEditorPasscode()" class="px-4 py-2 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 text-xs font-bold rounded-xl transition duration-200">🛠️ Administrace</button>
+                <div class="glass-card px-6 py-3 rounded-2xl text-center">
+                    <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Celkem nasbíráno</span>
+                    <span class="text-3xl font-black text-emerald-400">{stats['overall']['total_cans_collected']:,} ks</span>
+                </div>
             </div>
         </header>
 
@@ -491,6 +494,459 @@ def generate_html_report(stats, output_path):
                 }}
             }}
         }});
+    </script>
+
+    <!-- Modální okno pro administrátorský přehled -->
+    <div id="adminPanelModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+        <div class="glass-card w-full max-w-2xl max-h-[85vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-slate-800 p-6 bg-slate-900">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400">🛠️ Administrace dat (Korekce)</h2>
+                <button onclick="closeAdminPanel()" class="text-2xl text-slate-500 hover:text-slate-300">&times;</button>
+            </div>
+            
+            <div class="flex gap-4 mb-4">
+                <input type="text" id="adminSearchNick" placeholder="Hledat přezdívku..." oninput="filterAdminPickups()" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500">
+                <select id="adminStatusFilter" onchange="filterAdminPickups()" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500">
+                    <option value="all">Všechny sběry</option>
+                    <option value="unanalyzed">Pouze neanalyzované</option>
+                    <option value="unknown">Obsahuje "Nerozpoznáno" / "Unknown"</option>
+                </select>
+            </div>
+            
+            <div class="flex flex-col flex-1 overflow-hidden border border-slate-800 rounded-xl bg-slate-950/40">
+                <div class="grid grid-cols-[80px_1fr_60px_80px_50px] gap-2 items-center px-4 py-3 bg-slate-800/40 border-b border-slate-800 font-bold text-[10px] text-slate-400 uppercase tracking-wider">
+                    <span>Datum</span>
+                    <span>Přezdívka</span>
+                    <span class="text-right">Kusy</span>
+                    <span class="text-center">Stav</span>
+                    <span class="text-center">Akce</span>
+                </div>
+                <div id="adminPickupsList" class="flex-1 overflow-y-auto divide-y divide-slate-800/40">
+                    <!-- Řádky se načtou dynamicky -->
+                </div>
+            </div>
+            
+            <button onclick="closeAdminPanel()" class="w-full mt-6 px-4 py-2.5 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold rounded-xl transition duration-200">Zavřít administraci</button>
+        </div>
+    </div>
+
+    <!-- Modální okno pro ruční úpravu konkrétního sběru -->
+    <div id="adminEditPickupModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
+        <div class="glass-card w-full max-w-3xl max-h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-slate-800 p-6 bg-slate-900">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-200">✏️ Korekce záznamu</h3>
+                <button onclick="closeAdminEditModal()" class="text-2xl text-slate-500 hover:text-slate-300">&times;</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-6 flex-1 overflow-y-auto mb-6 pr-2">
+                <!-- Fotka v plném detailu -->
+                <div class="w-full max-h-[300px] md:max-h-[420px] rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+                    <img id="adminEditPhoto" src="" alt="Sběr" class="max-w-full max-h-full object-contain">
+                </div>
+                
+                <!-- Informace a formulář pro plechovky -->
+                <div class="flex flex-col">
+                    <div class="text-xs text-slate-400 flex flex-col gap-3 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60 mb-4">
+                        <div class="flex items-center gap-2">
+                            <strong class="text-slate-350 w-24 text-left">Uživatel:</strong>
+                            <input type="text" id="adminEditNickInput" class="flex-1 bg-slate-800 border border-slate-700 text-slate-100 rounded px-2.5 py-1 text-xs outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <strong class="text-slate-350 w-24 text-left">Třída / Tým:</strong>
+                            <input type="text" id="adminEditTeamInput" class="flex-1 bg-slate-800 border border-slate-700 text-slate-100 rounded px-2.5 py-1 text-xs outline-none focus:border-emerald-500" placeholder="Např. 8.A">
+                        </div>
+                        <p><strong class="text-slate-300">Datum:</strong> <span id="adminEditDate">...</span></p>
+                        <p><strong class="text-slate-300">Poznámka:</strong> <span id="adminEditNotes">...</span></p>
+                    </div>
+                    
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pb-1 border-b border-slate-800">🥫 Zjištěné plechovky</h4>
+                    <div id="adminCansList" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                        <!-- Plechovky se načtou dynamicky -->
+                    </div>
+                    
+                    <button onclick="addCanToEditList()" class="w-full mt-3 py-2 border border-dashed border-slate-700 hover:border-emerald-500 text-slate-400 hover:text-emerald-400 text-xs font-bold rounded-xl transition duration-200">➕ Přidat další plechovku</button>
+                    
+                    <!-- Náhled přepočítaného ekologického dopadu -->
+                    <div class="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
+                        <h4 class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">📊 Živý náhled ekologických hodnot</h4>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-slate-300">
+                            <div>Počet: <strong id="liveCansCount" class="text-emerald-400">0 ks</strong></div>
+                            <div>Hmotnost: <strong id="liveWeight" class="text-emerald-400">0 g</strong></div>
+                            <div>Energie: <strong id="liveEnergy" class="text-emerald-400">0 kWh</strong></div>
+                            <div>CO₂ úspora: <strong id="liveCo2" class="text-emerald-400">0 kg</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 mt-auto">
+                <button id="adminSaveBtn" onclick="saveAdminEditChanges()" class="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl transition duration-200">Uložit změny</button>
+                <button onclick="closeAdminEditModal()" class="flex-1 py-3 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold rounded-xl transition duration-200">Zrušit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script pro administraci a komunikaci se Supabase -->
+    <script>
+        const SUPABASE_URL = "{SUPABASE_URL}";
+        const SUPABASE_KEY = "{SUPABASE_KEY}";
+        
+        let allPickups = [];
+        let adminSelectedPickup = null;
+        let adminEditCansLocal = [];
+        const POPULAR_BRANDS = [
+            'Birell', 'Pilsner Urquell', 'Radegast', 'Staropramen', 'Coca-Cola', 
+            'Pepsi', 'Monster', 'Red Bull', 'Tiger', 'Heineken', 'Starobrno', 
+            'Kofola', 'Frisco', 'Desperados', 'Jiná / Ostatní', 'Nerozpoznáno'
+        ];
+        const CAN_WEIGHTS = {{
+            0.5: 16.5,
+            0.33: 13.5,
+            0.25: 10.0,
+            0.2: 8.0,
+            'Unknown': 14.0
+        }};
+        const ENERGY_SAVED_KWH_PER_KG = 14;
+        const SCRAP_VALUE_RAW_PER_KG = 20;
+        const CO2_SAVED_KG_PER_KG = 6.2;
+
+        window.openAdminEditorPasscode = function() {{
+            const pw = prompt("Zadejte administrátorské heslo:");
+            if (pw === "milion2026") {{
+                openAdminPanel();
+            }} else if (pw !== null) {{
+                alert("Nesprávné heslo!");
+            }}
+        }};
+
+        async function openAdminPanel() {{
+            const modal = document.getElementById('adminPanelModal');
+            if (modal) {{
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }}
+            
+            const listContainer = document.getElementById('adminPickupsList');
+            if (listContainer) {{
+                listContainer.innerHTML = '<div class="text-center py-8 text-slate-400">Načítám data z databáze...</div>';
+            }}
+            
+            try {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code`, {{
+                    headers: {{
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${{SUPABASE_KEY}}`
+                    }}
+                }});
+                if (!response.ok) throw new Error('Načítání selhalo');
+                allPickups = await response.json();
+                filterAdminPickups();
+            }} catch (e) {{
+                console.error(e);
+                if (listContainer) {{
+                    listContainer.innerHTML = `<div class="text-center py-8 text-red-400">Chyba: ${{e.message}}</div>`;
+                }}
+            }}
+        }}
+
+        window.closeAdminPanel = function() {{
+            const modal = document.getElementById('adminPanelModal');
+            if (modal) {{
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }}
+        }};
+
+        window.filterAdminPickups = function() {{
+            const searchInput = document.getElementById('adminSearchNick');
+            const statusSelect = document.getElementById('adminStatusFilter');
+            const listContainer = document.getElementById('adminPickupsList');
+            
+            if (!listContainer) return;
+            listContainer.innerHTML = '';
+            
+            const searchNick = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            const statusFilter = statusSelect ? statusSelect.value : 'all';
+            
+            const sorted = [...allPickups].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            const filtered = sorted.filter(p => {{
+                const nick = (p.nickname || '').toLowerCase();
+                if (searchNick && !nick.includes(searchNick)) return false;
+                
+                if (statusFilter === 'unanalyzed') {{
+                    return !p.is_analyzed;
+                }} else if (statusFilter === 'unknown') {{
+                    if (!p.is_analyzed) return false;
+                    if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
+                    return p.analysis_json.some(c => {{
+                        const b = c.brand || 'Nerozpoznáno';
+                        return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
+                    }});
+                }}
+                return true;
+            }});
+            
+            if (filtered.length === 0) {{
+                listContainer.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">Žádné nahrávky neodpovídají filtrům.</div>';
+                return;
+            }}
+            
+            filtered.forEach(p => {{
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-[80px_1fr_60px_80px_50px] gap-2 items-center px-4 py-3 border-b border-slate-800/60 hover:bg-slate-800/30 text-xs text-slate-300';
+                
+                const dateStr = new Date(p.created_at).toLocaleDateString('cs-CZ', {{
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }});
+                
+                let badgeHtml = '';
+                if (!p.is_analyzed) {{
+                    badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">Čeká</span>';
+                }} else {{
+                    const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
+                        p.analysis_json.some(c => {{
+                            const b = c.brand || 'Nerozpoznáno';
+                            return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
+                        }});
+                    if (hasUnknown) {{
+                        badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-wider">Neznámé</span>';
+                    }} else {{
+                        badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">Hotovo</span>';
+                    }}
+                }}
+                
+                row.innerHTML = `
+                    <span class="text-slate-500 font-bold">\${{dateStr}}</span>
+                    <span class="font-bold text-slate-200 truncate" title="\${{p.nickname || '@anonym'}}">\${{p.nickname || '@anonym'}}</span>
+                    <span class="font-extrabold text-emerald-400 text-right pr-2">\${{p.count || 0}} ks</span>
+                    <span class="flex justify-center">\${{badgeHtml}}</span>
+                    <button onclick="openAdminEditModal(\${{p.id}})" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
+                `;
+                listContainer.appendChild(row);
+            }});
+        }};
+
+        window.openAdminEditModal = function(pickupId) {{
+            const pickup = allPickups.find(p => p.id === pickupId);
+            if (!pickup) return;
+            
+            adminSelectedPickup = pickup;
+            adminEditCansLocal = [];
+            
+            if (pickup.analysis_json && Array.isArray(pickup.analysis_json)) {{
+                adminEditCansLocal = JSON.parse(JSON.stringify(pickup.analysis_json));
+                adminEditCansLocal.forEach(can => {{
+                    if (can.brand === 'Unknown' || can.brand === 'unknown' || !can.brand) {{
+                        can.brand = 'Nerozpoznáno';
+                    }}
+                }});
+            }}
+            
+            if (adminEditCansLocal.length === 0 && pickup.count > 0) {{
+                for (let i = 0; i < pickup.count; i++) {{
+                    adminEditCansLocal.push({{ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null }});
+                }}
+            }}
+            
+            document.getElementById('adminEditNickInput').value = pickup.nickname || '';
+            document.getElementById('adminEditTeamInput').value = pickup.team_code || '';
+            document.getElementById('adminEditDate').textContent = new Date(pickup.created_at).toLocaleString('cs-CZ');
+            document.getElementById('adminEditNotes').textContent = pickup.notes ? `"\${{pickup.notes}}"` : 'Bez poznámky';
+            document.getElementById('adminEditPhoto').src = pickup.photo_url || 'can-marker-transparent.png';
+            
+            renderAdminCansEditList();
+            
+            const editModal = document.getElementById('adminEditPickupModal');
+            if (editModal) {{
+                editModal.classList.remove('hidden');
+                editModal.style.display = 'flex';
+            }}
+        }};
+
+        window.closeAdminEditModal = function() {{
+            const editModal = document.getElementById('adminEditPickupModal');
+            if (editModal) {{
+                editModal.classList.add('hidden');
+                editModal.style.display = 'none';
+            }}
+            adminSelectedPickup = null;
+            adminEditCansLocal = [];
+        }};
+
+        function renderAdminCansEditList() {{
+            const container = document.getElementById('adminCansList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            adminEditCansLocal.forEach((can, index) => {{
+                const row = document.createElement('div');
+                row.className = 'flex gap-2 items-center pb-2 border-b border-slate-800/40';
+                
+                let brandOptions = '';
+                POPULAR_BRANDS.forEach(b => {{
+                    const selected = (can.brand === b) ? 'selected' : '';
+                    brandOptions += `<option value="\${{b}}" \${{selected}}>\text-slate-100 \${{b}}</option>`;
+                }});
+                // Oprava pro popular_brands v selectu
+                brandOptions = '';
+                POPULAR_BRANDS.forEach(b => {{
+                    const selected = (can.brand === b) ? 'selected' : '';
+                    brandOptions += `<option value="\${{b}}" \${{selected}}>\${{b}}</option>`;
+                }});
+                if (can.brand && !POPULAR_BRANDS.includes(can.brand)) {{
+                    brandOptions = `<option value="\${{can.brand}}" selected>\${{can.brand}}</option>` + brandOptions;
+                }}
+                
+                const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
+                let volOptions = '';
+                vols.forEach(v => {{
+                    const isMatch = (can.volume_liters == v || (v === 'Unknown' && (can.volume_liters === 'Unknown' || !can.volume_liters)));
+                    volOptions += `<option value="\${{v}}" \${{isMatch ? 'selected' : ''}}>\${{v === 'Unknown' ? 'Neznámý' : v + ' L'}}</option>`;
+                }});
+                
+                row.innerHTML = `
+                    <span class="text-[10px] font-bold text-slate-500 w-5">#\${{index + 1}}</span>
+                    <select onchange="updateLocalCanBrand(\${{index}}, this.value)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
+                        \${{brandOptions}}
+                    </select>
+                    <select onchange="updateLocalCanVolume(\${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
+                        \${{volOptions}}
+                    </select>
+                    <button onclick="removeCanFromEditList(\${{index}})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
+                `;
+                container.appendChild(row);
+            }});
+            
+            recalculateAdminStats();
+        }}
+
+        window.updateLocalCanBrand = function(index, value) {{
+            if (adminEditCansLocal[index]) {{
+                adminEditCansLocal[index].brand = value;
+            }}
+        }};
+
+        window.updateLocalCanVolume = function(index, value) {{
+            if (adminEditCansLocal[index]) {{
+                adminEditCansLocal[index].volume_liters = (value === 'Unknown') ? 'Unknown' : parseFloat(value);
+                recalculateAdminStats();
+            }}
+        }};
+
+        window.removeCanFromEditList = function(index) {{
+            adminEditCansLocal.splice(index, 1);
+            renderAdminCansEditList();
+        }};
+
+        window.addCanToEditList = function() {{
+            adminEditCansLocal.push({{ brand: 'Nerozpoznáno', volume_liters: 'Unknown', detection_issue: null }});
+            renderAdminCansEditList();
+        }};
+
+        function recalculateAdminStats() {{
+            let totalWeightG = 0;
+            adminEditCansLocal.forEach(can => {{
+                const vol = can.volume_liters;
+                let weight = CAN_WEIGHTS['Unknown'];
+                if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
+                else if (vol === 0.33 || vol === '0.33') weight = CAN_WEIGHTS[0.33];
+                else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
+                else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
+                totalWeightG += weight;
+            }});
+            
+            const weightKg = totalWeightG / 1000.0;
+            const energySaved = weightKg * ENERGY_SAVED_KWH_PER_KG;
+            const co2Saved = weightKg * CO2_SAVED_KG_PER_KG;
+            
+            document.getElementById('liveCansCount').textContent = `\${{adminEditCansLocal.length}} ks`;
+            document.getElementById('liveWeight').textContent = `\${{totalWeightG.toFixed(1)}} g`;
+            document.getElementById('liveEnergy').textContent = `\${{energySaved.toFixed(3).replace('.', ',')}} kWh`;
+            document.getElementById('liveCo2').textContent = `\${{co2Saved.toFixed(2).replace('.', ',')}} kg`;
+        }}
+
+        window.saveAdminEditChanges = async function() {{
+            if (!adminSelectedPickup) return;
+            
+            const saveBtn = document.getElementById('adminSaveBtn');
+            if (!saveBtn) return;
+            
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Ukládám...';
+            saveBtn.disabled = true;
+            
+            let totalWeightG = 0;
+            adminEditCansLocal.forEach(can => {{
+                const vol = can.volume_liters;
+                let weight = CAN_WEIGHTS['Unknown'];
+                if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
+                else if (vol === 0.33 || vol === '0.33') weight = CAN_WEIGHTS[0.33];
+                else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
+                else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
+                totalWeightG += weight;
+            }});
+            
+            const weightKg = totalWeightG / 1000.0;
+            const energySaved = parseFloat((weightKg * ENERGY_SAVED_KWH_PER_KG).toFixed(4));
+            const moneySaved = parseFloat((weightKg * SCRAP_VALUE_RAW_PER_KG).toFixed(2));
+            const co2Saved = parseFloat((weightKg * CO2_SAVED_KG_PER_KG).toFixed(3));
+            const count = adminEditCansLocal.length;
+            
+            const newNick = document.getElementById('adminEditNickInput')?.value.trim() || '';
+            const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
+            
+            try {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?id=eq.\${{adminSelectedPickup.id}}`, {{
+                    method: 'PATCH',
+                    headers: {{
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer \${{SUPABASE_KEY}}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    }},
+                    body: JSON.stringify({{
+                        nickname: newNick || null,
+                        team_code: newTeam || null,
+                        count: count,
+                        is_analyzed: true,
+                        analysis_json: adminEditCansLocal,
+                        aluminum_weight_g: totalWeightG,
+                        energy_saved_kwh: energySaved,
+                        money_saved_czk: moneySaved,
+                        co2_saved_kg: co2Saved
+                    }})
+                }});
+                
+                if (!response.ok) throw new Error('Uložení do databáze selhalo.');
+                
+                const idx = allPickups.findIndex(p => p.id === adminSelectedPickup.id);
+                if (idx !== -1) {{
+                    allPickups[idx].nickname = newNick || null;
+                    allPickups[idx].team_code = newTeam || null;
+                    allPickups[idx].count = count;
+                    allPickups[idx].is_analyzed = true;
+                    allPickups[idx].analysis_json = adminEditCansLocal;
+                    allPickups[idx].aluminum_weight_g = totalWeightG;
+                    allPickups[idx].energy_saved_kwh = energySaved;
+                    allPickups[idx].money_saved_czk = moneySaved;
+                    allPickups[idx].co2_saved_kg = co2Saved;
+                }}
+                
+                alert('Změny byly uloženy do databáze! Pro přepočítání grafů a celkových statistik v tomto reportu stačí znovu spustit skript scratch/generate_stats_report.py.');
+                closeAdminEditModal();
+                filterAdminPickups();
+            }} catch (e) {{
+                console.error(e);
+                alert('Chyba při ukládání: ' + e.message);
+            }} finally {{
+                saveBtn.textContent = originalText;
+                saveBtn.disabled = false;
+            }}
+        }};
     </script>
 </body>
 </html>"""

@@ -1837,12 +1837,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        const nickEl = document.getElementById('adminEditNick');
+        const nickInput = document.getElementById('adminEditNickInput');
+        const teamInput = document.getElementById('adminEditTeamInput');
         const dateEl = document.getElementById('adminEditDate');
         const notesEl = document.getElementById('adminEditNotes');
         const photoEl = document.getElementById('adminEditPhoto');
         
-        if (nickEl) nickEl.textContent = pickup.nickname || '@anonym';
+        if (nickInput) nickInput.value = pickup.nickname || '';
+        if (teamInput) teamInput.value = pickup.team_code || '';
         if (dateEl) dateEl.textContent = new Date(pickup.created_at).toLocaleString('cs-CZ');
         if (notesEl) notesEl.textContent = pickup.notes ? `"${pickup.notes}"` : 'Bez poznámky';
         if (photoEl) photoEl.src = pickup.photo_url || 'can-marker-transparent.png';
@@ -1982,6 +1984,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const co2Saved = parseFloat((weightKg * CO2_SAVED_KG_PER_KG).toFixed(3));
         const count = adminEditCansLocal.length;
         
+        const newNick = document.getElementById('adminEditNickInput')?.value.trim() || '';
+        const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
+        
         try {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${adminSelectedPickup.id}`, {
                 method: 'PATCH',
@@ -1992,6 +1997,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Prefer': 'return=minimal'
                 },
                 body: JSON.stringify({
+                    nickname: newNick || null,
+                    team_code: newTeam || null,
                     count: count,
                     is_analyzed: true,
                     analysis_json: adminEditCansLocal,
@@ -2006,6 +2013,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const idx = allPickups.findIndex(p => p.id === adminSelectedPickup.id);
             if (idx !== -1) {
+                allPickups[idx].nickname = newNick || null;
+                allPickups[idx].team_code = newTeam || null;
                 allPickups[idx].count = count;
                 allPickups[idx].is_analyzed = true;
                 allPickups[idx].analysis_json = adminEditCansLocal;
