@@ -290,7 +290,7 @@ def generate_html_report(stats, output_path):
                 <div class="absolute -right-4 -bottom-4 text-7xl opacity-5 select-none">💰</div>
                 <h3 class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Hodnota ve sběrně</h3>
                 <p id="overallMoney" class="text-3xl font-extrabold mt-2 text-sky-400">{stats['overall']['total_money_saved_czk']:,} Kč</p>
-                <p class="text-slate-400 text-[10px] mt-1">odhad (20 Kč/kg)</p>
+                <p class="text-slate-400 text-[10px] mt-1">odhad (14 Kč/kg)</p>
             </div>
         </section>
 
