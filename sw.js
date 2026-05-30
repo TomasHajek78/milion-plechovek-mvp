@@ -1,9 +1,11 @@
-const CACHE_NAME = 'milion-plechovek-v18';
-const ASSETS = [
-  './',
-  './index.html',
-  './style.css',
-  './app.js',
+const CACHE_NAME = 'milion-plechovek-v19';
+
+// Soubory aplikace – načítáme vždy ze sítě (network-first)
+// Důvod: při každém deployi musí testeři vidět okamžitě novou verzi
+const APP_FILES = ['app.js', 'index.html', 'style.css', 'sw.js'];
+
+// Statické assety – cachujeme pro rychlost a offline (cache-first)
+const STATIC_ASSETS = [
   './logo.png',
   './can-marker.png',
   './can-marker-transparent.png',
@@ -15,39 +17,54 @@ const ASSETS = [
   'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js'
 ];
 
-// Instalace - cachování souborů
+// Instalace – cachujeme jen statické assety, NE app soubory
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Vynutit okamžité převzetí kontroly novým Service Workerem
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
 });
 
-// Aktivace - vyčištění staré cache
+// Aktivace – smazat starou cache
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim()); // Okamžitě převzít kontrolu nad všemi klienty
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      )
+    ])
   );
 });
 
-// Fetch - strategie "Cache First" pro rychlost, pak Network
+// Fetch – hybridní strategie
 self.addEventListener('fetch', (event) => {
-  // Ignorujeme požadavky, které nejsou typu GET (např. POST pro zápis do databáze)
-  // a také jakékoliv dotazy na Supabase databázi. Ty se musí posílat rovnou na síť.
-  if (event.request.method !== 'GET' || event.request.url.includes('supabase.co')) {
-    return; // Nechá prohlížeč vyřídit požadavek běžnou síťovou cestou bez zásahu Service Workeru
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Supabase – vždy rovnou na síť (data nesmí jít z cache)
+  if (url.hostname.includes('supabase.co')) return;
+
+  // Soubory aplikace (app.js, index.html, style.css) – NETWORK FIRST
+  // Pokud jsme online, vždy stáhne aktuální verzi a uloží do cache.
+  // Pokud jsme offline, použije zálohu z cache.
+  const isAppFile = APP_FILES.some((f) => url.pathname.endsWith(f) || url.pathname === '/' || url.pathname === '');
+  if (isAppFile) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
   }
 
+  // Statické assety (obrázky, Leaflet, fonty) – CACHE FIRST pro rychlost
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });
