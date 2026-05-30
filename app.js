@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData() {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,is_verified`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -1783,7 +1783,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
