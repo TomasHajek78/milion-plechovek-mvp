@@ -106,6 +106,12 @@
 
         <!-- HLAVNÍ SEKCE (HOME) -->
         <div id="homeSection" class="view-section">
+            <!-- Indikátor offline synchronizace -->
+            <div id="syncBanner" class="sync-banner hidden">
+                <span class="sync-icon">🔄</span>
+                <span id="syncStatusText">Synchronizuji 0 neodeslaných úlovků...</span>
+            </div>
+
             <div class="stats-row" id="statsRow">
                 <div class="stat-card" id="myStatsCard">
                     <h3>Moje plechovky</h3>
@@ -116,6 +122,17 @@
                     <h3>Zbývá sebrat</h3>
                     <div class="stat-value highlight" id="globalTotal">999 171</div>
                     <p>z cílového milionu</p>
+                </div>
+            </div>
+
+            <!-- Samostatná karta pro ekologickou úsporu energie pod hlavními kartami -->
+            <div class="stats-row" style="margin-bottom: 24px;">
+                <div class="stat-card" id="energyStatsCard" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;">
+                    <div>
+                        <h3 style="margin: 0 0 2px 0;">Ušetřená energie <span style="font-size:12px; color:var(--text-dim);">ⓘ</span></h3>
+                        <p style="margin: 0; font-size: 11px; color: var(--text-dim);">Celkem zrecyklováno hliníku</p>
+                    </div>
+                    <div class="stat-value highlight" id="globalEnergy" style="font-size: 20px; margin: 0; color: var(--forest-green); font-weight: 900;">0 kWh</div>
                 </div>
             </div>
 
@@ -209,8 +226,19 @@
             <!-- Detail konkrétní fotky (výchozí skrytý, zobrazí se po kliknutí v mřížce) -->
             <div id="photoDetailViewer" class="photo-detail-viewer hidden" style="margin-top:20px; padding-top:15px; border-top:1px solid #e2e8f0; text-align: left;">
                 <img id="detailImage" src="" style="width:100%; border-radius:12px; max-height:250px; object-fit:cover; margin-bottom:10px; border: 1px solid #e2e8f0;">
-                <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--text-dark); margin-bottom:5px;">
-                    <span id="detailCount">🥫 0 ks</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:700; color:var(--text-dark); margin-bottom:5px;">
+                    <!-- Počet plechovek v grafice jako na mapce -->
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div id="detailCountIcon" class="custom-div-icon" style="width:36px; height:36px; background-size:contain; position:relative; display:block;">
+                            <div id="detailCountNumber" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-weight: 900; font-size: 11px; color: white; text-shadow: 0 0 4px rgba(0,0,0,0.8); padding-top: 2px;">0</div>
+                        </div>
+                        <span style="font-size:12px; font-weight:700; color:var(--text-dark);">ks</span>
+                    </div>
+                    <!-- Lajkovací plechovka -->
+                    <button id="likeBtn" style="background:none; border:none; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:700; color:var(--text-dark); font-size:13px; padding:4px 8px; border-radius:10px; transition:transform 0.15s ease;">
+                        <img id="likeCanIcon" src="can-marker-transparent.png" style="width:16px; height:20px; object-fit:contain; transition:transform 0.15s ease;">
+                        <span id="likeCount">0</span>
+                    </button>
                     <span id="detailDate" style="color:var(--text-dim); font-weight:400;">...</span>
                 </div>
                 <p id="detailNotes" style="font-size:12px; font-style:italic; color:var(--text-dim); margin:0; line-height:1.4;"></p>
@@ -218,6 +246,59 @@
         </div>
     </div>
 
-    <script src="app.js?v=3"></script>
+    <!-- Real-time notifikační toast -->
+    <div id="activityToast" class="activity-toast hidden" style="position:fixed; bottom:95px; left:20px; right:20px; z-index:10000; border-radius:18px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+        <span id="toastEmoji" style="font-size: 20px;">🥫</span>
+        <span id="toastText" style="font-size: 13px; font-weight: 700;">Tom právě nasbíral 4 plechovky!</span>
+    </div>
+
+    <!-- Modální okno Info o energii -->
+    <div id="energyInfoModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1030; width:90%; max-width:400px; padding:20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 2px solid var(--forest-green);">
+        <h3 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">⚡ Ušetřená energie</h3>
+        <p style="font-size:12px; line-height:1.5; color:var(--text-light); text-align:left; margin-bottom:15px;">
+            1. Výroba nového hliníku z bauxitu je extrémně energeticky náročná.<br><br>
+            2. Recyklací jedné hliníkové plechovky ušetříme až 95 % této energie oproti výrobě nové z primárních surovin.<br><br>
+            3. Každá ušetřená kilowatthodina (kWh) v této statistice představuje čistou úsporu elektřiny, kterou lze využít pro svícení, nabíjení telefonů nebo provoz spotřebičů.
+        </p>
+        <button id="closeEnergyInfoBtn" class="primary-btn-small" style="width:100%;">Rozumím</button>
+    </div>
+
+    <!-- Modální okno Týmového Reportu -->
+    <div id="teamReportModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1015; width:95%; max-width:440px; max-height:85vh; overflow-y:auto; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 2px solid var(--forest-green);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+            <h3 id="teamReportTitle" style="margin:0; font-size:15px;">Týmový Report</h3>
+            <button id="closeTeamReportBtn" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-dim); font-weight:bold; padding: 0 5px;">&times;</button>
+        </div>
+        
+        <div class="stats-row" style="margin-bottom:15px; display:flex; gap:10px;">
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Plechovky</h4>
+                <div class="stat-value" id="teamCansTotal" style="font-size:20px; margin:5px 0; font-weight:900;">0 ks</div>
+            </div>
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Úspora energie</h4>
+                <div class="stat-value highlight" id="teamEnergyTotal" style="font-size:20px; margin:5px 0; color:var(--forest-green); font-weight:900;">0 kWh</div>
+            </div>
+        </div>
+        
+        <div class="stats-row" style="margin-bottom:15px; display:flex; gap:10px;">
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Váha hliníku</h4>
+                <div class="stat-value" id="teamWeightTotal" style="font-size:16px; margin:5px 0; font-weight:700;">0 kg</div>
+            </div>
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Ušetřeno CO₂</h4>
+                <div class="stat-value" id="teamCo2Total" style="font-size:16px; margin:5px 0; font-weight:700;">0 kg</div>
+            </div>
+        </div>
+        
+        <h4 style="text-align:left; margin:15px 0 5px 0; font-size:13px; color:var(--text-dark); font-weight:700; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">🏆 Pořadí ve třídě</h4>
+        <ul id="teamLeaderboardList" class="leaderboard-list" style="margin-bottom:15px; padding:0; list-style:none;"></ul>
+        
+        <h4 style="text-align:left; margin:15px 0 5px 0; font-size:13px; color:var(--text-dark); font-weight:700; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">📸 Fotky ze společného sběru</h4>
+        <div id="teamGalleryGrid" class="gallery-grid" style="margin-bottom:10px; display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
+    </div>
+
+    <script src="app.js?v=6"></script>
 </body>
 </html>

@@ -522,3 +522,59 @@ input:focus, textarea:focus {
 .leaderboard-item:active, #myStatsCard:active {
     transform: scale(0.98);
 }
+
+/* Offline Sync Banner */
+.sync-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(55, 124, 69, 0.15);
+    border: 1px solid rgba(55, 124, 69, 0.25);
+    padding: 12px 18px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--forest-green);
+    animation: fadeIn 0.3s ease;
+}
+
+.sync-icon {
+    display: inline-block;
+    animation: spin 2s linear infinite;
+    font-size: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Real-time Activity Toast */
+.activity-toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(15, 23, 42, 0.9);
+    color: white;
+    padding: 14px 20px;
+    animation: slideUpToast 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUpToast {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Like Button Scaling animation */
+#likeBtn:active img {
+    transform: scale(1.4);
+}
+
+

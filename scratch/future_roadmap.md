@@ -192,6 +192,13 @@ Každý komunitní a crowdsourcingový projekt s sebou nese rizika zneužití ne
     1.  **AI verifikace fotky:** Vision AI zkontroluje, zda fotka obsahuje zmačkanou plechovku v terénu (tráva, hlína, les), nikoliv v regálu obchodu.
     2.  **GPS a časový limit (Cooldown):** Zamezení odesílání více záznamů z jedné GPS souřadnice v krátkém čase od jednoho uživatele.
     3.  **Administrátorské schvalování:** Podezřelé nálezy (např. nad 15 plechovek najednou nebo ty označené AI) spadnou do fronty ke schválení moderátorem.
+    4.  **Prevence zneužití žlutých popelnic (recyklačních kontejnerů):**
+        *   *Kdy hrozí:* Při soutěžích o věcné ceny mohou uživatelé vytahovat již roztříděné plechovky ze žlutých kontejnerů. To nepomáhá čistit přírodu a je to nefér vůči ostatním (sběr z černých směsných košů nevadí, ale žluté kontejnery jsou tabu).
+        *   *Řešení (Kodex & Detekce):*
+            *   **Desatero a pravidla:** V aplikaci jasně deklarovat, že sběr ze žlutých kontejnerů je závažným porušením pravidel a znamená okamžité vyřazení ze soutěží.
+            *   **Analýza čistoty a množství:** AI (Gemini) zkontroluje čistotu a vzhled plechovek. Pokud někdo nahraje 50 dokonale čistých, suchých plechovek naráz, systém to označí jako podezřelé (plechovka z lesa bývá zmačkaná, špinavá nebo zrezivělá).
+            *   **Detekce lokace:** Pokud uživatel nahraje fotku přímo u stanoviště tříděného odpadu (lze detekovat i z pozadí fotky – přítomnost barevných popelnic), záznam bude automaticky pozastaven k ručnímu schválení adminem.
+            *   **Komunitní kontrola:** Veřejná galerie fotek v žebříčku umožňuje uživatelům nahlížet na fotky ostatních. Pokud někdo cheatne, ostatní sběrači si toho všimnou a mohou nahlásit porušení pravidel.
 
 ### B. Riziko: Výpadek cloudu při přetížení (Supabase limity)
 *   **Kdy hrozí:** Během Fáze 2 a 3 (50 až 100+ aktivních uživatelů).

@@ -43,14 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const canCountInput = document.getElementById('canCount');
     const myTotalEl = document.getElementById('myTotal');
     const globalTotalEl = document.getElementById('globalTotal');
+    const globalEnergyEl = document.getElementById('globalEnergy');
     
     const historyList = document.getElementById('historyList');
     const leaderboardList = document.getElementById('leaderboardList');
     const settingsNicknameInput = document.getElementById('settingsNickname');
+    
+    // --- Indikátor synchronizace ---
+    const syncBanner = document.getElementById('syncBanner');
+    const syncStatusText = document.getElementById('syncStatusText');
 
     // --- State Aplikace ---
     let myStats = parseInt(localStorage.getItem('milion_mystats')) || 0;
     let globalStats = parseInt(localStorage.getItem('milion_globalstats')) || 999171;
+    let globalEnergy = parseFloat(localStorage.getItem('milion_globalenergy')) || 0;
     let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
     let userNick = localStorage.getItem('milion_nickname') || '';
     let useGPS = localStorage.getItem('milion_use_gps') !== 'false';
@@ -58,6 +64,27 @@ document.addEventListener('DOMContentLoaded', () => {
     let map, markersLayer;
     let selectedFile = null;
     let allPickups = []; // Globální pole pro uchování všech stažených úlovků pro galerii
+    let activeDetailPickup = null;
+    const likedPickups = new Set();
+    let teamReportOpened = false;
+    
+    // --- IndexedDB Inicializace pro Offline úlovky ---
+    let db = null;
+    const dbRequest = indexedDB.open('MilionPlechovekDB', 1);
+    dbRequest.onupgradeneeded = (e) => {
+        const localDb = e.target.result;
+        if (!localDb.objectStoreNames.contains('pendingPickups')) {
+            localDb.createObjectStore('pendingPickups', { keyPath: 'id', autoIncrement: true });
+        }
+    };
+    dbRequest.onsuccess = (e) => {
+        db = e.target.result;
+        updateSyncBanner();
+        syncOfflinePickups();
+    };
+    dbRequest.onerror = (e) => {
+        console.error("IndexedDB error:", e);
+    };
 
     // --- Mock Data pro Žebříček (Fallback) ---
     const mockLeaderboard = [
@@ -76,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData() {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=nickname,count,latitude,longitude,notes,created_at,photo_url,team_code`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -90,6 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalCans = data.reduce((sum, item) => sum + item.count, 0);
             globalStats = 1000000 - totalCans;
             myStats = data.filter(item => item.nickname === userNick).reduce((sum, item) => sum + item.count, 0);
+
+            // Součet celkové ušetřené energie
+            const totalEnergy = data.reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
+            globalEnergy = totalEnergy;
 
             // Formátování historie pro aktuálního uživatele
             myHistory = data.filter(item => item.nickname === userNick)
@@ -105,20 +136,43 @@ document.addEventListener('DOMContentLoaded', () => {
             // Záložní uložení do localStorage pro offline
             localStorage.setItem('milion_mystats', myStats);
             localStorage.setItem('milion_globalstats', globalStats);
+            localStorage.setItem('milion_globalenergy', globalEnergy);
             localStorage.setItem('milion_history', JSON.stringify(myHistory));
 
             // Aktualizace rozhraní
             myTotalEl.textContent = myStats;
-            globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
+            if (globalTotalEl) {
+                globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
+            }
+            if (globalEnergyEl) {
+                globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
+            }
             renderHistory();
             renderLeaderboard(data);
             renderMarkers(data);
-
+            
+            // Pokud je v URL parametr ?team=KOD, otevřeme týmový report (pouze jednou při startu)
+            if (!teamReportOpened) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const teamParam = urlParams.get('team');
+                if (teamParam) {
+                    teamReportOpened = true;
+                    openTeamReport(teamParam, data);
+                }
+            }
+            
+            // Pokud jsme úspěšně online načetli data, zkusíme odeslat případné offline čekající položky
+            syncOfflinePickups();
         } catch (e) {
             console.error('Nepodařilo se připojit k databázi. Používám lokální mezipaměť:', e);
             // Fallback na lokální data z localStorage
             myTotalEl.textContent = myStats;
-            globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
+            if (globalTotalEl) {
+                globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
+            }
+            if (globalEnergyEl) {
+                globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
+            }
             renderHistory();
             renderLeaderboard(); 
             renderMarkers(); 
@@ -240,6 +294,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return classes[index];
     }
 
+    // Stabilní barva pro lajkovací plechovky (podle souřadnic, případně podle ID pro případy bez GPS)
+    function getCanColorClass(item) {
+        if (!item) return '';
+        if (item.latitude && item.longitude) {
+            return getMarkerColorClass(item);
+        }
+        const hash = Math.abs(Math.sin((item.id || 0) * 12.9898) * 43758.5453);
+        const index = Math.floor((hash % 1) * 3);
+        const classes = ['', 'can-blue', 'can-red'];
+        return classes[index];
+    }
+
     // --- Mapa ---
     function initMap() {
         map = L.map('map', { maxZoom: 21 }).setView([49.8175, 15.473], 7);
@@ -354,6 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initMap();
     loadData();
+    initRealtime();
 
     // Nastavení GPS přepínače
     if (gpsToggle) {
@@ -517,6 +584,11 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.textContent = "Odesílám...";
         
         try {
+            if (!navigator.onLine) {
+                savePickupOffline(count, notes, selectedFile);
+                return;
+            }
+
             let photoUrl = null;
             if (selectedFile) {
                 // Generování unikátního názvu souboru pro zabránění přepsání
@@ -524,24 +596,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cleanNick = userNick.replace(/[^a-zA-Z0-9]/g, '_');
                 const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
                 
-                try {
-                    const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
-                        method: 'POST',
-                        headers: {
-                            'apikey': SUPABASE_KEY,
-                            'Authorization': `Bearer ${SUPABASE_KEY}`,
-                            'Content-Type': selectedFile.type
-                        },
-                        body: selectedFile
-                    });
-                    
-                    if (uploadResponse.ok) {
-                        photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
-                    } else {
-                        console.error("Storage upload failed (status not ok), saving entry without image...");
-                    }
-                } catch (uploadError) {
-                    console.error("Network error during storage upload, saving entry without image:", uploadError);
+                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': selectedFile.type
+                    },
+                    body: selectedFile
+                });
+                
+                if (uploadResponse.ok) {
+                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
+                } else {
+                    throw new Error("Odesílání fotografie selhalo.");
                 }
             }
 
@@ -569,12 +637,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Okamžité znovunačtení dat z databáze
             await loadData();
             
+            // Reset titulku úspěšné obrazovky na výchozí online stav
+            const successTitle = successScreen.querySelector('h3');
+            const successDesc = successScreen.querySelector('p');
+            if (successTitle) successTitle.textContent = "Úlovek zapsán! 🎉";
+            if (successDesc) successDesc.innerHTML = "Skvělá práce, tvůj úlovek byl úspěšně zapsán do databáze a odečten od cílového milionu.";
+            
             pickupForm.classList.add('hidden');
             successScreen.classList.remove('hidden');
             launchConfetti();
             
         } catch (e) {
-            alert('Ukládání selhalo: ' + e.message);
+            console.warn("Chyba při online odesílání, padám do offline režimu:", e);
+            savePickupOffline(count, notes, selectedFile);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "Odeslat do odpočtu";
@@ -696,7 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const galleryTitle = document.getElementById('galleryTitle');
     const photoDetailViewer = document.getElementById('photoDetailViewer');
     const detailImage = document.getElementById('detailImage');
-    const detailCount = document.getElementById('detailCount');
+    const detailCountNumber = document.getElementById('detailCountNumber');
+    const detailCountIcon = document.getElementById('detailCountIcon');
     const detailDate = document.getElementById('detailDate');
     const detailNotes = document.getElementById('detailNotes');
 
@@ -731,12 +807,52 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.querySelectorAll('.gallery-item').forEach(el => el.classList.remove('selected'));
                     itemDiv.classList.add('selected');
                     
+                    activeDetailPickup = pickup; // Nastavíme aktivní úlovek pro lajkování
+                    
                     detailImage.src = pickup.photo_url;
-                    detailCount.textContent = `🥫 ${pickup.count} ks`;
+                    if (detailCountNumber) {
+                        detailCountNumber.textContent = pickup.count;
+                    }
+                    if (detailCountIcon) {
+                        detailCountIcon.className = 'custom-div-icon'; // reset
+                        const colorClass = getCanColorClass(pickup);
+                        if (colorClass) {
+                            detailCountIcon.classList.add(colorClass);
+                        }
+                    }
                     detailDate.textContent = pickup.created_at 
                         ? new Date(pickup.created_at).toLocaleDateString('cs-CZ', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})
                         : '';
                     detailNotes.textContent = pickup.notes ? `„${pickup.notes}“` : 'Bez poznámky';
+                    
+                    // Nastavit počet lajků
+                    const likeCountEl = document.getElementById('likeCount');
+                    if (likeCountEl) {
+                        likeCountEl.textContent = pickup.likes_count || 0;
+                    }
+                    
+                    // Nastavit barvu lajkovací plechovky
+                    const likeCanIconEl = document.getElementById('likeCanIcon');
+                    if (likeCanIconEl) {
+                        likeCanIconEl.className = ''; // Reset barvy
+                        const colorClass = getCanColorClass(pickup);
+                        if (colorClass) {
+                            likeCanIconEl.classList.add(colorClass);
+                        }
+                    }
+                    
+                    // Vizuální stav lajknutí tlačítka
+                    const likeBtnEl = document.getElementById('likeBtn');
+                    if (likeBtnEl) {
+                        if (likedPickups.has(pickup.id)) {
+                            likeBtnEl.style.opacity = '0.5';
+                            likeBtnEl.style.cursor = 'default';
+                        } else {
+                            likeBtnEl.style.opacity = '1';
+                            likeBtnEl.style.cursor = 'pointer';
+                        }
+                    }
+                    
                     photoDetailViewer.classList.remove('hidden');
                     
                     // Odrolovat dolů k detailu pro lepší uživatelský zážitek na mobilu
@@ -761,10 +877,315 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- LOGIKA TLAČÍTKA LAJKOVÁNÍ FOTEK ---
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+        likeBtn.addEventListener('click', async () => {
+            if (!activeDetailPickup || likedPickups.has(activeDetailPickup.id)) return;
+            
+            const pickupToLike = activeDetailPickup;
+            likedPickups.add(pickupToLike.id);
+            
+            // Okamžité vizuální podbarvení a navýšení v UI pro skvělou odezvu
+            likeBtn.style.opacity = '0.5';
+            likeBtn.style.cursor = 'default';
+            
+            const newLikesCount = (pickupToLike.likes_count || 0) + 1;
+            pickupToLike.likes_count = newLikesCount;
+            
+            const likeCountEl = document.getElementById('likeCount');
+            if (likeCountEl) {
+                likeCountEl.textContent = newLikesCount;
+            }
+            
+            try {
+                // Zkusíme nejprve zavolat bezpečnou RPC funkci (zabíjí race conditions)
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_likes`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ row_id: pickupToLike.id })
+                });
+                
+                if (!response.ok) {
+                    // Fallback na přímý PATCH, pokud uživatel ještě nespustil SQL pro RPC funkci
+                    console.warn("RPC increment_likes selhalo, zkouším PATCH fallback...");
+                    await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${pickupToLike.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ likes_count: newLikesCount })
+                    });
+                }
+                
+                // Načteme nová data na pozadí, abychom synchronizovali stavy
+                loadData();
+            } catch (err) {
+                console.error("Chyba při odesílání lajku do Supabase:", err);
+            }
+        });
+    }
+
+    // --- REALTIME WEB-SOCKET AKTIVITY ---
+    let toastTimeout = null;
+    function showToast(message, emoji = '🥫') {
+        const toastEl = document.getElementById('activityToast');
+        const emojiEl = document.getElementById('toastEmoji');
+        const textEl = document.getElementById('toastText');
+        
+        if (!toastEl || !emojiEl || !textEl) return;
+        
+        if (toastTimeout) {
+            clearTimeout(toastTimeout);
+        }
+        
+        emojiEl.textContent = emoji;
+        textEl.textContent = message;
+        
+        toastEl.classList.remove('hidden');
+        
+        toastTimeout = setTimeout(() => {
+            toastEl.classList.add('hidden');
+        }, 4000);
+    }
+
+    function initRealtime() {
+        const wsUrl = `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`;
+        let ws = new WebSocket(wsUrl);
+        let heartbeatInterval = null;
+        let refCounter = 1;
+
+        ws.onopen = () => {
+            console.log("Supabase Realtime WebSocket připojen.");
+            
+            // Phoenix heartbeat každých 30 sekund
+            heartbeatInterval = setInterval(() => {
+                ws.send(JSON.stringify({
+                    topic: "phoenix",
+                    event: "heartbeat",
+                    payload: {},
+                    ref: (refCounter++).toString()
+                }));
+            }, 30000);
+
+            // Přihlášení do kanálu pro sledování změn v pickups
+            ws.send(JSON.stringify({
+                topic: "realtime:public:pickups",
+                event: "phx_join",
+                payload: {
+                    config: {
+                        postgres_changes: [
+                            {
+                                event: "*",
+                                schema: "public",
+                                table: "pickups"
+                            }
+                        ]
+                    }
+                },
+                ref: (refCounter++).toString()
+            }));
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                
+                // Ignorujeme odpovědi na heartbeat
+                if (msg.event === "phx_reply" && msg.topic === "phoenix") return;
+                
+                if (msg.event === "postgres_changes") {
+                    const change = msg.payload;
+                    if (!change || !change.data) return;
+                    
+                    const record = change.data.record;
+                    const type = change.data.type;
+                    
+                    if (type === "INSERT") {
+                        // Někdo nasbíral plechovky!
+                        showToast(`🥫 ${record.nickname || 'Někdo'} právě nasbíral ${record.count} plechovek!`);
+                        loadData();
+                    } else if (type === "UPDATE") {
+                        const oldRecord = change.data.old_record;
+                        if (record.likes_count > (oldRecord ? (oldRecord.likes_count || 0) : 0)) {
+                            // Někdo dal lajk!
+                            showToast(`💚 Někdo dal lajk fotce od ${record.nickname || 'někoho'}!`);
+                            
+                            // Aktualizace lokálního stavu pro okamžité zobrazení
+                            const localPickup = allPickups.find(p => p.id === record.id);
+                            if (localPickup) {
+                                localPickup.likes_count = record.likes_count;
+                                
+                                const detailViewer = document.getElementById('photoDetailViewer');
+                                if (detailViewer && !detailViewer.classList.contains('hidden') && activeDetailPickup && activeDetailPickup.id === record.id) {
+                                    const likeCountEl = document.getElementById('likeCount');
+                                    if (likeCountEl) {
+                                        likeCountEl.textContent = record.likes_count;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Chyba při zpracování WebSocket zprávy:", err);
+            }
+        };
+
+        ws.onclose = () => {
+            console.warn("Supabase Realtime WebSocket odpojen. Reconnect za 5s...");
+            clearInterval(heartbeatInterval);
+            setTimeout(initRealtime, 5000);
+        };
+
+        ws.onerror = (err) => {
+            console.error("Chyba WebSocketu:", err);
+            ws.close();
+        };
+    }
+
     window.toggleDesatero = () => {
         const modal = document.getElementById('desateroModal');
         modal.classList.toggle('hidden');
     };
+
+    window.toggleEnergyInfo = () => {
+        const modal = document.getElementById('energyInfoModal');
+        if (modal) modal.classList.toggle('hidden');
+    };
+
+    const energyStatsCard = document.getElementById('energyStatsCard');
+    if (energyStatsCard) {
+        energyStatsCard.addEventListener('click', () => {
+            toggleEnergyInfo();
+        });
+    }
+
+    const closeEnergyInfoBtn = document.getElementById('closeEnergyInfoBtn');
+    if (closeEnergyInfoBtn) {
+        closeEnergyInfoBtn.addEventListener('click', () => {
+            document.getElementById('energyInfoModal').classList.add('hidden');
+        });
+    }
+
+    window.toggleTeamReport = () => {
+        const modal = document.getElementById('teamReportModal');
+        if (modal) modal.classList.toggle('hidden');
+    };
+
+    const closeTeamReportBtn = document.getElementById('closeTeamReportBtn');
+    if (closeTeamReportBtn) {
+        closeTeamReportBtn.addEventListener('click', () => {
+            document.getElementById('teamReportModal').classList.add('hidden');
+        });
+    }
+
+    function openTeamReport(teamCode, allData) {
+        const modal = document.getElementById('teamReportModal');
+        const title = document.getElementById('teamReportTitle');
+        const cansTotal = document.getElementById('teamCansTotal');
+        const energyTotal = document.getElementById('teamEnergyTotal');
+        const weightTotal = document.getElementById('teamWeightTotal');
+        const co2Total = document.getElementById('teamCo2Total');
+        const leaderboard = document.getElementById('teamLeaderboardList');
+        const gallery = document.getElementById('teamGalleryGrid');
+        
+        if (!modal || !title || !cansTotal || !energyTotal || !weightTotal || !co2Total || !leaderboard || !gallery) return;
+        
+        title.textContent = `Třídní Report: ${teamCode}`;
+        leaderboard.innerHTML = '';
+        gallery.innerHTML = '';
+        
+        const normalizedTeam = teamCode.trim().toUpperCase();
+        const filtered = allData.filter(item => item.team_code && item.team_code.trim().toUpperCase() === normalizedTeam);
+        
+        if (filtered.length === 0) {
+            cansTotal.textContent = '0 ks';
+            energyTotal.textContent = '0 kWh';
+            weightTotal.textContent = '0 kg';
+            co2Total.textContent = '0 kg';
+            leaderboard.innerHTML = '<li class="small-text" style="color:#888; text-align:center; padding:10px 0;">V tomto týmu zatím nikdo nic neodevzdal.</li>';
+            gallery.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-dim); padding: 10px 0; font-size: 11px;">Žádné společné fotky.</div>';
+            modal.classList.remove('hidden');
+            return;
+        }
+        
+        // Spočítat statistiky
+        const totalCans = filtered.reduce((sum, item) => sum + item.count, 0);
+        const totalEnergy = filtered.reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
+        const totalWeight = filtered.reduce((sum, item) => sum + (parseFloat(item.aluminum_weight_g) || 0), 0) / 1000;
+        const totalCo2 = filtered.reduce((sum, item) => sum + (parseFloat(item.co2_saved_kg) || 0), 0);
+        
+        cansTotal.textContent = `${totalCans} ks`;
+        energyTotal.textContent = `${totalEnergy.toFixed(1).replace('.', ',')} kWh`;
+        weightTotal.textContent = `${totalWeight.toFixed(2).replace('.', ',')} kg`;
+        co2Total.textContent = `${totalCo2.toFixed(1).replace('.', ',')} kg`;
+        
+        // Žebříček ve třídě
+        const userSums = {};
+        filtered.forEach(item => {
+            const nick = item.nickname || 'Anonymní Sběrač';
+            userSums[nick] = (userSums[nick] || 0) + item.count;
+        });
+        
+        const sortedUsers = Object.entries(userSums)
+            .map(([nick, count]) => ({ nick, count }))
+            .sort((a, b) => b.count - a.count);
+            
+        sortedUsers.forEach((user, index) => {
+            const li = document.createElement('li');
+            li.className = 'leaderboard-item';
+            if (user.nick === userNick) li.className += ' me';
+            li.innerHTML = `
+                <span class="rank">${index + 1}.</span>
+                <span class="nick">${user.nick}</span>
+                <span class="count">${user.count} ks</span>
+            `;
+            li.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                openUserGallery(user.nick);
+            });
+            leaderboard.appendChild(li);
+        });
+        
+        // Společné fotky
+        const photos = filtered.filter(item => item.photo_url);
+        if (photos.length === 0) {
+            gallery.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-dim); padding: 10px 0; font-size: 11px;">Žádné fotky z tohoto týmu.</div>';
+        } else {
+            // Seřadit od nejnovějších
+            photos.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+            photos.slice(0, 9).forEach(pickup => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'gallery-item';
+                itemDiv.style.aspectRatio = '1';
+                itemDiv.style.borderRadius = '8px';
+                itemDiv.style.overflow = 'hidden';
+                itemDiv.style.border = '1px solid #e2e8f0';
+                itemDiv.style.position = 'relative';
+                
+                itemDiv.innerHTML = `
+                    <img src="${pickup.photo_url}" style="width:100%; height:100%; object-fit:cover;">
+                    <span class="gallery-badge" style="position:absolute; bottom:4px; right:4px; font-size:9px; padding:2px 4px; border-radius:4px; background:rgba(15,23,42,0.85); color:white; font-weight:700;">+${pickup.count}</span>
+                `;
+                
+                itemDiv.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                    openUserGallery(pickup.nickname);
+                });
+                
+                gallery.appendChild(itemDiv);
+            });
+        }
+        
+        modal.classList.remove('hidden');
+    }
 
     window.forceRefresh = async () => {
         try {
@@ -815,6 +1236,165 @@ document.addEventListener('DOMContentLoaded', () => {
             if (outcome === 'accepted') installOverlay.classList.add('hidden');
             deferredPrompt = null;
         }
+    });
+
+    // --- POMOCNÉ FUNKCE PRO OFFLINE SYNCHRONIZACI ---
+    function updateSyncBanner() {
+        if (!db) return;
+        try {
+            const transaction = db.transaction(['pendingPickups'], 'readonly');
+            const store = transaction.objectStore('pendingPickups');
+            const countRequest = store.count();
+            countRequest.onsuccess = () => {
+                const pendingCount = countRequest.result;
+                if (pendingCount > 0) {
+                    syncStatusText.textContent = `Máš ${pendingCount} neodeslaných úlovků. Odesílám...`;
+                    syncBanner.classList.remove('hidden');
+                } else {
+                    syncBanner.classList.add('hidden');
+                }
+            };
+        } catch (e) {
+            console.error("Chyba při aktualizaci banneru:", e);
+        }
+    }
+
+    function savePickupOffline(count, notes, file) {
+        if (!db) {
+            alert("Místní paměť telefonu není připravena. Úlovek se nepodařilo uložit.");
+            return;
+        }
+        
+        try {
+            const transaction = db.transaction(['pendingPickups'], 'readwrite');
+            const store = transaction.objectStore('pendingPickups');
+            
+            const item = {
+                nickname: userNick,
+                count: count,
+                latitude: currentCoords ? currentCoords.lat : null,
+                longitude: currentCoords ? currentCoords.lon : null,
+                notes: notes || null,
+                photoBlob: file, // raw File/Blob
+                timestamp: Date.now()
+            };
+            
+            const addRequest = store.add(item);
+            addRequest.onsuccess = () => {
+                updateSyncBanner();
+                
+                // Zobrazíme upravenou úspěšnou obrazovku
+                const successTitle = successScreen.querySelector('h3');
+                const successDesc = successScreen.querySelector('p');
+                if (successTitle) successTitle.textContent = "Uloženo offline! 💾🥫";
+                if (successDesc) successDesc.innerHTML = "Nemáš připojení, nebo si šetříš mobilní data. Tvůj úlovek je bezpečně uložený v telefonu a <strong>odešle se sám, jakmile budeš na internetu</strong>.";
+                
+                pickupForm.classList.add('hidden');
+                successScreen.classList.remove('hidden');
+                launchConfetti();
+            };
+            addRequest.onerror = (err) => {
+                console.error("Chyba při offline zápisu do IndexedDB:", err);
+                alert("Nepodařilo se uložit úlovek offline.");
+            };
+        } catch (e) {
+            console.error("Kritická chyba IndexedDB transakce:", e);
+            alert("Chyba zápisu do paměti telefonu.");
+        }
+    }
+
+    let isSyncing = false;
+    async function syncOfflinePickups() {
+        if (!db || isSyncing || !navigator.onLine) return;
+        
+        try {
+            const transaction = db.transaction(['pendingPickups'], 'readonly');
+            const store = transaction.objectStore('pendingPickups');
+            const getAllRequest = store.getAll();
+            
+            getAllRequest.onsuccess = async () => {
+                const pending = getAllRequest.result;
+                if (pending.length === 0) return;
+                
+                isSyncing = true;
+                console.log(`Spouštím synchronizaci ${pending.length} offline úlovků...`);
+                
+                for (const item of pending) {
+                    try {
+                        let photoUrl = null;
+                        if (item.photoBlob) {
+                            const fileExt = item.photoBlob.name ? item.photoBlob.name.split('.').pop() : 'jpg';
+                            const cleanNick = item.nickname.replace(/[^a-zA-Z0-9]/g, '_');
+                            const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
+                            
+                            const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
+                                method: 'POST',
+                                headers: {
+                                    'apikey': SUPABASE_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                    'Content-Type': item.photoBlob.type
+                                },
+                                body: item.photoBlob
+                            });
+                            
+                            if (uploadResponse.ok) {
+                                photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
+                            } else {
+                                console.error("Storage sync upload failed");
+                            }
+                        }
+                        
+                        const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                nickname: item.nickname,
+                                count: item.count,
+                                latitude: item.latitude,
+                                longitude: item.longitude,
+                                notes: item.notes,
+                                photo_url: photoUrl,
+                                created_at: new Date(item.timestamp).toISOString() // Zachováme historické datum sběru z lesa!
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            // Smazat z IndexedDB
+                            await new Promise((resolve, reject) => {
+                                const deleteTx = db.transaction(['pendingPickups'], 'readwrite');
+                                const deleteStore = deleteTx.objectStore('pendingPickups');
+                                const deleteReq = deleteStore.delete(item.id);
+                                deleteTx.oncomplete = () => resolve();
+                                deleteTx.onerror = (err) => reject(err);
+                            });
+                            console.log(`Offline úlovek ID ${item.id} úspěšně synchronizován.`);
+                        } else {
+                            console.error(`Chyba zápisu DB při synchronizaci úlovku ID ${item.id}`);
+                            break; // Zastavit synchronizaci při chybě, zkusíme příště
+                        }
+                    } catch (err) {
+                        console.error("Chyba při síťovém odesílání offline úlovku:", err);
+                        break; // Síťové chyby zastaví smyčku
+                    }
+                }
+                
+                isSyncing = false;
+                updateSyncBanner();
+                await loadData(); // Aktualizovat celá data a žebříček
+            };
+        } catch (e) {
+            console.error("Chyba při čtení z IndexedDB pro synchronizaci:", e);
+        }
+    }
+
+    // Automatický spouštěč synchronizace při chycení signálu
+    window.addEventListener('online', () => {
+        console.log("Internetové připojení obnoveno, startuji synchronizaci...");
+        syncOfflinePickups();
     });
 
     newPickupBtn.addEventListener('click', () => { window.location.reload(); });
