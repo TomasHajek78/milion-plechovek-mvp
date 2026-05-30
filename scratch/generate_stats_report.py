@@ -724,7 +724,7 @@ def generate_html_report(stats, output_path):
                     <span class="font-bold text-slate-200 truncate" title="${{p.nickname || '@anonym'}}">${{p.nickname || '@anonym'}}</span>
                     <span class="font-extrabold text-emerald-400 text-right pr-2">${{p.count || 0}} ks</span>
                     <span class="flex justify-center">${{badgeHtml}}</span>
-                    <button onclick="openAdminEditModal(${{p.id}})" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
+                    <button onclick="openAdminEditModal('${{p.id}}')" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
                 `;
                 listContainer.appendChild(row);
             }});

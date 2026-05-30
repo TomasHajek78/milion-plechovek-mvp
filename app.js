@@ -1808,7 +1808,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="nick" title="${p.nickname || '@anonym'}">${p.nickname || '@anonym'}</span>
                 <span class="count">${p.count || 0} ks</span>
                 <span class="badge-cell">${badgeHtml}</span>
-                <button onclick="window.openAdminEditModal(${p.id})" class="admin-edit-btn" title="Upravit">✏️</button>
+                <button onclick="window.openAdminEditModal('${p.id}')" class="admin-edit-btn" title="Upravit">✏️</button>
             `;
             listContainer.appendChild(row);
         });
