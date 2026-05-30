@@ -7,7 +7,7 @@ if ('serviceWorker' in navigator) {
 
 // --- Konfigurace Supabase Databáze ---
 const SUPABASE_URL = 'https://dxlyjugmeucevosmhage.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_CR-YuABHB1SvPK6b6sz-WQ_Q6y_8iKx';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bHlqdWdtZXVjZXZvc21oYWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzIzOTUsImV4cCI6MjA5NTEwODM5NX0.cG-DVzuKL1VOj8pwQG_Uu_sS_lJ3Wx5L-QmRbrBxIWw';
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---

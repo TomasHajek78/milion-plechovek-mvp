@@ -24,7 +24,7 @@
                 <button onclick="openAdminEditorPasscode()" class="px-4 py-2 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 text-xs font-bold rounded-xl transition duration-200">🛠️ Administrace</button>
                 <div class="glass-card px-6 py-3 rounded-2xl text-center">
                     <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Celkem nasbíráno</span>
-                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">61 ks</span>
+                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">63 ks</span>
                 </div>
             </div>
         </header>
@@ -124,17 +124,17 @@
                         <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
                             <span class="flex items-center gap-2">
                                 <span class="text-xs text-slate-500 font-bold w-4">2.</span>
-                                <span class="font-semibold text-slate-300">King Kong</span>
+                                <span class="font-semibold text-slate-300">Spiedy</span>
                             </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">10 ks</span>
+                            <span class="text-emerald-400 font-extrabold text-sm">11 ks</span>
                         </li>
                     
                         <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
                             <span class="flex items-center gap-2">
                                 <span class="text-xs text-slate-500 font-bold w-4">3.</span>
-                                <span class="font-semibold text-slate-300">Spiedy</span>
+                                <span class="font-semibold text-slate-300">King Kong</span>
                             </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">9 ks</span>
+                            <span class="text-emerald-400 font-extrabold text-sm">10 ks</span>
                         </li>
                     
                         <li class="flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30">
@@ -435,7 +435,7 @@
     <!-- Script pro administraci a komunikaci se Supabase -->
     <script>
         const SUPABASE_URL = "https://dxlyjugmeucevosmhage.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_CR-YuABHB1SvPK6b6sz-WQ_Q6y_8iKx";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bHlqdWdtZXVjZXZvc21oYWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzIzOTUsImV4cCI6MjA5NTEwODM5NX0.cG-DVzuKL1VOj8pwQG_Uu_sS_lJ3Wx5L-QmRbrBxIWw";
         
         let allPickups = [];
         let adminSelectedPickup = null;
