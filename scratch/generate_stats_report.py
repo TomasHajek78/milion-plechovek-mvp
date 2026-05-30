@@ -156,7 +156,8 @@ def aggregate_data(pickups):
                     brand = 'Nerozpoznáno'
                 vol = can.get('volume_liters') or 'Unknown'
 
-                brands[brand] = brands.get(brand, 0) + 1
+                if brand != 'Nerozpoznáno':
+                    brands[brand] = brands.get(brand, 0) + 1
                 volumes[vol] = volumes.get(vol, 0) + 1
 
         if p.get('team_code'):

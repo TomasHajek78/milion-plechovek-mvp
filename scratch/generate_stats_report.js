@@ -135,7 +135,9 @@ function aggregateData(pickups) {
                 }
                 const vol = can.volume_liters || 'Unknown';
 
-                brands[brand] = (brands[brand] || 0) + 1;
+                if (brand !== 'Nerozpoznáno') {
+                    brands[brand] = (brands[brand] || 0) + 1;
+                }
                 volumes[vol] = (volumes[vol] || 0) + 1;
             });
         }
