@@ -875,7 +875,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     detailDate.textContent = pickup.created_at 
                         ? new Date(pickup.created_at).toLocaleDateString('cs-CZ', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})
                         : '';
-                    detailNotes.textContent = pickup.notes ? `„${pickup.notes}“` : 'Bez poznámky';
+                    detailNotes.innerHTML = pickup.notes ? `„${pickup.notes}“` : 'Bez poznámky';
+                    if (pickup.nickname === userNick) {
+                        const editBtn = document.createElement('span');
+                        editBtn.innerHTML = ' ✏️';
+                        editBtn.style.cursor = 'pointer';
+                        editBtn.title = 'Upravit poznámku';
+                        editBtn.onclick = () => window.editPickupNote(pickup.id, pickup.notes);
+                        detailNotes.appendChild(editBtn);
+                    }
                     
                     // Nastavit počet lajků
                     const likeCountEl = document.getElementById('likeCount');
@@ -896,12 +904,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Vizuální stav lajknutí tlačítka
                     const likeBtnEl = document.getElementById('likeBtn');
                     if (likeBtnEl) {
-                        if (likedPickups.has(pickup.id)) {
-                            likeBtnEl.style.opacity = '0.5';
-                            likeBtnEl.style.cursor = 'default';
+                        if (pickup.nickname === userNick) {
+                            likeBtnEl.style.opacity = '0.3';
+                            likeBtnEl.style.cursor = 'not-allowed';
+                            likeBtnEl.title = 'Vlastní úlovek nelze lajkovat';
+                        } else if (likedPickups.has(pickup.id)) {
+                            likeBtnEl.style.opacity = '0.7';
+                            likeBtnEl.style.cursor = 'pointer';
+                            likeBtnEl.title = 'Odebrat lajk';
                         } else {
                             likeBtnEl.style.opacity = '1';
                             likeBtnEl.style.cursor = 'pointer';
+                            likeBtnEl.title = 'Přidat lajk';
                         }
                     }
                     
@@ -933,56 +947,116 @@ document.addEventListener('DOMContentLoaded', () => {
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
         likeBtn.addEventListener('click', async () => {
-            if (!activeDetailPickup || likedPickups.has(activeDetailPickup.id)) return;
-            
+            if (!activeDetailPickup) return;
             const pickupToLike = activeDetailPickup;
-            likedPickups.add(pickupToLike.id);
             
-            // Okamžité vizuální podbarvení a navýšení v UI pro skvělou odezvu
-            likeBtn.style.opacity = '0.5';
-            likeBtn.style.cursor = 'default';
+            // Zákaz lajkování vlastních fotek
+            if (pickupToLike.nickname === userNick) {
+                return;
+            }
             
-            const newLikesCount = (pickupToLike.likes_count || 0) + 1;
+            const isLiking = !likedPickups.has(pickupToLike.id);
+            const currentCount = pickupToLike.likes_count || 0;
+            let newLikesCount = currentCount;
+            
+            if (isLiking) {
+                likedPickups.add(pickupToLike.id);
+                likeBtn.style.opacity = '0.7';
+                likeBtn.title = 'Odebrat lajk';
+                newLikesCount = currentCount + 1;
+            } else {
+                likedPickups.delete(pickupToLike.id);
+                likeBtn.style.opacity = '1';
+                likeBtn.title = 'Přidat lajk';
+                newLikesCount = Math.max(0, currentCount - 1);
+            }
+            
             pickupToLike.likes_count = newLikesCount;
-            
             const likeCountEl = document.getElementById('likeCount');
             if (likeCountEl) {
                 likeCountEl.textContent = newLikesCount;
             }
             
             try {
-                // Zkusíme nejprve zavolat bezpečnou RPC funkci (zabíjí race conditions)
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_likes`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ row_id: pickupToLike.id })
-                });
-                
-                if (!response.ok) {
-                    // Fallback na přímý PATCH, pokud uživatel ještě nespustil SQL pro RPC funkci
-                    console.warn("RPC increment_likes selhalo, zkouším PATCH fallback...");
-                    await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${pickupToLike.id}`, {
-                        method: 'PATCH',
+                if (isLiking) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_likes`, {
+                        method: 'POST',
                         headers: {
                             'apikey': SUPABASE_KEY,
                             'Authorization': `Bearer ${SUPABASE_KEY}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ likes_count: newLikesCount })
+                        body: JSON.stringify({ row_id: pickupToLike.id })
                     });
+                    
+                    if (!response.ok) throw new Error("RPC fallback");
+                } else {
+                    throw new Error("Force fallback for decrement"); // Nemáme decrement RPC, použijeme PATCH
                 }
-                
-                // Načteme nová data na pozadí, abychom synchronizovali stavy
-                loadData();
             } catch (err) {
-                console.error("Chyba při odesílání lajku do Supabase:", err);
+                // Fallback na přímý PATCH
+                await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${pickupToLike.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ likes_count: newLikesCount })
+                });
             }
+            
+            // Načteme nová data na pozadí
+            loadData();
         });
     }
+
+    // --- FUNKCE PRO ÚPRAVU POZNÁMKY ---
+    window.editPickupNote = async function(pickupId, currentNote) {
+        const newNote = prompt("Upravit poznámku:", currentNote || "");
+        if (newNote === null) return; // Zrušeno uživatelem
+        
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${pickupId}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ notes: newNote.trim() || null })
+            });
+            
+            if (response.ok) {
+                const detailNotes = document.getElementById('detailNotes');
+                if (detailNotes) {
+                    detailNotes.innerHTML = newNote.trim() ? `„${newNote.trim()}“` : 'Bez poznámky';
+                    const editBtn = document.createElement('span');
+                    editBtn.innerHTML = ' ✏️';
+                    editBtn.style.cursor = 'pointer';
+                    editBtn.title = 'Upravit poznámku';
+                    editBtn.onclick = () => window.editPickupNote(pickupId, newNote.trim());
+                    detailNotes.appendChild(editBtn);
+                }
+                
+                // Aktualizovat data v poli a překreslit
+                const idx = allPickups.findIndex(p => p.id === pickupId);
+                if (idx !== -1) {
+                    allPickups[idx].notes = newNote.trim() || null;
+                }
+                if (activeDetailPickup && activeDetailPickup.id === pickupId) {
+                    activeDetailPickup.notes = newNote.trim() || null;
+                }
+                loadData(); // Obnovit na pozadí
+            } else {
+                alert("Nepodařilo se upravit poznámku.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Chyba spojení se serverem.");
+        }
+    };
+
 
     // --- REALTIME WEB-SOCKET AKTIVITY ---
     let toastTimeout = null;

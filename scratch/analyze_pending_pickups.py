@@ -264,6 +264,46 @@ def main():
                 time.sleep(4)
         
         print(f"\n🎉 Analýza dokončena.")
+        
+        # Odeslání notifikace / emailu
+        print("🔍 Kontroluji, zda nezůstaly fotky k ruční korekci...")
+        query_unverified = f"{SUPABASE_URL}/rest/v1/pickups?is_analyzed=eq.true&is_verified=eq.false&select=id,analysis_json"
+        res_unver = requests.get(query_unverified, headers=headers, timeout=30)
+        
+        if res_unver.status_code == 200:
+            unverified_pickups = res_unver.json()
+            needs_review_count = 0
+            for p in unverified_pickups:
+                ajson = p.get('analysis_json')
+                if isinstance(ajson, list):
+                    if any(c.get('brand') in ['Nerozpoznáno', 'Unknown'] for c in ajson):
+                        needs_review_count += 1
+            
+            if needs_review_count > 0:
+                print(f"⚠️ Nalezeno {needs_review_count} fotek vyžadujících ruční korekci. Odesílám upozornění.")
+                
+                # 1. Zobrazení notifikace v macOS
+                os.system(f"osascript -e 'display notification \"V administraci je {needs_review_count} fotek k ruční kontrole.\" with title \"Milion plechovek\" subtitle \"Čeká na schválení\"'")
+                
+                # 2. Odeslání tichého e-mailu přes Apple Mail
+                # UPOZORNĚNÍ: E-mailovou adresu "tvuj_email@seznam.cz" níže prosím přepiš na svůj skutečný e-mail!
+                target_email = "tvuj_email@seznam.cz"
+                
+                applescript = f"""
+tell application "Mail"
+    set theMessage to make new outgoing message with properties {{subject:"Milion plechovek - Fotky ke schválení", content:"Ahoj,\\n\\nv administraci aplikace Milion plechovek čeká {needs_review_count} fotek na tvou ruční kontrolu.\\n\\nPřihlaste se a upravte je v sekci Administrace dat.", visible:false}}
+    tell theMessage
+        make new to recipient at end of to recipients with properties {{address:"{target_email}"}}
+        send
+    end tell
+end tell
+"""
+                with open("/tmp/send_mail.scpt", "w") as f:
+                    f.write(applescript)
+                
+                os.system("osascript /tmp/send_mail.scpt")
+                print("📩 Tichý e-mail přes aplikaci Mail byl odeslán.")
+
 
     except Exception as e:
         print("❌ Kritická chyba skriptu:", str(e))
