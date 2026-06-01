@@ -1975,8 +1975,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-                }
-            }
             
             row.innerHTML = `
                 <span class="date">${dateStr}</span>
