@@ -2066,7 +2066,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                     <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); width: 20px;">#${index + 1}</span>
-                    <input type="text" list="dynamicBrandsList" class="can-brand" style="flex: 1; min-width: 0; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" value="${inputValue}" onchange="window.updateLocalCanBrandCustom(${index}, this.value)" placeholder="Značka...">
+                    <input type="text" list="dynamicBrandsList" class="can-brand" style="flex: 1; min-width: 0; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" value="${inputValue}" onchange="window.updateLocalCanBrandCustom(${index}, this.value)" onfocus="if(this.value==='Nerozpoznáno') this.value='';" onblur="if(this.value.trim()===''){ this.value='Nerozpoznáno'; window.updateLocalCanBrandCustom(${index}, 'Nerozpoznáno'); }" placeholder="Značka...">
                     <select class="can-volume" style="width: 90px;" onchange="window.updateLocalCanVolume(${index}, this.value)">
                         ${volOptions}
                     </select>

@@ -699,10 +699,10 @@ def generate_html_report(stats, output_path):
                         li.className = 'flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30';
                         li.innerHTML = `
                             <span class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-bold w-4">\${{idx + 1}}.</span>
-                                <span class="font-semibold text-slate-300">\${{team.code}}</span>
+                                <span class="text-xs text-slate-500 font-bold w-4">${{idx + 1}}.</span>
+                                <span class="font-semibold text-slate-300">${{team.code}}</span>
                             </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">\${{team.count}} ks</span>
+                            <span class="text-emerald-400 font-extrabold text-sm">${{team.count}} ks</span>
                         `;
                         teamsList.appendChild(li);
                     }});
@@ -721,10 +721,10 @@ def generate_html_report(stats, output_path):
                         li.className = 'flex justify-between items-center bg-slate-800/30 px-4 py-2 rounded-xl border border-slate-700/30';
                         li.innerHTML = `
                             <span class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-bold w-4">\${{idx + 1}}.</span>
-                                <span class="font-semibold text-slate-300">\${{user.nick}}</span>
+                                <span class="text-xs text-slate-500 font-bold w-4">${{idx + 1}}.</span>
+                                <span class="font-semibold text-slate-300">${{user.nick}}</span>
                             </span>
-                            <span class="text-emerald-400 font-extrabold text-sm">\${{user.count}} ks</span>
+                            <span class="text-emerald-400 font-extrabold text-sm">${{user.count}} ks</span>
                         `;
                         usersList.appendChild(li);
                     }});
@@ -733,7 +733,7 @@ def generate_html_report(stats, output_path):
 
             const brandsHeader = document.getElementById('brandsDirectoryHeader');
             if (brandsHeader) {{
-                brandsHeader.textContent = `\${{stats.all_brands.length}} unikátních typů`;
+                brandsHeader.textContent = `${{stats.all_brands.length}} unikátních typů`;
             }}
             const brandsBody = document.getElementById('brandsDirectoryBody');
             if (brandsBody) {{
@@ -742,10 +742,10 @@ def generate_html_report(stats, output_path):
                     const tr = document.createElement('tr');
                     tr.className = 'border-b border-slate-800/40 hover:bg-slate-800/20';
                     tr.innerHTML = `
-                        <td class="py-2 font-mono text-slate-500">\${{idx + 1}}.</td>
-                        <td class="py-2 font-semibold text-slate-200">\${{brand.name}}</td>
-                        <td class="py-2 text-right font-bold text-emerald-400">\${{brand.count}} ks</td>
-                        <td class="py-2 text-right text-slate-400">\${{brand.percentage.toFixed(1).replace('.', ',')}} %</td>
+                        <td class="py-2 font-mono text-slate-500">${{idx + 1}}.</td>
+                        <td class="py-2 font-semibold text-slate-200">${{brand.name}}</td>
+                        <td class="py-2 text-right font-bold text-emerald-400">${{brand.count}} ks</td>
+                        <td class="py-2 text-right text-slate-400">${{brand.percentage.toFixed(1).replace('.', ',')}} %</td>
                     `;
                     brandsBody.appendChild(tr);
                 }});
@@ -974,11 +974,11 @@ def generate_html_report(stats, output_path):
                 }}
                 
                 row.innerHTML = `
-                    <span class="text-slate-500 font-bold">\${{dateStr}}</span>
-                    <span class="font-bold text-slate-200 truncate" title="\${{p.nickname || '@anonym'}}">\${{p.nickname || '@anonym'}}</span>
-                    <span class="font-extrabold text-emerald-400 text-right pr-2">\${{p.count || 0}} ks</span>
-                    <span class="flex justify-center">\${{badgeHtml}}</span>
-                    <button onclick="openAdminEditModal('\${{p.id}}')" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
+                    <span class="text-slate-500 font-bold">${{dateStr}}</span>
+                    <span class="font-bold text-slate-200 truncate" title="${{p.nickname || '@anonym'}}">${{p.nickname || '@anonym'}}</span>
+                    <span class="font-extrabold text-emerald-400 text-right pr-2">${{p.count || 0}} ks</span>
+                    <span class="flex justify-center">${{badgeHtml}}</span>
+                    <button onclick="openAdminEditModal('${{p.id}}')" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
                 `;
                 listContainer.appendChild(row);
             }});
@@ -1009,7 +1009,7 @@ def generate_html_report(stats, output_path):
             document.getElementById('adminEditNickInput').value = pickup.nickname || '';
             document.getElementById('adminEditTeamInput').value = pickup.team_code || '';
             document.getElementById('adminEditDate').textContent = new Date(pickup.created_at).toLocaleString('cs-CZ');
-            document.getElementById('adminEditNotes').textContent = pickup.notes ? `"\${{pickup.notes}}"` : 'Bez poznámky';
+            document.getElementById('adminEditNotes').textContent = pickup.notes ? `"${{pickup.notes}}"` : 'Bez poznámky';
             document.getElementById('adminEditPhoto').src = pickup.photo_url || 'can-marker-transparent.png';
             
             renderAdminCansEditList();
@@ -1046,17 +1046,17 @@ def generate_html_report(stats, output_path):
                 let volOptions = '';
                 vols.forEach(v => {{
                     const isMatch = (can.volume_liters == v || (v === 'Unknown' && (can.volume_liters === 'Unknown' || !can.volume_liters)));
-                    volOptions += `<option value="\${{v}}" \${{isMatch ? 'selected' : ''}}>\${{v === 'Unknown' ? 'Neznámý' : v + ' L'}}</option>`;
+                    volOptions += `<option value="${{v}}" ${{isMatch ? 'selected' : ''}}>${{v === 'Unknown' ? 'Neznámý' : v + ' L'}}</option>`;
                 }});
                 
                 row.innerHTML = `
                     <div class="flex gap-2 items-center w-full">
-                        <span class="text-[10px] font-bold text-slate-500 w-5">#\${{index + 1}}</span>
-                        <input type="text" list="dynamicBrandsList" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500" value="\${{inputValue}}" onchange="updateLocalCanBrandCustom(\${{index}}, this.value)" placeholder="Značka...">
-                        <select onchange="updateLocalCanVolume(\${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
-                            \${{volOptions}}
+                        <span class="text-[10px] font-bold text-slate-500 w-5">#${{index + 1}}</span>
+                        <input type="text" list="dynamicBrandsList" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500" value="${{inputValue}}" onchange="updateLocalCanBrandCustom(${{index}}, this.value)" onfocus="if(this.value==='Nerozpoznáno') this.value='';" onblur="if(this.value.trim()===''){ this.value='Nerozpoznáno'; updateLocalCanBrandCustom(${{index}}, 'Nerozpoznáno'); }" placeholder="Značka...">
+                        <select onchange="updateLocalCanVolume(${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
+                            ${{volOptions}}
                         </select>
-                        <button onclick="removeCanFromEditList(\${{index}})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
+                        <button onclick="removeCanFromEditList(${{index}})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
                     </div>
                 `;
                 container.appendChild(row);
@@ -1104,10 +1104,10 @@ def generate_html_report(stats, output_path):
             const energySaved = weightKg * ENERGY_SAVED_KWH_PER_KG;
             const co2Saved = weightKg * CO2_SAVED_KG_PER_KG;
             
-            document.getElementById('liveCansCount').textContent = `\${{adminEditCansLocal.length}} ks`;
-            document.getElementById('liveWeight').textContent = `\${{totalWeightG.toFixed(1)}} g`;
-            document.getElementById('liveEnergy').textContent = `\${{energySaved.toFixed(3).replace('.', ',')}} kWh`;
-            document.getElementById('liveCo2').textContent = `\${{co2Saved.toFixed(2).replace('.', ',')}} kg`;
+            document.getElementById('liveCansCount').textContent = `${{adminEditCansLocal.length}} ks`;
+            document.getElementById('liveWeight').textContent = `${{totalWeightG.toFixed(1)}} g`;
+            document.getElementById('liveEnergy').textContent = `${{energySaved.toFixed(3).replace('.', ',')}} kWh`;
+            document.getElementById('liveCo2').textContent = `${{co2Saved.toFixed(2).replace('.', ',')}} kg`;
         }}
 
         window.saveAdminEditChanges = async function() {{
@@ -1141,7 +1141,7 @@ def generate_html_report(stats, output_path):
             const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
             
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?id=eq.\${{adminSelectedPickup.id}}`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?id=eq.${{adminSelectedPickup.id}}`, {{
                     method: 'PATCH',
                     headers: {{
                         'apikey': SUPABASE_KEY,
