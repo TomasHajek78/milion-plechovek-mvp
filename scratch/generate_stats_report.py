@@ -1052,7 +1052,7 @@ def generate_html_report(stats, output_path):
                 row.innerHTML = `
                     <div class="flex gap-2 items-center w-full">
                         <span class="text-[10px] font-bold text-slate-500 w-5">#${{index + 1}}</span>
-                        <input type="text" list="dynamicBrandsList" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500" value="${{inputValue}}" onchange="updateLocalCanBrandCustom(${{index}}, this.value)" onfocus="if(this.value==='Nerozpoznáno') this.value='';" onblur="if(this.value.trim()===''){ this.value='Nerozpoznáno'; updateLocalCanBrandCustom(${{index}}, 'Nerozpoznáno'); }" placeholder="Značka...">
+                        <input type="text" list="dynamicBrandsList" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500" value="${{inputValue}}" onchange="updateLocalCanBrandCustom(${{index}}, this.value)" onfocus="if(this.value==='Nerozpoznáno') this.value='';" onblur="if(this.value.trim()===''){{ this.value='Nerozpoznáno'; updateLocalCanBrandCustom(${{index}}, 'Nerozpoznáno'); }}" placeholder="Značka...">
                         <select onchange="updateLocalCanVolume(${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
                             ${{volOptions}}
                         </select>
