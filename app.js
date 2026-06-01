@@ -1933,17 +1933,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const nick = (p.nickname || '').toLowerCase();
             if (searchNick && !nick.includes(searchNick)) return false;
             
-            const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
-                p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
-                
             if (statusFilter === 'unanalyzed') {
                 return !p.is_analyzed;
-            } else if (statusFilter === 'unverified_unknown') {
-                return p.is_analyzed && !p.is_verified && hasUnknown;
-            } else if (statusFilter === 'unverified_ai') {
-                return p.is_analyzed && !p.is_verified && !hasUnknown;
-            } else if (statusFilter === 'verified') {
-                return p.is_verified;
+            } else if (statusFilter === 'unknown') {
+                if (!p.is_analyzed) return false;
+                if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
+                return p.analysis_json.some(c => {
+                    const b = c.brand || 'Nerozpoznáno';
+                    return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
+                });
             }
             return true;
         });
@@ -1967,15 +1965,16 @@ document.addEventListener('DOMContentLoaded', () => {
             let badgeHtml = '';
             if (!p.is_analyzed) {
                 badgeHtml = '<span class="admin-badge warning">Čeká</span>';
-            } else if (p.is_verified) {
-                badgeHtml = '<span class="admin-badge success">Ověřeno</span>';
             } else {
                 const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
                     p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
                 if (hasUnknown) {
                     badgeHtml = '<span class="admin-badge error">Neznámé</span>';
                 } else {
-                    badgeHtml = '<span class="admin-badge info">Pouze AI</span>';
+                    badgeHtml = '<span class="admin-badge success">Hotovo</span>';
+                }
+            }
+
                 }
             }
             
@@ -2202,7 +2201,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     team_code: newTeam || null,
                     count: count,
                     is_analyzed: true,
-                    is_verified: true,
                     analysis_json: adminEditCansLocal,
                     aluminum_weight_g: totalWeightG,
                     energy_saved_kwh: energySaved,
@@ -2219,7 +2217,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 allPickups[idx].team_code = newTeam || null;
                 allPickups[idx].count = count;
                 allPickups[idx].is_analyzed = true;
-                allPickups[idx].is_verified = true;
                 allPickups[idx].analysis_json = adminEditCansLocal;
                 allPickups[idx].aluminum_weight_g = totalWeightG;
                 allPickups[idx].energy_saved_kwh = energySaved;

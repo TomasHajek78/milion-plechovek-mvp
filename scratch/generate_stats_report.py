@@ -534,7 +534,7 @@ def generate_html_report(stats, output_path):
 
         async function loadDashboardData() {{
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
                     headers: {{
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${{SUPABASE_KEY}}`
@@ -861,7 +861,7 @@ def generate_html_report(stats, output_path):
             }}
             
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,is_verified,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
                     headers: {{
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${{SUPABASE_KEY}}`
@@ -1154,7 +1154,6 @@ def generate_html_report(stats, output_path):
                         team_code: newTeam || null,
                         count: count,
                         is_analyzed: true,
-                        is_verified: true,
                         analysis_json: adminEditCansLocal,
                         aluminum_weight_g: totalWeightG,
                         energy_saved_kwh: energySaved,
@@ -1171,7 +1170,6 @@ def generate_html_report(stats, output_path):
                     allPickups[idx].team_code = newTeam || null;
                     allPickups[idx].count = count;
                     allPickups[idx].is_analyzed = true;
-                    allPickups[idx].is_verified = true;
                     allPickups[idx].analysis_json = adminEditCansLocal;
                     allPickups[idx].aluminum_weight_g = totalWeightG;
                     allPickups[idx].energy_saved_kwh = energySaved;
