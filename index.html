@@ -10,6 +10,9 @@
     <link rel="icon" type="image/png" href="logo.png?v=2">
     <link rel="manifest" href="manifest.json?v=2">
     <title>Milion Plechovek | Sběrač</title>
+    <style>
+        .hidden { display: none !important; }
+    </style>
     <link rel="stylesheet" href="style.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <!-- Leaflet Mapa -->
@@ -487,6 +490,7 @@
                     </div>
                     
                     <h4 style="margin: 15px 0 5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">🥫 Zjištěné plechovky</h4>
+                    <datalist id="dynamicBrandsList"></datalist>
                     <div id="adminCansList" class="admin-cans-list">
                         <!-- Plechovky se načtou dynamicky jako řádky formuláře -->
                     </div>
@@ -508,6 +512,7 @@
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="adminSaveBtn" onclick="saveAdminEditChanges()" class="primary-btn-small" style="flex: 1; background-color: var(--forest-green);">Uložit změny</button>
+                <button onclick="deleteAdminPickup()" class="secondary-btn" style="flex: 1; margin: 0; background-color: var(--rust-red); color: white; border-color: var(--rust-red);">Smazat úplně</button>
                 <button onclick="closeAdminEditModal()" class="secondary-btn" style="flex: 1; margin: 0;">Zrušit</button>
             </div>
         </div>

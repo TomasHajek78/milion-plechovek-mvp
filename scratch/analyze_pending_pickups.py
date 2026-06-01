@@ -51,6 +51,9 @@ def analyze_image_with_gemini(base64_data, mime_type):
 2. Volume in liters (0.5, 0.33, 0.25, 0.2, or 'Unknown').
 3. detection_issue: If the brand or volume is 'Unknown', write a brief explanation in Czech explaining why (e.g. "plechovka je příliš zmačkaná a logo je skryté", "fotka je rozmazaná a text nečitelný", "je vidět pouze stříbrná spodní část", "plechovka je špinavá nebo zrezivělá"). Otherwise, set it to null.
 
+SAFETY CRITICAL: If the image contains ANY inappropriate content (e.g. nudity, genitalia, explicit violence, "dick pics", obscene gestures, highly offensive material), you MUST immediately stop the analysis and respond ONLY with this JSON array:
+[{"brand": "NSFW", "volume_liters": "NSFW", "detection_issue": "Závadný obsah (nahota/nevhodné)"}]
+
 CRITICAL: Czech brands cheat sheet:
 - Birell: green cans with 'BIRELL' in white/green oval. Yellow-green is 'Pomelo & Grep'.
 - Staropramen: green cans with large 'S' logo.
@@ -223,6 +226,30 @@ def main():
                 continue
 
             print(f"  🔍 Gemini detekovala plechovky: {json.dumps(detected_cans)}")
+
+            # OCHRANA PROTI NSFW / ZÁVADNÉMU OBSAHU
+            if any(c.get('brand') == 'NSFW' for c in detected_cans):
+                print(f"  🚨 ZÁVADNÝ OBSAH DETEKOVÁN! Mažu záznam ID {pickup['id']}.")
+                delete_url = f"{SUPABASE_URL}/rest/v1/pickups?id=eq.{pickup['id']}"
+                delete_headers = {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': f"Bearer {SUPABASE_KEY}",
+                }
+                requests.delete(delete_url, headers=delete_headers)
+                
+                os.system(f"osascript -e 'display notification \"Zablokován NSFW obsah od uživatele {pickup['nickname']}. Záznam smazán.\" with title \"Milion plechovek - SECURITY\"'")
+                
+                applescript_nsfw = f"""
+tell application "Mail"
+    set newMessage to make new outgoing message with properties {{subject:"🚨 Milion Plechovek: Zablokován nevhodný obsah", content:"Systém zablokoval fotku nahranou uživatelem '{pickup['nickname']}', protože AI model na ní detekoval nevhodný obsah (nahota, vulgarismy atd.).\\n\\nFotka i záznam byly trvale smazány z databáze.", visible:false}}
+    tell newMessage
+        make new to recipient at end of to recipients with properties {{address:"tomas@tomashajek.cz"}}
+    end tell
+    send newMessage
+end tell
+"""
+                os.system(f"osascript -e '{applescript_nsfw}'")
+                continue
 
             # Výpočet statistik
             stats = calculate_environmental_stats(detected_cans, pickup['count'])

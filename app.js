@@ -1865,6 +1865,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) throw new Error('Načítání selhalo');
             allPickups = await response.json();
+            window.populateDynamicBrands();
             window.filterAdminPickups();
         } catch (e) {
             console.error(e);
@@ -1878,6 +1879,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('adminPanelModal');
         if (modal) {
             modal.classList.add('hidden');
+        }
+    };
+
+    window.populateDynamicBrands = function() {
+        const brandsSet = new Set(POPULAR_BRANDS);
+        allPickups.forEach(p => {
+            if (p.analysis_json && Array.isArray(p.analysis_json)) {
+                p.analysis_json.forEach(can => {
+                    if (can.brand && can.brand !== 'Unknown' && can.brand !== 'unknown' && can.brand !== 'Nerozpoznáno') {
+                        brandsSet.add(can.brand);
+                    }
+                });
+            }
+        });
+        const sortedBrands = Array.from(brandsSet).sort((a, b) => a.localeCompare(b, 'cs'));
+        const datalist = document.getElementById('dynamicBrandsList');
+        if (datalist) {
+            datalist.innerHTML = '';
+            sortedBrands.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b;
+                datalist.appendChild(opt);
+            });
         }
     };
 
@@ -2023,14 +2047,6 @@ document.addEventListener('DOMContentLoaded', () => {
             row.style.borderBottom = '1px solid var(--border-color, #e2e8f0)';
             row.style.marginBottom = '6px';
             
-            const isCustom = can.brand && !POPULAR_BRANDS.includes(can.brand) && can.brand !== 'Nerozpoznáno';
-            
-            let brandOptions = '';
-            POPULAR_BRANDS.forEach(b => {
-                const selected = (!isCustom && can.brand === b) ? 'selected' : '';
-                brandOptions += `<option value="${b}" ${selected}>${b}</option>`;
-            });
-            
             const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
             let volOptions = '';
             vols.forEach(v => {
@@ -2038,20 +2054,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 volOptions += `<option value="${v}" ${isMatch ? 'selected' : ''}>${v === 'Unknown' ? 'Neznámý' : v + ' L'}</option>`;
             });
             
+            let inputValue = can.brand === 'Unknown' || can.brand === 'unknown' ? 'Nerozpoznáno' : (can.brand || '');
+            
             row.innerHTML = `
                 <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                     <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); width: 20px;">#${index + 1}</span>
-                    <select class="can-brand" style="flex: 1; min-width: 0;" onchange="window.onBrandSelectChange(${index}, this)">
-                        ${brandOptions}
-                        <option value="CUSTOM_BRAND" ${isCustom ? 'selected' : ''}>✍️ Vlastní značka...</option>
-                    </select>
+                    <input type="text" list="dynamicBrandsList" class="can-brand" style="flex: 1; min-width: 0; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" value="${inputValue}" onchange="window.updateLocalCanBrandCustom(${index}, this.value)" placeholder="Značka...">
                     <select class="can-volume" style="width: 90px;" onchange="window.updateLocalCanVolume(${index}, this.value)">
                         ${volOptions}
                     </select>
                     <button onclick="window.removeCanFromEditList(${index})" class="delete-btn" style="background: none; border: none; cursor: pointer; color: var(--rust-red, #ef4444); font-size: 14px; padding: 4px;" title="Odstranit">🗑️</button>
-                </div>
-                <div id="customBrandContainer_${index}" style="display: ${isCustom ? 'flex' : 'none'}; padding-left: 28px; width: 100%;">
-                    <input type="text" placeholder="Napište název značky..." value="${isCustom ? can.brand : ''}" oninput="window.updateLocalCanBrandCustom(${index}, this.value)" style="flex: 1; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; background: #fff;" />
                 </div>
             `;
             container.appendChild(row);
@@ -2060,22 +2072,29 @@ document.addEventListener('DOMContentLoaded', () => {
         window.recalculateAdminStats();
     };
 
-    window.onBrandSelectChange = function(index, selectEl) {
-        const val = selectEl.value;
-        const container = document.getElementById(`customBrandContainer_${index}`);
+    window.deleteAdminPickup = async function() {
+        if (!adminSelectedPickup) return;
+        if (!confirm("Opravdu chceš tento úlovek trvale smazat? Tato akce je nevratná.")) return;
         
-        if (val === 'CUSTOM_BRAND') {
-            if (container) container.style.display = 'flex';
-            const input = container ? container.querySelector('input') : null;
-            const customVal = input ? input.value.trim() : '';
-            if (adminEditCansLocal[index]) {
-                adminEditCansLocal[index].brand = customVal || 'Vlastní';
-            }
-        } else {
-            if (container) container.style.display = 'none';
-            if (adminEditCansLocal[index]) {
-                adminEditCansLocal[index].brand = val;
-            }
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${adminSelectedPickup.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+            if (!response.ok) throw new Error('Nelze smazat záznam z databáze');
+            
+            alert('Záznam byl úspěšně smazán.');
+            window.closeAdminEditModal();
+            // Odebrat z lokálního pole a překreslit
+            allPickups = allPickups.filter(p => p.id !== adminSelectedPickup.id);
+            window.filterAdminPickups();
+            loadData(); // obnovit veřejné zobrazení
+        } catch (e) {
+            console.error(e);
+            alert("Chyba při mazání záznamu: " + e.message);
         }
     };
 
