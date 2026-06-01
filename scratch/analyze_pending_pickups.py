@@ -286,8 +286,7 @@ def main():
                 os.system(f"osascript -e 'display notification \"V administraci je {needs_review_count} fotek k ruční kontrole.\" with title \"Milion plechovek\" subtitle \"Čeká na schválení\"'")
                 
                 # 2. Odeslání tichého e-mailu přes Apple Mail
-                # UPOZORNĚNÍ: E-mailovou adresu "tvuj_email@seznam.cz" níže prosím přepiš na svůj skutečný e-mail!
-                target_email = "tvuj_email@seznam.cz"
+                target_email = "tomas@tomashajek.cz"
                 
                 applescript = f"""
 tell application "Mail"
