@@ -229,19 +229,31 @@ def main():
 
             # OCHRANA PROTI NSFW / ZÁVADNÉMU OBSAHU
             if any(c.get('brand') == 'NSFW' for c in detected_cans):
-                print(f"  🚨 ZÁVADNÝ OBSAH DETEKOVÁN! Mažu záznam ID {pickup['id']}.")
-                delete_url = f"{SUPABASE_URL}/rest/v1/pickups?id=eq.{pickup['id']}"
-                delete_headers = {
+                print(f"  🚨 ZÁVADNÝ OBSAH DETEKOVÁN! Blokuji záznam ID {pickup['id']}.")
+                
+                update_url = f"{SUPABASE_URL}/rest/v1/pickups?id=eq.{pickup['id']}"
+                update_headers = {
                     'apikey': SUPABASE_KEY,
                     'Authorization': f"Bearer {SUPABASE_KEY}",
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
                 }
-                requests.delete(delete_url, headers=delete_headers)
                 
-                os.system(f"osascript -e 'display notification \"Zablokován NSFW obsah od uživatele {pickup['nickname']}. Záznam smazán.\" with title \"Milion plechovek - SECURITY\"'")
+                update_payload = {
+                    'is_analyzed': True,
+                    'analysis_json': [{'brand': 'NSFW', 'volume_liters': 'NSFW', 'detection_issue': 'Závadný obsah'}],
+                    'aluminum_weight_g': 0,
+                    'energy_saved_kwh': 0,
+                    'money_saved_czk': 0,
+                    'co2_saved_kg': 0
+                }
+                requests.patch(update_url, headers=update_headers, json=update_payload)
+                
+                os.system(f"osascript -e 'display notification \"Zablokován NSFW obsah od uživatele {pickup['nickname']}. Čeká na smazání v administraci.\" with title \"Milion plechovek - SECURITY\"'")
                 
                 applescript_nsfw = f"""
 tell application "Mail"
-    set newMessage to make new outgoing message with properties {{subject:"🚨 Milion Plechovek: Zablokován nevhodný obsah", content:"Systém zablokoval fotku nahranou uživatelem '{pickup['nickname']}', protože AI model na ní detekoval nevhodný obsah (nahota, vulgarismy atd.).\\n\\nFotka i záznam byly trvale smazány z databáze.", visible:false}}
+    set newMessage to make new outgoing message with properties {{subject:"🚨 Milion Plechovek: Zablokován nevhodný obsah", content:"Systém zablokoval fotku nahranou uživatelem '{pickup['nickname']}', protože AI model na ní detekoval nevhodný obsah (nahota, vulgarismy atd.).\\n\\nFotka byla skryta z veřejné galerie a čeká na tvé smazání v Administraci.", visible:false}}
     tell newMessage
         make new to recipient at end of to recipients with properties {{address:"tomas@tomashajek.cz"}}
     end tell

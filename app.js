@@ -116,14 +116,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData() {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
                 }
             });
             if (!response.ok) throw new Error('Chyba komunikace s databází');
-            const data = await response.json();
+            let data = await response.json();
+            
+            // Odstranění NSFW položek z veřejné galerie
+            data = data.filter(item => {
+                if (item.analysis_json && Array.isArray(item.analysis_json)) {
+                    return !item.analysis_json.some(can => can.brand === 'NSFW');
+                }
+                return true;
+            });
+            
             allPickups = data; // Uložení do globálního pole pro galerii
 
             // Sčítání globálních a osobních statistik
@@ -1880,6 +1889,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) {
             modal.classList.add('hidden');
         }
+        loadData(); // Obnovit veřejná data (bez NSFW) po zavření administrace
     };
 
     window.populateDynamicBrands = function() {
