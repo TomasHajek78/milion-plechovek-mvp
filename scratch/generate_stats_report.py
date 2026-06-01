@@ -442,6 +442,7 @@ def generate_html_report(stats, output_path):
 
     <!-- Modální okno pro ruční úpravu konkrétního sběru -->
     <div id="adminEditPickupModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
+        <datalist id="dynamicBrandsList"></datalist>
         <div class="glass-card w-full max-w-3xl max-h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-slate-800 p-6 bg-slate-900">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-bold text-slate-200">✏️ Korekce záznamu</h3>
@@ -489,9 +490,12 @@ def generate_html_report(stats, output_path):
                 </div>
             </div>
             
-            <div class="flex gap-4 mt-auto">
+            <div class="flex gap-4 mt-auto pt-4 border-t border-slate-800">
                 <button id="adminSaveBtn" onclick="saveAdminEditChanges()" class="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl transition duration-200">Uložit změny</button>
                 <button onclick="closeAdminEditModal()" class="flex-1 py-3 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold rounded-xl transition duration-200">Zrušit</button>
+            </div>
+            <div class="flex gap-4 mt-4">
+                <button onclick="deleteAdminPickup()" class="w-full py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-900/50 font-bold rounded-xl transition duration-200 text-xs">🗑️ Smazat záznam úplně</button>
             </div>
         </div>
     </div>
@@ -865,12 +869,37 @@ def generate_html_report(stats, output_path):
                 }});
                 if (!response.ok) throw new Error('Načítání selhalo');
                 allPickups = await response.json();
+                populateDynamicBrands();
                 filterAdminPickups();
             }} catch (e) {{
                 console.error(e);
                 if (listContainer) {{
                     listContainer.innerHTML = `<div class="text-center py-8 text-red-400">Chyba: ${{e.message}}</div>`;
                 }}
+            }}
+        }}
+
+        function populateDynamicBrands() {{
+            const brandsSet = new Set(POPULAR_BRANDS);
+            allPickups.forEach(p => {{
+                if (p.analysis_json && Array.isArray(p.analysis_json)) {{
+                    p.analysis_json.forEach(can => {{
+                        if (can.brand && can.brand !== 'Unknown' && can.brand !== 'unknown' && can.brand !== 'Nerozpoznáno') {{
+                            brandsSet.add(can.brand);
+                        }}
+                    }});
+                }}
+            }});
+
+            const sortedBrands = Array.from(brandsSet).sort((a, b) => a.localeCompare(b, 'cs'));
+            const datalist = document.getElementById('dynamicBrandsList');
+            if (datalist) {{
+                datalist.innerHTML = '';
+                sortedBrands.forEach(b => {{
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    datalist.appendChild(opt);
+                }});
             }}
         }}
 
@@ -1011,13 +1040,7 @@ def generate_html_report(stats, output_path):
                 const row = document.createElement('div');
                 row.className = 'flex flex-col gap-1 pb-2 border-b border-slate-800/40 mb-2';
                 
-                const isCustom = can.brand && !POPULAR_BRANDS.includes(can.brand) && can.brand !== 'Nerozpoznáno';
-                
-                let brandOptions = '';
-                POPULAR_BRANDS.forEach(b => {{
-                    const selected = (!isCustom && can.brand === b) ? 'selected' : '';
-                    brandOptions += `<option value="\${{b}}" \${{selected}}>\${{b}}</option>`;
-                }});
+                let inputValue = can.brand === 'Unknown' || can.brand === 'unknown' ? 'Nerozpoznáno' : (can.brand || '');
                 
                 const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
                 let volOptions = '';
@@ -1029,17 +1052,11 @@ def generate_html_report(stats, output_path):
                 row.innerHTML = `
                     <div class="flex gap-2 items-center w-full">
                         <span class="text-[10px] font-bold text-slate-500 w-5">#\${{index + 1}}</span>
-                        <select onchange="onBrandSelectChange(\${{index}}, this)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
-                            \${{brandOptions}}
-                            <option value="CUSTOM_BRAND" \${{isCustom ? 'selected' : ''}}>✍️ Vlastní značka...</option>
-                        </select>
+                        <input type="text" list="dynamicBrandsList" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500" value="\${{inputValue}}" onchange="updateLocalCanBrandCustom(\${{index}}, this.value)" placeholder="Značka...">
                         <select onchange="updateLocalCanVolume(\${{index}}, this.value)" class="w-24 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg p-1.5 text-xs outline-none focus:border-emerald-500">
                             \${{volOptions}}
                         </select>
                         <button onclick="removeCanFromEditList(\${{index}})" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Odstranit">🗑️</button>
-                    </div>
-                    <div id="customBrandContainer_\${{index}}" style="display: \${{isCustom ? 'flex' : 'none'}}; padding-left: 28px; width: 100%;">
-                        <input type="text" placeholder="Napište název značky..." value="\${{isCustom ? can.brand : ''}}" oninput="updateLocalCanBrandCustom(\${{index}}, this.value)" class="flex-1 bg-slate-800 border border-slate-700 text-slate-100 rounded px-2.5 py-1 text-xs outline-none focus:border-emerald-500" />
                     </div>
                 `;
                 container.appendChild(row);
@@ -1048,28 +1065,9 @@ def generate_html_report(stats, output_path):
             recalculateAdminStats();
         }}
 
-        window.onBrandSelectChange = function(index, selectEl) {{
-            const val = selectEl.value;
-            const container = document.getElementById(`customBrandContainer_\${{index}}`);
-            
-            if (val === 'CUSTOM_BRAND') {{
-                if (container) container.style.display = 'flex';
-                const input = container ? container.querySelector('input') : null;
-                const customVal = input ? input.value.trim() : '';
-                if (adminEditCansLocal[index]) {{
-                    adminEditCansLocal[index].brand = customVal || 'Vlastní';
-                }}
-            }} else {{
-                if (container) container.style.display = 'none';
-                if (adminEditCansLocal[index]) {{
-                    adminEditCansLocal[index].brand = val;
-                }}
-            }}
-        }};
-
         window.updateLocalCanBrandCustom = function(index, value) {{
             if (adminEditCansLocal[index]) {{
-                adminEditCansLocal[index].brand = value.trim() || 'Vlastní';
+                adminEditCansLocal[index].brand = value.trim() || 'Nerozpoznáno';
             }}
         }};
 
