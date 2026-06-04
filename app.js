@@ -2293,13 +2293,6 @@ document.addEventListener('DOMContentLoaded', () => {
             saveBtn.textContent = originalText;
             saveBtn.disabled = false;
         }
-        } catch (e) {
-            console.error(e);
-            alert('Chyba při ukládání: ' + e.message);
-        } finally {
-            saveBtn.textContent = originalText;
-            saveBtn.disabled = false;
-        }
     };
 
     window.recalculateGlobalStatsAfterAdminEdit = function() {
