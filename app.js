@@ -192,6 +192,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Pokud jsme úspěšně online načetli data, zkusíme odeslat případné offline čekající položky
             syncOfflinePickups();
+            
+            // Obnovení administrátorského seznamu (pokud je otevřen)
+            if (typeof window.filterAdminPickups === 'function') {
+                window.filterAdminPickups();
+            }
+            // Aktualizace našeptávače značek
+            if (typeof window.populateDynamicBrands === 'function') {
+                window.populateDynamicBrands();
+            }
         } catch (e) {
             console.error('Nepodařilo se připojit k databázi. Používám lokální mezipaměť:', e);
             // Fallback na lokální data z localStorage
@@ -280,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .sort((a, b) => b.count - a.count);
 
         // Vykreslení TOP 10
-        sortedUsers.slice(0, 10).forEach((user, index) => {
+        sortedUsers.slice(0, 50).forEach((user, index) => {
             const li = document.createElement('li');
             li.className = 'leaderboard-item';
             if (user.nick === userNick) li.className += ' me';
@@ -393,8 +402,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!markersLayer) return;
         markersLayer.clearLayers();
         
+        // Filtrování pouze schválených sběrů pro veřejnou mapu (karanténa)
+        const validPickups = allData.filter(p => {
+            if (!p.is_analyzed) return false; // Skrýt neschválené (čekající na AI)
+            if (p.analysis_json && Array.isArray(p.analysis_json)) {
+                if (p.analysis_json.some(c => c.brand === 'Unknown' || c.brand === 'unknown' || c.brand === 'Nerozpoznáno')) {
+                    return false; // Skrýt spam / zamítnuté umělou inteligencí
+                }
+            }
+            return true;
+        });
+
         // Pokud nemáme live data, ukážeme jen svoji historii z paměti
-        const itemsToRender = allData.length > 0 ? allData : myHistory.map(h => ({
+        const itemsToRender = validPickups.length > 0 ? validPickups : myHistory.map(h => ({
             nickname: userNick || 'Já',
             count: h.count,
             latitude: h.coords ? h.coords.lat : null,
@@ -443,7 +463,8 @@ document.addEventListener('DOMContentLoaded', () => {
             historyList.innerHTML = '<li class="small-text" style="color:#888; text-align:center; width:100%;">Zatím nic. Vyraz ven!</li>';
             return;
         }
-        myHistory.slice(0, 5).forEach(item => {
+        // Zobrazíme posledních 20 záznamů v UI (ale v localStorage jich je uloženo až 1000 pro zálohu)
+        myHistory.slice(0, 20).forEach(item => {
             const li = document.createElement('li');
             li.innerHTML = `<span>📅 ${item.date}${item.photo_url ? ` <a href="${item.photo_url}" target="_blank" style="text-decoration:none;">📸</a>` : ''}</span> <strong>+${item.count} ks</strong>`;
             historyList.appendChild(li);
@@ -646,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             if (!navigator.onLine) {
-                savePickupOffline(count, notes, selectedFile);
+                await savePickupOffline(count, notes, selectedFile);
                 return;
             }
 
@@ -657,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cleanNick = userNick.replace(/[^a-zA-Z0-9]/g, '_');
                 const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
                 
-                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
+                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v2/${filename}`, {
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
@@ -668,7 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 if (uploadResponse.ok) {
-                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
+                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v2/${filename}`;
                 } else {
                     throw new Error("Odesílání fotografie selhalo.");
                 }
@@ -708,9 +729,10 @@ document.addEventListener('DOMContentLoaded', () => {
             successScreen.classList.remove('hidden');
             launchConfetti();
             
-        } catch (e) {
-            console.warn("Chyba při online odesílání, padám do offline režimu:", e);
-            savePickupOffline(count, notes, selectedFile);
+        } catch (error) {
+            console.error("Chyba:", error);
+            // Zkusíme uložit offline jako záložní řešení, pokud selhalo online odeslání
+            await savePickupOffline(count, notes, selectedFile);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "Odeslat do odpočtu";
@@ -844,8 +866,17 @@ document.addEventListener('DOMContentLoaded', () => {
         galleryGrid.innerHTML = '';
         photoDetailViewer.classList.add('hidden'); // Skrýt detail při otevření
 
-        // Filtrování úlovků daného uživatele, které mají fotku
-        const userPickups = allPickups.filter(p => p.nickname === nickname && p.photo_url);
+        // Filtrování úlovků daného uživatele, které mají fotku a prošly schválením AI
+        const userPickups = allPickups.filter(p => {
+            if (p.nickname !== nickname || !p.photo_url) return false;
+            if (!p.is_analyzed) return false; // Skrýt neschválené
+            if (p.analysis_json && Array.isArray(p.analysis_json)) {
+                if (p.analysis_json.some(c => c.brand === 'Unknown' || c.brand === 'unknown' || c.brand === 'Nerozpoznáno')) {
+                    return false; // Skrýt spam
+                }
+            }
+            return true;
+        });
 
         if (userPickups.length === 0) {
             galleryGrid.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-dim); padding: 20px 0; font-size: 13px;">Tento uživatel nemá nahrané žádné fotky.</div>';
@@ -1394,10 +1425,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function savePickupOffline(count, notes, file) {
+    async function savePickupOffline(count, notes, file) {
         if (!db) {
             alert("Místní paměť telefonu není připravena. Úlovek se nepodařilo uložit.");
             return;
+        }
+        
+        let photoBase64 = null;
+        if (file) {
+            try {
+                photoBase64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsDataURL(file);
+                });
+            } catch (e) {
+                console.error("Nepodařilo se převést fotku na Base64:", e);
+            }
         }
         
         try {
@@ -1410,7 +1455,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 latitude: currentCoords ? currentCoords.lat : null,
                 longitude: currentCoords ? currentCoords.lon : null,
                 notes: notes || null,
-                photoBlob: file, // raw File/Blob
+                photoBase64: photoBase64, // Ukládáme jako Base64 text (odolné vůči iOS Safari bugům)
                 timestamp: Date.now()
             };
             
@@ -1457,26 +1502,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (const item of pending) {
                     try {
                         let photoUrl = null;
-                        if (item.photoBlob) {
-                            const fileExt = item.photoBlob.name ? item.photoBlob.name.split('.').pop() : 'jpg';
+                        let uploadSuccess = true;
+                        
+                        if (item.photoBase64) {
+                            const fileExt = 'jpg';
                             const cleanNick = item.nickname.replace(/[^a-zA-Z0-9]/g, '_');
                             const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
                             
-                            const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickup-photos/${filename}`, {
+                            // Převedeme base64 zpět na Blob pro odeslání
+                            const response = await fetch(item.photoBase64);
+                            const uploadBody = await response.blob();
+                            
+                            const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v2/${filename}`, {
                                 method: 'POST',
                                 headers: {
                                     'apikey': SUPABASE_KEY,
                                     'Authorization': `Bearer ${SUPABASE_KEY}`,
-                                    'Content-Type': item.photoBlob.type
+                                    'Content-Type': 'image/jpeg'
                                 },
-                                body: item.photoBlob
+                                body: uploadBody
                             });
                             
                             if (uploadResponse.ok) {
-                                photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickup-photos/${filename}`;
+                                photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v2/${filename}`;
                             } else {
                                 console.error("Storage sync upload failed");
+                                uploadSuccess = false;
                             }
+                        }
+                        
+                        if (!uploadSuccess) {
+                            console.warn(`Přeskakuji synchronizaci záznamu ${item.id} kvůli chybě nahrávání fotky.`);
+                            break; // Zastavíme sync loop, fotka se uchová v paměti do dalšího pokusu
                         }
                         
                         const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups`, {
@@ -2083,15 +2140,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!adminSelectedPickup) return;
         if (!confirm("Opravdu chceš tento úlovek trvale smazat? Tato akce je nevratná.")) return;
         
+        let adminPassword = sessionStorage.getItem('adminPassword');
+        if (!adminPassword) {
+            adminPassword = prompt("Zadejte administrátorské heslo pro smazání záznamu:");
+            if (!adminPassword) return;
+            sessionStorage.setItem('adminPassword', adminPassword);
+        }
+        
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${adminSelectedPickup.id}`, {
-                method: 'DELETE',
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_delete_pickup`, {
+                method: 'POST',
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    p_id: adminSelectedPickup.id,
+                    p_secret: adminPassword
+                })
             });
-            if (!response.ok) throw new Error('Nelze smazat záznam z databáze');
+            if (!response.ok) {
+                if (response.status === 400 || response.status === 403) {
+                    sessionStorage.removeItem('adminPassword');
+                    throw new Error("Špatné heslo nebo chyba oprávnění.");
+                }
+                throw new Error('Nelze smazat záznam z databáze');
+            }
             
             alert('Záznam byl úspěšně smazán.');
             window.closeAdminEditModal();
@@ -2165,67 +2240,59 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn.textContent = 'Ukládám...';
         saveBtn.disabled = true;
         
-        let totalWeightG = 0;
-        adminEditCansLocal.forEach(can => {
-            const vol = can.volume_liters;
-            let weight = CAN_WEIGHTS['Unknown'];
-            if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
-            else if (vol === 0.33 || vol === '0.33') weight = CAN_WEIGHTS[0.33];
-            else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
-            else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
-            totalWeightG += weight;
-        });
-        
-        const weightKg = totalWeightG / 1000.0;
-        const energySaved = parseFloat((weightKg * ENERGY_SAVED_KWH_PER_KG).toFixed(4));
-        const moneySaved = parseFloat((weightKg * SCRAP_VALUE_RAW_PER_KG).toFixed(2));
-        const co2Saved = parseFloat((weightKg * CO2_SAVED_KG_PER_KG).toFixed(3));
         const count = adminEditCansLocal.length;
-        
         const newNick = document.getElementById('adminEditNickInput')?.value.trim() || '';
         const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
         
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?id=eq.${adminSelectedPickup.id}`, {
-                method: 'PATCH',
+            let adminPassword = sessionStorage.getItem('adminPassword');
+            if (!adminPassword) {
+                adminPassword = prompt("Zadejte administrátorské heslo pro uložení změn:");
+                if (!adminPassword) {
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+                sessionStorage.setItem('adminPassword', adminPassword);
+            }
+            
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_update_pickup`, {
+                method: 'POST',
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=minimal'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    nickname: newNick || null,
-                    team_code: newTeam || null,
-                    count: count,
-                    is_analyzed: true,
-                    analysis_json: adminEditCansLocal,
-                    aluminum_weight_g: totalWeightG,
-                    energy_saved_kwh: energySaved,
-                    money_saved_czk: moneySaved,
-                    co2_saved_kg: co2Saved
+                    p_id: adminSelectedPickup.id,
+                    p_secret: adminPassword,
+                    p_nickname: newNick || null,
+                    p_team: newTeam || null,
+                    p_notes: adminSelectedPickup.notes,
+                    p_is_analyzed: true,
+                    p_analysis_json: adminEditCansLocal,
+                    p_count: count
                 })
             });
             
-            if (!response.ok) throw new Error('Uložení do databáze selhalo.');
-            
-            const idx = allPickups.findIndex(p => p.id === adminSelectedPickup.id);
-            if (idx !== -1) {
-                allPickups[idx].nickname = newNick || null;
-                allPickups[idx].team_code = newTeam || null;
-                allPickups[idx].count = count;
-                allPickups[idx].is_analyzed = true;
-                allPickups[idx].analysis_json = adminEditCansLocal;
-                allPickups[idx].aluminum_weight_g = totalWeightG;
-                allPickups[idx].energy_saved_kwh = energySaved;
-                allPickups[idx].money_saved_czk = moneySaved;
-                allPickups[idx].co2_saved_kg = co2Saved;
+            if (!response.ok) {
+                if (response.status === 400 || response.status === 403) {
+                    sessionStorage.removeItem('adminPassword');
+                    throw new Error("Špatné heslo nebo chyba oprávnění.");
+                }
+                throw new Error('Uložení do databáze selhalo.');
             }
             
-            window.recalculateGlobalStatsAfterAdminEdit();
-            alert('Změny byly úspěšně uloženy!');
+            alert('Změny úspěšně uloženy.');
             window.closeAdminEditModal();
-            window.filterAdminPickups();
+            loadData();
+        } catch (e) {
+            console.error(e);
+            alert("Chyba při ukládání: " + e.message);
+        } finally {
+            saveBtn.textContent = originalText;
+            saveBtn.disabled = false;
+        }
         } catch (e) {
             console.error(e);
             alert('Chyba při ukládání: ' + e.message);
