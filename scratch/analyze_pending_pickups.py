@@ -42,26 +42,33 @@ def get_base64_image(url):
         print(f"  ⚠️ Chyba stahování obrázku z {url}: {str(e)}")
         return None
 
-def analyze_image_with_gemini(base64_data, mime_type):
+def analyze_image_with_gemini(base64_data, mime_type, dynamic_brands_str=""):
     # V roce 2026 používáme kombinaci modelů pro rozložení denního limitu (každý model má 20 RPD, dohromady 80 RPD)
     models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash"]
     
-    prompt = """Analyze this photo of discarded beverage cans. Identify all aluminum cans. For each, determine:
-1. Brand (e.g. Monster, Coca-Cola, Pilsner Urquell, Birell, Staropramen, Radegast, Kofola, Starobrno, Red Bull, Tiger, Heineken, Pepsi, or 'Unknown').
+    dynamic_section = ""
+    if dynamic_brands_str:
+        dynamic_section = f"\nCRITICAL DYNAMIC CHEAT SHEET (Learned from Database):\nThe following brands have been previously verified by human administrators: {dynamic_brands_str}\nSTEEL FILTER RULE: You may use these brands ONLY AND EXCLUSIVELY if you are absolutely certain the object is an aluminum beverage can. If the object is a plastic bottle, a bag of chips, paper, or any non-can trash, you MUST IGNORE these brands completely and not output them."
+
+    prompt = f"""You are an expert AI image analyzer for an ecological project 'Milion Plechovek'. Your task is to analyze photos of discarded beverage cans found in nature.
+
+Analyze the image and determine:
+1. Brand (e.g. Monster, Coca-Cola, Pilsner Urquell, Birell, Red Bull, Tiger, Pepsi, Crazy Wolf, Big Shock, Semtex, etc.). CRITICAL: If you can clearly read ANY brand name on the can, use it! Do not restrict yourself only to these examples. Only use 'Unknown' if the text/logo is completely illegible.
 2. Volume in liters (0.5, 0.33, 0.25, 0.2, or 'Unknown').
 3. detection_issue: If the brand or volume is 'Unknown', write a brief explanation in Czech explaining why (e.g. "plechovka je příliš zmačkaná a logo je skryté", "fotka je rozmazaná a text nečitelný", "je vidět pouze stříbrná spodní část", "plechovka je špinavá nebo zrezivělá"). Otherwise, set it to null.
 
 SAFETY CRITICAL: If the image contains ANY inappropriate content (e.g. nudity, genitalia, explicit violence, "dick pics", obscene gestures, highly offensive material), you MUST immediately stop the analysis and respond ONLY with this JSON array:
-[{"brand": "NSFW", "volume_liters": "NSFW", "detection_issue": "Závadný obsah (nahota/nevhodné)"}]
-
+[{{"brand": "NSFW", "volume_liters": "NSFW", "detection_issue": "Závadný obsah (nahota/nevhodné)"}}]
+{dynamic_section}
 CRITICAL: Czech brands cheat sheet:
 - Birell: green cans with 'BIRELL' in white/green oval. Yellow-green is 'Pomelo & Grep'.
 - Staropramen: green cans with large 'S' logo.
 - Pilsner Urquell: green cans with red wax seal logo.
 - Radegast: green or blue cans with pagan god symbol.
 - Kofola: brown/beige/black cans with yellow flower logo.
+- Republica (Božkov): dark/brown cans with rum and cola, often says 'REPUBLICA' or 'BOŽKOV'.
 
-Respond ONLY with a JSON array of objects with keys 'brand', 'volume_liters', and 'detection_issue'. Example output: [{"brand": "Monster", "volume_liters": 0.5, "detection_issue": null}, {"brand": "Unknown", "volume_liters": "Unknown", "detection_issue": "plechovka je příliš zmačkaná a logo je skryté"}]"""
+Respond ONLY with a JSON array of objects with keys 'brand', 'volume_liters', and 'detection_issue'. Example output: [{{"brand": "Monster", "volume_liters": 0.5, "detection_issue": null}}, {{"brand": "Unknown", "volume_liters": "Unknown", "detection_issue": "plechovka je příliš zmačkaná a logo je skryté"}}]"""
 
     for model in models:
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
@@ -81,7 +88,8 @@ Respond ONLY with a JSON array of objects with keys 'brand', 'volume_liters', an
                 }
             ],
             "generationConfig": {
-                "responseMimeType": "application/json"
+                "responseMimeType": "application/json",
+                "temperature": 0.0
             }
         }
 
@@ -182,12 +190,35 @@ def main():
     print("🚀 Spouštím analýzu neanalyzovaných plechovek ze Supabase...")
     
     try:
-        # 1. Načtení neanalyzovaných řádků, které obsahují URL fotky
-        query_url = f"{SUPABASE_URL}/rest/v1/pickups?is_analyzed=eq.false&photo_url=not.is.null&select=id,photo_url,count,nickname"
         headers = {
             'apikey': SUPABASE_KEY,
             'Authorization': f"Bearer {SUPABASE_KEY}"
         }
+
+        # 0. Načtení všech známých značek pro dynamický tahák (Continuous Learning)
+        print("📚 Načítám databázi dříve ověřených značek...")
+        query_brands = f"{SUPABASE_URL}/rest/v1/pickups?is_analyzed=eq.true&select=analysis_json"
+        res_brands = requests.get(query_brands, headers=headers, timeout=30)
+        
+        dynamic_brands_str = ""
+        if res_brands.status_code == 200:
+            verified_pickups = res_brands.json()
+            known_brands = set()
+            for p in verified_pickups:
+                ajson = p.get('analysis_json')
+                if isinstance(ajson, list):
+                    for can in ajson:
+                        b = can.get('brand')
+                        if b and b not in ['Nerozpoznáno', 'Unknown', 'NSFW']:
+                            known_brands.add(b)
+            if known_brands:
+                dynamic_brands_str = ", ".join(sorted(list(known_brands)))
+                print(f"📚 Dynamický tahák načten ({len(known_brands)} ověřených značek): {dynamic_brands_str}")
+        else:
+            print("⚠️ Nepodařilo se načíst dynamický tahák z databáze.")
+
+        # 1. Načtení neanalyzovaných řádků, které obsahují URL fotky
+        query_url = f"{SUPABASE_URL}/rest/v1/pickups?is_analyzed=eq.false&photo_url=not.is.null&select=id,photo_url,count,nickname"
         
         response = requests.get(query_url, headers=headers, timeout=30)
         if response.status_code != 200:
@@ -215,7 +246,7 @@ def main():
             
             detected_cans = []
             try:
-                detected_cans = analyze_image_with_gemini(base64_data, mime_type)
+                detected_cans = analyze_image_with_gemini(base64_data, mime_type, dynamic_brands_str)
                 if not detected_cans or not isinstance(detected_cans, list):
                     print("  ⚠️ Gemini nevrátila validní seznam plechovek. Nastavuji jako prázdné.")
                     detected_cans = []
