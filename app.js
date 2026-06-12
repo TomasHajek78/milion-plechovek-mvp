@@ -92,12 +92,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const dbRequest = indexedDB.open('MilionPlechovekDB', 1);
     dbRequest.onupgradeneeded = (e) => {
         const localDb = e.target.result;
+        // Jednorázová čistička zablokovaných fotek v telefonu
+        if (!localStorage.getItem('queue_cleared_v1')) {
+            if (localDb.objectStoreNames.contains('pendingPickups')) {
+                const tx = localDb.transaction(['pendingPickups'], 'readwrite');
+                tx.objectStore('pendingPickups').clear();
+                localStorage.setItem('queue_cleared_v1', 'true');
+                console.log("Zaseklá fronta vymazána");
+            }
+        }
+
         if (!localDb.objectStoreNames.contains('pendingPickups')) {
             localDb.createObjectStore('pendingPickups', { keyPath: 'id', autoIncrement: true });
         }
     };
     dbRequest.onsuccess = (e) => {
         db = e.target.result;
+        
+        // Jednorázová čistička zablokovaných fotek v telefonu
+        if (!localStorage.getItem('queue_cleared_v2')) {
+            if (db.objectStoreNames.contains('pendingPickups')) {
+                const tx = db.transaction(['pendingPickups'], 'readwrite');
+                tx.objectStore('pendingPickups').clear();
+                localStorage.setItem('queue_cleared_v2', 'true');
+                console.log("Zaseklá fronta vymazána");
+            }
+        }
+        
         updateSyncBanner();
         syncOfflinePickups();
     };
