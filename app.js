@@ -58,6 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let globalStats = parseInt(localStorage.getItem('milion_globalstats')) || 999171;
     let globalEnergy = parseFloat(localStorage.getItem('milion_globalenergy')) || 0;
     let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
+    const originalLength = myHistory.length;
+    myHistory = myHistory.filter(item => item.status !== 'pending');
+    if (myHistory.length < originalLength) {
+        localStorage.setItem('milion_history', JSON.stringify(myHistory));
+        console.log("Zaseklé položky byly úspěšně vymazány.");
+    }
     // Podpora URL parametru ?nick=Tom pro obnovení přezdívky bez login screenu
     const _urlNick = new URLSearchParams(window.location.search).get('nick');
     if (_urlNick) {
@@ -453,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     icon: numberIcon,
                     canCount: item.count
                 })
-                .bindPopup(popupText)
+                .bindPopup(popupText, { autoPan: false, minWidth: 140 })
                 .addTo(markersLayer);
             }
         });
@@ -904,6 +910,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 myStats = data.stats;
                 globalStats = data.global;
                 myHistory = data.history;
+                
                 userNick = data.nick;
                 localStorage.setItem('milion_mystats', myStats);
                 localStorage.setItem('milion_globalstats', globalStats);
