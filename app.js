@@ -125,6 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Chyba komunikace s databází');
             let data = await response.json();
             
+            // Odstranění spam botů (příliš vysoké počty)
+            data = data.filter(item => item.count <= 50 && item.count > 0);
+
             // Odstranění NSFW položek z veřejné galerie
             data = data.filter(item => {
                 if (item.analysis_json && Array.isArray(item.analysis_json)) {
@@ -402,10 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!markersLayer) return;
         markersLayer.clearLayers();
         
-        // Filtrování pouze schválených sběrů pro veřejnou mapu (karanténa)
+        // Filtrování pouze schválených sběrů pro veřejnou mapu (karanténa vypnuta pro okamžitou zpětnou vazbu)
         const validPickups = allData.filter(p => {
-            if (!p.is_analyzed) return false; // Skrýt neschválené (čekající na AI)
-            if (p.analysis_json && Array.isArray(p.analysis_json)) {
+            // Zobrazíme i neschválené (čekající na AI). Skryjeme pouze PROKÁZANÝ spam.
+            if (p.is_analyzed && p.analysis_json && Array.isArray(p.analysis_json)) {
                 if (p.analysis_json.some(c => c.brand === 'Unknown' || c.brand === 'unknown' || c.brand === 'Nerozpoznáno')) {
                     return false; // Skrýt spam / zamítnuté umělou inteligencí
                 }
@@ -466,7 +469,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // Zobrazíme posledních 20 záznamů v UI (ale v localStorage jich je uloženo až 1000 pro zálohu)
         myHistory.slice(0, 20).forEach(item => {
             const li = document.createElement('li');
-            li.innerHTML = `<span>📅 ${item.date}${item.photo_url ? ` <a href="${item.photo_url}" target="_blank" style="text-decoration:none;">📸</a>` : ''}</span> <strong>+${item.count} ks</strong>`;
+            
+            // Detekce, zda AI zamítla tento úlovek
+            const isRejected = item.notes && item.notes.includes('[ZAMÍTNUTO AI: DUPLIKÁT SCÉNY]');
+            
+            if (isRejected) {
+                li.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; opacity: 0.6; text-decoration: line-through;">
+                            <span>📅 ${item.date}${item.photo_url ? ` <a href="${item.photo_url}" target="_blank" style="text-decoration:none;">📸</a>` : ''}</span> 
+                            <strong>+0 ks</strong>
+                        </div>
+                        <span style="font-size: 11px; color: var(--rust-red); background: rgba(220,38,38,0.1); padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                            ⚠️ Zamítnuto AI: Pokus o znovunahrání stejných plechovek
+                        </span>
+                    </div>
+                `;
+            } else {
+                li.innerHTML = `<span>📅 ${item.date}${item.photo_url ? ` <a href="${item.photo_url}" target="_blank" style="text-decoration:none;">📸</a>` : ''}</span> <strong>+${item.count} ks</strong>`;
+            }
             historyList.appendChild(li);
         });
     }
@@ -641,6 +662,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    async function compressImage(file, maxWidth = 2048, maxHeight = 2048, quality = 0.85) {
+        if (!file || !file.type || !file.type.startsWith('image/')) return file;
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else resolve(file); // fallback
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = error => {
+                    console.error('Image load error during compression', error);
+                    resolve(file); // fallback on error
+                };
+            };
+            reader.onerror = error => {
+                console.error('File read error during compression', error);
+                resolve(file); // fallback
+            };
+        });
+    }
+
     function getGPSLocation() {
         gpsStatus.textContent = "📍 Zjišťuji polohu...";
         navigator.geolocation.getCurrentPosition(
@@ -674,28 +742,31 @@ document.addEventListener('DOMContentLoaded', () => {
             let photoUrl = null;
             if (selectedFile) {
                 // Generování unikátního názvu souboru pro zabránění přepsání
-                const fileExt = selectedFile.name.split('.').pop() || 'jpg';
+                const fileExt = 'jpg'; // Forcováno na JPG díky kompresi
                 const cleanNick = userNick.replace(/[^a-zA-Z0-9]/g, '_');
                 const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
                 
-                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v2/${filename}`, {
+                const compressedBlob = await compressImage(selectedFile, 2048, 2048, 0.85);
+                
+                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v3/${filename}`, {
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': selectedFile.type
+                        'Content-Type': 'image/jpeg'
                     },
-                    body: selectedFile
+                    body: compressedBlob
                 });
                 
                 if (uploadResponse.ok) {
-                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v2/${filename}`;
+                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v3/${filename}`;
                 } else {
                     throw new Error("Odesílání fotografie selhalo.");
                 }
             }
 
             // Uložení do Supabase databáze
+            let isInserted = false;
             const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups`, {
                 method: 'POST',
                 headers: {
@@ -715,9 +786,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (!response.ok) throw new Error('Chyba zápisu do databáze');
+            isInserted = true;
             
             // Okamžité znovunačtení dat z databáze
-            await loadData();
+            try {
+                await loadData();
+            } catch (loadErr) {
+                console.warn("Zápis úspěšný, ale nepodařilo se načíst nová data:", loadErr);
+                // Data už jsou v databázi, chyba načtení skóre nevadí úspěšnému uložení.
+            }
             
             // Reset titulku úspěšné obrazovky na výchozí online stav
             const successTitle = successScreen.querySelector('h3');
@@ -731,8 +808,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
         } catch (error) {
             console.error("Chyba:", error);
-            // Zkusíme uložit offline jako záložní řešení, pokud selhalo online odeslání
-            await savePickupOffline(count, notes, selectedFile);
+            // Zkusíme uložit offline jako záložní řešení, POUZE pokud se nepovedlo odeslat data na server
+            if (typeof isInserted !== 'undefined' && isInserted) {
+                // Bylo úspěšně vloženo do databáze, ale selhalo něco jiného (např. chyba v UI).
+                // V žádném případě neukládat do offline zálohy, jinak vzniknou duplikáty!
+                pickupForm.classList.add('hidden');
+                successScreen.classList.remove('hidden');
+                launchConfetti();
+            } else {
+                await savePickupOffline(count, notes, selectedFile);
+            }
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "Odeslat do odpočtu";
@@ -866,11 +951,10 @@ document.addEventListener('DOMContentLoaded', () => {
         galleryGrid.innerHTML = '';
         photoDetailViewer.classList.add('hidden'); // Skrýt detail při otevření
 
-        // Filtrování úlovků daného uživatele, které mají fotku a prošly schválením AI
+        // Filtrování úlovků daného uživatele (zobrazujeme hned, skrýváme jen prokázaný spam)
         const userPickups = allPickups.filter(p => {
             if (p.nickname !== nickname || !p.photo_url) return false;
-            if (!p.is_analyzed) return false; // Skrýt neschválené
-            if (p.analysis_json && Array.isArray(p.analysis_json)) {
+            if (p.is_analyzed && p.analysis_json && Array.isArray(p.analysis_json)) {
                 if (p.analysis_json.some(c => c.brand === 'Unknown' || c.brand === 'unknown' || c.brand === 'Nerozpoznáno')) {
                     return false; // Skrýt spam
                 }
@@ -1434,11 +1518,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let photoBase64 = null;
         if (file) {
             try {
+                // Komprese i pro offline režim, aby se ušetřilo místo v telefonu
+                const compressedBlob = await compressImage(file, 2048, 2048, 0.85);
                 photoBase64 = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = () => reject(reader.error);
-                    reader.readAsDataURL(file);
+                    reader.readAsDataURL(compressedBlob);
                 });
             } catch (e) {
                 console.error("Nepodařilo se převést fotku na Base64:", e);
@@ -1513,7 +1599,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const response = await fetch(item.photoBase64);
                             const uploadBody = await response.blob();
                             
-                            const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v2/${filename}`, {
+                            const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v3/${filename}`, {
                                 method: 'POST',
                                 headers: {
                                     'apikey': SUPABASE_KEY,
@@ -1524,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                             
                             if (uploadResponse.ok) {
-                                photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v2/${filename}`;
+                                photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v3/${filename}`;
                             } else {
                                 console.error("Storage sync upload failed");
                                 uploadSuccess = false;
@@ -1550,6 +1636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 longitude: item.longitude,
                                 notes: item.notes,
                                 photo_url: photoUrl,
+                                app_version: 3,
                                 created_at: new Date(item.timestamp).toISOString() // Zachováme historické datum sběru z lesa!
                             })
                         });
