@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v32';
+const CACHE_NAME = 'milion-plechovek-v33';
 
 // Soubory aplikace – načítáme vždy ze sítě (network-first)
 // Důvod: při každém deployi musí testeři vidět okamžitě novou verzi
@@ -14,6 +14,7 @@ const STATIC_ASSETS = [
   './can_marker_red_transparent.png',
   './ikona_sheet2_8.png',
   './ikona_sheet2_9.png',
+  './ikona_sheet2_13.png',
   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
