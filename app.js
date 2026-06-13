@@ -1527,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- POMOCNÉ FUNKCE PRO OFFLINE SYNCHRONIZACI ---
-    function updateSyncBanner() {
+    function updateSyncBanner(activelySyncing = false) {
         if (!db) return;
         try {
             const transaction = db.transaction(['pendingPickups'], 'readonly');
@@ -1536,7 +1536,12 @@ document.addEventListener('DOMContentLoaded', () => {
             countRequest.onsuccess = () => {
                 const pendingCount = countRequest.result;
                 if (pendingCount > 0) {
-                    syncStatusText.textContent = `Máš ${pendingCount} neodeslaných úlovků. Odesílám...`;
+                    // Odlišíme stav: aktivní odesílání vs. čeká na připojení
+                    if (activelySyncing || isSyncing) {
+                        syncStatusText.textContent = `⏳ Právě odesílám ${pendingCount} úlovek… Nevypínej aplikaci.`;
+                    } else {
+                        syncStatusText.textContent = `📡 ${pendingCount} úlovek čeká na odeslání. Připoj se k internetu.`;
+                    }
                     syncBanner.classList.remove('hidden');
                 } else {
                     syncBanner.classList.add('hidden');
