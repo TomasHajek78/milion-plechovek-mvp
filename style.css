@@ -326,6 +326,15 @@ body {
 .nav-icon {
     font-size: 24px;
     transition: transform 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-image-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
 }
 
 .nav-item.active .nav-icon {
@@ -428,12 +437,16 @@ input:focus, textarea:focus {
     justify-content: center;
 }
 
-.can-blue {
-    filter: hue-rotate(85deg) saturate(1.2) brightness(0.9) !important;
+.can-green {
+    background-image: url('can_marker_green_transparent.png') !important;
+}
+
+.can-teal {
+    background-image: url('can_marker_teal_transparent.png') !important;
 }
 
 .can-red {
-    filter: hue-rotate(225deg) saturate(1.5) brightness(0.9) !important;
+    background-image: url('can_marker_red_transparent.png') !important;
 }
 
 

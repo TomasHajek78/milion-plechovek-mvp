@@ -361,23 +361,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pomocná funkce pro určení barvy plechovky (zelená, modrá, červená) podle souřadnic.
     // Výsledkem je, že plechovky budou mít různé barvy z loga, ale konkrétní nález bude mít vždy stejnou barvu.
     function getMarkerColorClass(item) {
-        if (!item || !item.latitude || !item.longitude) return '';
+        if (!item || !item.latitude || !item.longitude) return 'can-green';
         // Jednoduchý stabilní hash ze souřadnic
         const hash = Math.abs(Math.sin(item.latitude * 12.9898 + item.longitude * 78.233) * 43758.5453);
-        const index = Math.floor((hash % 1) * 3); // 0 = zelená (bez třídy), 1 = modrá, 2 = červená
-        const classes = ['', 'can-blue', 'can-red'];
+        const index = Math.floor((hash % 1) * 3); // 0 = zelená, 1 = teal, 2 = červená
+        const classes = ['can-green', 'can-teal', 'can-red'];
         return classes[index];
     }
 
     // Stabilní barva pro lajkovací plechovky (podle souřadnic, případně podle ID pro případy bez GPS)
     function getCanColorClass(item) {
-        if (!item) return '';
+        if (!item) return 'can-green';
         if (item.latitude && item.longitude) {
             return getMarkerColorClass(item);
         }
         const hash = Math.abs(Math.sin((item.id || 0) * 12.9898) * 43758.5453);
         const index = Math.floor((hash % 1) * 3);
-        const classes = ['', 'can-blue', 'can-red'];
+        const classes = ['can-green', 'can-teal', 'can-red'];
         return classes[index];
     }
 
@@ -1050,6 +1050,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         const colorClass = getCanColorClass(pickup);
                         if (colorClass) {
                             likeCanIconEl.classList.add(colorClass);
+                            // Aktualizujeme src pro img element
+                            if (colorClass === 'can-green') {
+                                likeCanIconEl.src = 'can_marker_green_transparent.png';
+                            } else if (colorClass === 'can-teal') {
+                                likeCanIconEl.src = 'can_marker_teal_transparent.png';
+                            } else if (colorClass === 'can-red') {
+                                likeCanIconEl.src = 'can_marker_red_transparent.png';
+                            }
+                        } else {
+                            likeCanIconEl.src = 'can-marker-transparent.png';
                         }
                     }
                     
@@ -1878,7 +1888,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const introSub = document.querySelector('#wrappedSlide1 .wrapped-subtitle');
         const introText = document.querySelector('#wrappedSlide1 .wrapped-text');
         if (introSub) {
-            introSub.textContent = isQuarterly ? "Tvůj kvartální přehled" : "Tvůj sběratelský přehled";
+            introSub.textContent = "Lov započal!";
         }
         if (introText) {
             introText.textContent = isQuarterly 
@@ -1957,12 +1967,13 @@ document.addEventListener('DOMContentLoaded', () => {
             brandIconEl.className = 'custom-div-icon large-can-icon';
             const lowerName = topBrandName.toLowerCase();
             if (lowerName.includes('birell') || lowerName.includes('monster')) {
-                brandIconEl.style.filter = 'none';
+                brandIconEl.classList.add('can-green');
             } else if (lowerName.includes('coca') || lowerName.includes('frisco') || lowerName.includes('red') || lowerName.includes('pepsi') || lowerName.includes('desperados')) {
-                brandIconEl.style.filter = 'hue-rotate(225deg) saturate(1.5) brightness(0.9)';
+                brandIconEl.classList.add('can-red');
             } else {
-                brandIconEl.style.filter = 'hue-rotate(85deg) saturate(1.2) brightness(0.9)';
+                brandIconEl.classList.add('can-teal');
             }
+            brandIconEl.style.filter = 'none';
         }
 
         // Slide 5: Celkový dopad

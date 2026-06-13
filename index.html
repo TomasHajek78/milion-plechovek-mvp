@@ -185,7 +185,7 @@
             <img id="photoPreview" alt="Náhled úlovku" class="photo-preview">
             <div class="form-group">
                 <label for="canCount">Kolik plechovek je na fotce?</label>
-                <input type="number" id="canCount" value="1" min="1" max="500">
+                <input type="number" id="canCount" value="1" min="1" max="50">
             </div>
             <div class="form-group">
                 <label for="notes">Poznámka:</label>
@@ -211,7 +211,7 @@
                 <span class="nav-label">Domů</span>
             </button>
             <button class="nav-item" data-view="map">
-                <span class="nav-icon">📍</span>
+                <span class="nav-icon"><img src="ikona_sheet2_9.png" class="nav-image-icon" alt="Mapa"></span>
                 <span class="nav-label">Mapa</span>
             </button>
             <button class="nav-item" data-view="leaderboard">
@@ -267,6 +267,11 @@
             2. Recyklací jedné hliníkové plechovky ušetříme až 95 % této energie oproti výrobě nové z primárních surovin.<br><br>
             3. Každá ušetřená kilowatthodina (kWh) v této statistice představuje čistou úsporu elektřiny, kterou lze využít pro svícení, nabíjení telefonů nebo provoz spotřebičů.
         </p>
+        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; text-align: left; line-height: 1.4;">
+            <strong style="color: var(--text-dark); display: block; margin-bottom: 4px;">🤔 Kam s vysbíranými plechovkami?</strong>
+            Kovy patří primárně do <strong>šedých kontejnerů</strong> nebo sběrných dvorů. V některých obcích je lze házet i do žlutých plastů (pokud mají nálepku "kovy").<br>
+            <a href="https://www.kamsnim.cz/" target="_blank" style="color: var(--forest-green); font-weight: 700; text-decoration: none; display: inline-block; margin-top: 6px;">📍 Najít nejbližší kontejner na mapě →</a>
+        </div>
         <button id="closeEnergyInfoBtn" class="primary-btn-small" style="width:100%;">Rozumím</button>
     </div>
 
@@ -345,7 +350,7 @@
             <!-- SLIDE 2: První plechovka -->
             <div class="wrapped-slide" id="wrappedSlide2">
                 <div class="wrapped-content">
-                    <span class="wrapped-slide-badge">KROK 1</span>
+                    <span class="wrapped-slide-badge">První zářez</span>
                     <h2>Tvoje první plechovka</h2>
                     <p class="wrapped-slide-date" id="wrappedFirstDate">...</p>
                     <div class="polaroid-wrapper">
@@ -359,7 +364,7 @@
             <!-- SLIDE 3: Největší úlovek -->
             <div class="wrapped-slide" id="wrappedSlide3">
                 <div class="wrapped-content">
-                    <span class="wrapped-slide-badge">TVŮJ REKORD</span>
+                    <span class="wrapped-slide-badge">Zlatý jackpot</span>
                     <h2>Největší úlovek</h2>
                     <div class="polaroid-wrapper">
                         <img id="wrappedMaxImage" src="can-marker-transparent.png" class="polaroid-image">
@@ -373,7 +378,7 @@
             <!-- SLIDE 4: Nejčastější značka -->
             <div class="wrapped-slide" id="wrappedSlide4">
                 <div class="wrapped-content">
-                    <span class="wrapped-slide-badge">NEJČASTĚJŠÍ ZNAČKA</span>
+                    <span class="wrapped-slide-badge">Tvoje věrná značka</span>
                     <h2>Tvoje slabost</h2>
                     <div class="wrapped-can-avatar-container">
                         <div id="wrappedBrandCanIcon" class="custom-div-icon large-can-icon" style="background-image: url('can-marker-transparent.png');"></div>
@@ -387,7 +392,7 @@
             <!-- SLIDE 5: Celkový dopad & Poděkování -->
             <div class="wrapped-slide" id="wrappedSlide5">
                 <div class="wrapped-content">
-                    <span class="wrapped-slide-badge">CELKOVÝ DOPAD</span>
+                    <span class="wrapped-slide-badge">Tvoje zelená stopa</span>
                     <h2>Tvůj zelený otisk</h2>
                     
                     <div class="wrapped-impact-grid">
@@ -519,6 +524,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=21"></script>
+    <script src="app.js?v=23"></script>
 </body>
 </html>
