@@ -1652,21 +1652,38 @@ document.addEventListener('DOMContentLoaded', () => {
                             const response = await fetch(item.photoBase64);
                             const uploadBody = await response.blob();
                             
-                            const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v3/${filename}`, {
-                                method: 'POST',
-                                headers: {
-                                    'apikey': SUPABASE_KEY,
-                                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                                    'Content-Type': 'image/jpeg'
-                                },
-                                body: uploadBody
-                            });
+                            // AbortController: přeruší upload pokud trvá déle než 30s
+                            // Toto je permanentní oprava – bez tohoto fetch visí donekonečna při špatném signálu
+                            const uploadAbort = new AbortController();
+                            const uploadTimeout = setTimeout(() => uploadAbort.abort(), 30000);
                             
-                            if (uploadResponse.ok) {
-                                photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v3/${filename}`;
-                            } else {
-                                console.error("Storage sync upload failed");
+                            try {
+                                const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/pickups-v3/${filename}`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': SUPABASE_KEY,
+                                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                        'Content-Type': 'image/jpeg'
+                                    },
+                                    body: uploadBody,
+                                    signal: uploadAbort.signal
+                                });
+                                
+                                if (uploadResponse.ok) {
+                                    photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v3/${filename}`;
+                                } else {
+                                    console.error("Storage sync upload failed");
+                                    uploadSuccess = false;
+                                }
+                            } catch (uploadErr) {
+                                if (uploadAbort.signal.aborted) {
+                                    console.warn("Upload fotky přerušen – vypršel timeout 30s (špatný signál).");
+                                } else {
+                                    console.error("Upload fotky selhal:", uploadErr);
+                                }
                                 uploadSuccess = false;
+                            } finally {
+                                clearTimeout(uploadTimeout);
                             }
                         }
                         
@@ -1675,26 +1692,36 @@ document.addEventListener('DOMContentLoaded', () => {
                             break; // Zastavíme sync loop, fotka se uchová v paměti do dalšího pokusu
                         }
                         
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups`, {
-                            method: 'POST',
-                            headers: {
-                                'apikey': SUPABASE_KEY,
-                                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                nickname: item.nickname,
-                                count: item.count,
-                                latitude: item.latitude,
-                                longitude: item.longitude,
-                                notes: item.notes,
-                                photo_url: photoUrl,
-                                app_version: 3,
-                                created_at: new Date(item.timestamp).toISOString() // Zachováme historické datum sběru z lesa!
-                            })
-                        });
+                        // AbortController: přeruší zápis do DB pokud trvá déle než 15s
+                        const dbAbort = new AbortController();
+                        const dbTimeout = setTimeout(() => dbAbort.abort(), 15000);
                         
-                        if (response.ok) {
+                        let dbResponse;
+                        try {
+                            dbResponse = await fetch(`${SUPABASE_URL}/rest/v1/pickups`, {
+                                method: 'POST',
+                                headers: {
+                                    'apikey': SUPABASE_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    nickname: item.nickname,
+                                    count: item.count,
+                                    latitude: item.latitude,
+                                    longitude: item.longitude,
+                                    notes: item.notes,
+                                    photo_url: photoUrl,
+                                    app_version: 3,
+                                    created_at: new Date(item.timestamp).toISOString()
+                                }),
+                                signal: dbAbort.signal
+                            });
+                        } finally {
+                            clearTimeout(dbTimeout);
+                        }
+                        
+                        if (dbResponse && dbResponse.ok) {
                             // Smazat z IndexedDB
                             await new Promise((resolve, reject) => {
                                 const deleteTx = db.transaction(['pendingPickups'], 'readwrite');
@@ -1710,7 +1737,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     } catch (err) {
                         console.error("Chyba při síťovém odesílání offline úlovku:", err);
-                        break; // Síťové chyby zastaví smyčku
+                        break; // Síťové chyby zastaví smyčku čistě
                     }
                 }
                 
