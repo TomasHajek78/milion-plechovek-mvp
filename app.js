@@ -119,6 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
+        // v3: Oprava upload smyčky – foto se nahrávalo stokrát (DB zápis selhal, IDB se nevymazalo)
+        if (!localStorage.getItem('queue_cleared_v3')) {
+            if (db.objectStoreNames.contains('pendingPickups')) {
+                const tx = db.transaction(['pendingPickups'], 'readwrite');
+                tx.objectStore('pendingPickups').clear();
+                localStorage.setItem('queue_cleared_v3', 'true');
+                console.log("Zaseklá fronta v3 vymazána – zastavení upload smyčky");
+            }
+        }
+        
         updateSyncBanner();
         syncOfflinePickups();
     };
@@ -1722,15 +1732,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         
                         if (dbResponse && dbResponse.ok) {
-                            // Smazat z IndexedDB
-                            await new Promise((resolve, reject) => {
-                                const deleteTx = db.transaction(['pendingPickups'], 'readwrite');
-                                const deleteStore = deleteTx.objectStore('pendingPickups');
-                                const deleteReq = deleteStore.delete(item.id);
-                                deleteTx.oncomplete = () => resolve();
-                                deleteTx.onerror = (err) => reject(err);
-                            });
-                            console.log(`Offline úlovek ID ${item.id} úspěšně synchronizován.`);
+                            // Smazat z IndexedDB – vlastní try/catch, aby selhání delete
+                            // nezpůsobilo retry celého uploadu (root cause smyčky 100× uploadů)
+                            try {
+                                await new Promise((resolve, reject) => {
+                                    const deleteTx = db.transaction(['pendingPickups'], 'readwrite');
+                                    const deleteStore = deleteTx.objectStore('pendingPickups');
+                                    const deleteReq = deleteStore.delete(item.id);
+                                    deleteTx.oncomplete = () => resolve();
+                                    deleteTx.onerror = (err) => reject(err);
+                                });
+                                console.log(`Offline úlovek ID ${item.id} úspěšně synchronizován.`);
+                            } catch (deleteErr) {
+                                // DB zápis proběhl, IDB delete selhal – položka je na serveru,
+                                // nezkoušíme znovu (jinak by vznikly duplikáty v DB!)
+                                console.error(`IDB delete selhal pro ID ${item.id}, ale DB zápis byl úspěšný. Označuji jako hotové.`, deleteErr);
+                            }
                         } else {
                             console.error(`Chyba zápisu DB při synchronizaci úlovku ID ${item.id}`);
                             break; // Zastavit synchronizaci při chybě, zkusíme příště
