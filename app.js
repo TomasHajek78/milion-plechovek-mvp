@@ -1613,8 +1613,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let isSyncing = false;
+    let syncStartedAt = 0; // Timestamp startu – pojistka proti zaseknutí
     async function syncOfflinePickups() {
-        if (!db || isSyncing || !navigator.onLine) return;
+        // Pokud sync běží déle než 60s, považujeme ho za zaseknutý a resetujeme
+        const SYNC_TIMEOUT_MS = 60000;
+        if (isSyncing && (Date.now() - syncStartedAt) < SYNC_TIMEOUT_MS) return;
+        if (isSyncing) {
+            console.warn("Sync flag byl zaseknutý déle než 60s – automatický reset.");
+            isSyncing = false;
+        }
+        if (!db || !navigator.onLine) return;
         
         try {
             const transaction = db.transaction(['pendingPickups'], 'readonly');
@@ -1626,6 +1634,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pending.length === 0) return;
                 
                 isSyncing = true;
+                syncStartedAt = Date.now(); // Zaznamenat čas startu pro timeout pojistku
+                updateSyncBanner(true); // Zobrazit „Právě odesílám…"
                 console.log(`Spouštím synchronizaci ${pending.length} offline úlovků...`);
                 
                 for (const item of pending) {
@@ -1705,11 +1715,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 isSyncing = false;
-                updateSyncBanner();
+                updateSyncBanner(false);
                 await loadData(); // Aktualizovat celá data a žebříček
+            };
+            getAllRequest.onerror = () => {
+                // Chyba čtení z IndexedDB – vždy uvolnit flag
+                isSyncing = false;
+                updateSyncBanner(false);
             };
         } catch (e) {
             console.error("Chyba při čtení z IndexedDB pro synchronizaci:", e);
+            isSyncing = false; // Pojistka: uvolnit flag i při neočekávané výjimce
+            updateSyncBanner(false);
         }
     }
 
