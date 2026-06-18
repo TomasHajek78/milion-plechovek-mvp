@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const gpsToggle = document.getElementById('gpsToggle');
     
     const canCountInput = document.getElementById('canCount');
+    const userVolumesContainer = document.getElementById('userVolumesContainer');
+    const userVolumesGroup = document.getElementById('userVolumesGroup');
     const myTotalEl = document.getElementById('myTotal');
     const globalTotalEl = document.getElementById('globalTotal');
     const globalEnergyEl = document.getElementById('globalEnergy');
@@ -151,9 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     // --- Načítání dat ze Supabase ---
-    async function loadData() {
+    async function loadData(skipSync = false) {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -184,6 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalEnergy = data.reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
             globalEnergy = totalEnergy;
 
+            // Součet osobní ušetřené energie
+            const myEnergy = data.filter(item => item.nickname === userNick)
+                .reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
+
             // Formátování historie pro aktuálního uživatele
             myHistory = data.filter(item => item.nickname === userNick)
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -199,10 +205,15 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('milion_mystats', myStats);
             localStorage.setItem('milion_globalstats', globalStats);
             localStorage.setItem('milion_globalenergy', globalEnergy);
+            localStorage.setItem('milion_myenergy', myEnergy);
             localStorage.setItem('milion_history', JSON.stringify(myHistory));
 
             // Aktualizace rozhraní
             myTotalEl.textContent = myStats;
+            const myEnergyValEl = document.getElementById('myEnergyValue');
+            if (myEnergyValEl) {
+                myEnergyValEl.textContent = myEnergy.toFixed(1).replace('.', ',');
+            }
             if (globalTotalEl) {
                 globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
             }
@@ -231,7 +242,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Pokud jsme úspěšně online načetli data, zkusíme odeslat případné offline čekající položky
-            syncOfflinePickups();
+            if (!skipSync) {
+                syncOfflinePickups();
+            }
             
             // Obnovení administrátorského seznamu (pokud je otevřen)
             if (typeof window.filterAdminPickups === 'function') {
@@ -245,6 +258,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Nepodařilo se připojit k databázi. Používám lokální mezipaměť:', e);
             // Fallback na lokální data z localStorage
             myTotalEl.textContent = myStats;
+            const cachedMyEnergy = localStorage.getItem('milion_myenergy') || '0';
+            const myEnergyValEl = document.getElementById('myEnergyValue');
+            if (myEnergyValEl) {
+                myEnergyValEl.textContent = parseFloat(cachedMyEnergy).toFixed(1).replace('.', ',');
+            }
             if (globalTotalEl) {
                 globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
             }
@@ -391,9 +409,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return classes[index];
     }
 
+    // Získání URL rychlého náhledu pomocí Supabase Image Transformation (zdarma a extrémně rychlé)
+    function getThumbnailUrl(photoUrl) {
+        if (!photoUrl) return 'can-marker-transparent.png';
+        if (photoUrl.includes('/storage/v1/object/public/')) {
+            return photoUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + '?width=200&height=200&resize=cover';
+        }
+        return photoUrl;
+    }
+
     // --- Mapa ---
     function initMap() {
-        map = L.map('map', { maxZoom: 21 }).setView([49.8175, 15.473], 7);
+        map = L.map('map', { maxZoom: 21, closePopupOnClick: false }).setView([49.8175, 15.473], 7);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 21,
             maxNativeZoom: 19
@@ -678,6 +705,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelector('.bottom-nav').classList.add('hidden');
                 pickupForm.classList.remove('hidden');
                 
+                if (canCountInput) {
+                    canCountInput.value = 1;
+                }
+                const detailsEl = document.querySelector('#userVolumesGroup details');
+                if (detailsEl) {
+                    detailsEl.removeAttribute('open');
+                }
+                generateUserVolumeSelects(1);
+                
+                if (userVolumesGroup) {
+                    const isTom = userNick && userNick.trim().toLowerCase() === 'tom';
+                    userVolumesGroup.style.display = isTom ? 'block' : 'none';
+                }
+                
                 if (useGPS) {
                     getGPSLocation();
                 } else {
@@ -698,6 +739,39 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    function generateUserVolumeSelects(count) {
+        if (!userVolumesContainer) return;
+        userVolumesContainer.innerHTML = '';
+        
+        for (let i = 0; i < count; i++) {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.alignItems = 'center';
+            div.style.gap = '8px';
+            div.style.fontSize = '12px';
+            
+            div.innerHTML = `
+                <span style="font-weight: bold; color: var(--text-dark);">Plechovka #${i + 1}:</span>
+                <select style="flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff; color: var(--text-dark);">
+                    <option value="null">Neznámý objem</option>
+                    <option value="0.5">0,5 l</option>
+                    <option value="0.33">0,33 l</option>
+                    <option value="0.25">0,25 l</option>
+                    <option value="0.2">0,2 l</option>
+                </select>
+            `;
+            userVolumesContainer.appendChild(div);
+        }
+    }
+
+    if (canCountInput) {
+        canCountInput.addEventListener('input', () => {
+            const count = Math.max(1, Math.min(50, parseInt(canCountInput.value) || 1));
+            generateUserVolumeSelects(count);
+        });
+    }
 
     async function compressImage(file, maxWidth = 2048, maxHeight = 2048, quality = 0.85) {
         if (!file || !file.type || !file.type.startsWith('image/')) return file;
@@ -767,12 +841,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const count = parseInt(canCountInput.value) || 1;
         const notes = document.getElementById('notes').value.trim();
         
+        // Sběr dobrovolně zadaných velikostí (user_volumes) - pouze pro uživatele Tom
+        const isTom = userNick && userNick.trim().toLowerCase() === 'tom';
+        let userVolumesPayload = null;
+        if (isTom) {
+            const volumeSelects = document.querySelectorAll('#userVolumesContainer select');
+            let userVolumes = [];
+            volumeSelects.forEach(select => {
+                const val = select.value;
+                userVolumes.push(val === 'null' ? null : parseFloat(val));
+            });
+            const hasValues = userVolumes.some(v => v !== null);
+            userVolumesPayload = hasValues ? userVolumes : null;
+        }
+        
         submitBtn.disabled = true;
         submitBtn.textContent = "Odesílám...";
         
         try {
             if (!navigator.onLine) {
-                await savePickupOffline(count, notes, selectedFile);
+                await savePickupOffline(count, notes, selectedFile, userVolumesPayload);
                 return;
             }
 
@@ -818,7 +906,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     latitude: currentCoords ? currentCoords.lat : null,
                     longitude: currentCoords ? currentCoords.lon : null,
                     notes: notes || null,
-                    photo_url: photoUrl
+                    photo_url: photoUrl,
+                    user_volumes: userVolumesPayload
                 })
             });
             
@@ -853,7 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 successScreen.classList.remove('hidden');
                 launchConfetti();
             } else {
-                await savePickupOffline(count, notes, selectedFile);
+                await savePickupOffline(count, notes, selectedFile, userVolumesPayload);
             }
         } finally {
             submitBtn.disabled = false;
@@ -989,12 +1078,12 @@ document.addEventListener('DOMContentLoaded', () => {
         galleryGrid.innerHTML = '';
         photoDetailViewer.classList.add('hidden'); // Skrýt detail při otevření
 
-        // Filtrování úlovků daného uživatele (zobrazujeme hned, skrýváme jen prokázaný spam)
+        // Filtrování úlovků daného uživatele (zobrazujeme všechny platné fotky kromě zablokovaných jako NSFW)
         const userPickups = allPickups.filter(p => {
             if (p.nickname !== nickname || !p.photo_url) return false;
             if (p.is_analyzed && p.analysis_json && Array.isArray(p.analysis_json)) {
-                if (p.analysis_json.some(c => c.brand === 'Unknown' || c.brand === 'unknown' || c.brand === 'Nerozpoznáno')) {
-                    return false; // Skrýt spam
+                if (p.analysis_json.some(c => c.brand === 'NSFW')) {
+                    return false; // Skrýt nevhodný obsah
                 }
             }
             return true;
@@ -1010,8 +1099,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'gallery-item';
                 
+                const thumbUrl = getThumbnailUrl(pickup.photo_url);
                 itemDiv.innerHTML = `
-                    <img src="${pickup.photo_url}" alt="Úlovek">
+                    <img src="${thumbUrl}" alt="Úlovek" loading="lazy">
                     <span class="gallery-badge">+${pickup.count}</span>
                 `;
                 
@@ -1468,8 +1558,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemDiv.style.border = '1px solid #e2e8f0';
                 itemDiv.style.position = 'relative';
                 
+                const thumbUrl = getThumbnailUrl(pickup.photo_url);
                 itemDiv.innerHTML = `
-                    <img src="${pickup.photo_url}" style="width:100%; height:100%; object-fit:cover;">
+                    <img src="${thumbUrl}" style="width:100%; height:100%; object-fit:cover;" loading="lazy">
                     <span class="gallery-badge" style="position:absolute; bottom:4px; right:4px; font-size:9px; padding:2px 4px; border-radius:4px; background:rgba(15,23,42,0.85); color:white; font-weight:700;">+${pickup.count}</span>
                 `;
                 
@@ -1562,7 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function savePickupOffline(count, notes, file) {
+    async function savePickupOffline(count, notes, file, userVolumes) {
         if (!db) {
             alert("Místní paměť telefonu není připravena. Úlovek se nepodařilo uložit.");
             return;
@@ -1595,6 +1686,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 longitude: currentCoords ? currentCoords.lon : null,
                 notes: notes || null,
                 photoBase64: photoBase64, // Ukládáme jako Base64 text (odolné vůči iOS Safari bugům)
+                user_volumes: userVolumes || null,
                 timestamp: Date.now()
             };
             
@@ -1648,14 +1740,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateSyncBanner(true); // Zobrazit „Právě odesílám…"
                 console.log(`Spouštím synchronizaci ${pending.length} offline úlovků...`);
                 
+                let syncedCount = 0;
                 for (const item of pending) {
                     try {
-                        let photoUrl = null;
+                        let photoUrl = item.photoUrl || null;
                         let uploadSuccess = true;
                         
-                        if (item.photoBase64) {
+                        if (item.photoBase64 && !photoUrl) {
                             const fileExt = 'jpg';
-                            const cleanNick = item.nickname.replace(/[^a-zA-Z0-9]/g, '_');
+                            const nickname = item.nickname || 'Anonym';
+                            const cleanNick = nickname.replace(/[^a-zA-Z0-9]/g, '_');
                             const filename = `${Date.now()}_${cleanNick}.${fileExt}`;
                             
                             // Převedeme base64 zpět na Blob pro odeslání
@@ -1681,6 +1775,26 @@ document.addEventListener('DOMContentLoaded', () => {
                                 
                                 if (uploadResponse.ok) {
                                     photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v3/${filename}`;
+                                    
+                                    // Uložíme photoUrl do IndexedDB a vymažeme photoBase64, abychom fotku příště nemuseli uploadovat znovu a uvolnili místo v mobilu!
+                                    try {
+                                        await new Promise((resolve, reject) => {
+                                            const updateTx = db.transaction(['pendingPickups'], 'readwrite');
+                                            const updateStore = updateTx.objectStore('pendingPickups');
+                                            const updateItem = { ...item, photoUrl: photoUrl };
+                                            delete updateItem.photoBase64;
+                                            const updateReq = updateStore.put(updateItem);
+                                            updateTx.oncomplete = () => {
+                                                item.photoUrl = photoUrl;
+                                                delete item.photoBase64;
+                                                resolve();
+                                            };
+                                            updateTx.onerror = (err) => reject(err);
+                                        });
+                                        console.log(`Foto úspěšně nahráno a uloženo do IndexedDB: ${photoUrl}`);
+                                    } catch (updateErr) {
+                                        console.error("Nepodařilo se aktualizovat položku v IndexedDB s photoUrl:", updateErr);
+                                    }
                                 } else {
                                     console.error("Storage sync upload failed");
                                     uploadSuccess = false;
@@ -1722,6 +1836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     longitude: item.longitude,
                                     notes: item.notes,
                                     photo_url: photoUrl,
+                                    user_volumes: item.user_volumes || null,
                                     app_version: 3,
                                     created_at: new Date(item.timestamp).toISOString()
                                 }),
@@ -1743,10 +1858,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                     deleteTx.onerror = (err) => reject(err);
                                 });
                                 console.log(`Offline úlovek ID ${item.id} úspěšně synchronizován.`);
+                                syncedCount++;
                             } catch (deleteErr) {
                                 // DB zápis proběhl, IDB delete selhal – položka je na serveru,
                                 // nezkoušíme znovu (jinak by vznikly duplikáty v DB!)
                                 console.error(`IDB delete selhal pro ID ${item.id}, ale DB zápis byl úspěšný. Označuji jako hotové.`, deleteErr);
+                                syncedCount++;
                             }
                         } else {
                             console.error(`Chyba zápisu DB při synchronizaci úlovku ID ${item.id}`);
@@ -1760,7 +1877,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 isSyncing = false;
                 updateSyncBanner(false);
-                await loadData(); // Aktualizovat celá data a žebříček
+                if (syncedCount > 0) {
+                    await loadData(true); // Aktualizovat celá data a žebříček bez opětovného spuštění synchronizace
+                }
             };
             getAllRequest.onerror = () => {
                 // Chyba čtení z IndexedDB – vždy uvolnit flag
@@ -1867,7 +1986,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.nextWrappedSlide = () => {
         currentWrappedSlide++;
-        if (currentWrappedSlide >= 5) {
+        if (currentWrappedSlide >= 6) {
             closeWrapped();
         } else {
             showWrappedSlide(currentWrappedSlide);
@@ -2053,6 +2172,68 @@ document.addEventListener('DOMContentLoaded', () => {
         if (totEnergyEl) totEnergyEl.textContent = `${totalEnergyKwh.toFixed(1).replace('.', ',')} kWh`;
         if (totCo2El) totCo2El.textContent = `${totalCo2Kg.toFixed(1).replace('.', ',')} kg`;
 
+        // Slide 6: Žebříček a srovnání se spotřebiči
+        // 1. Spočítat pozici uživatele v žebříčku (myRank)
+        const userSums = {};
+        allPickups.forEach(p => {
+            if (p.nickname) {
+                const nick = p.nickname.trim();
+                userSums[nick] = (userSums[nick] || 0) + p.count;
+            }
+        });
+        
+        const sortedUsers = Object.entries(userSums)
+            .map(([nick, count]) => ({ nick, count }))
+            .sort((a, b) => b.count - a.count);
+        
+        let myRank = sortedUsers.findIndex(u => u.nick.toLowerCase() === userNick.toLowerCase()) + 1;
+        if (myRank === 0) myRank = sortedUsers.length + 1;
+        
+        const totalUsers = sortedUsers.length || 1;
+        
+        const rankValEl = document.getElementById('wrappedRankValue');
+        const rankPercentileEl = document.getElementById('wrappedRankPercentile');
+        
+        if (rankValEl) {
+            rankValEl.textContent = `#${myRank}`;
+        }
+        if (rankPercentileEl) {
+            rankPercentileEl.textContent = `z celkem ${totalUsers} sběratelů`;
+        }
+        
+        // 2. Energetické srovnání se spotřebiči na základě totalEnergyKwh
+        const appliances = [
+            { emoji: '🎮', text: 'hodin hraní na PlayStation 5 (spotřeba ~200W)', rate: 5 },
+            { emoji: '💻', text: 'hodin práce na notebooku (spotřeba ~50W)', rate: 20 },
+            { emoji: '☕', text: 'šálků kávy z kávovaru (~1000W po dobu 2 min)', rate: 30 },
+            { emoji: '📱', text: 'nabití tvého chytrého telefonu', rate: 100 },
+            { emoji: '💡', text: 'hodin svícení úsporné LED žárovky (~10W)', rate: 100 },
+            { emoji: '❄️', text: 'dní provozu moderní ledničky A+++ (~0.4 kWh/den)', rate: 2.5 },
+            { emoji: '🚗', text: 'metrů jízdy elektromobilem (~150 Wh/km)', rate: 6667 },
+            { emoji: '📺', text: 'hodin sledování 4K Smart TV (~100W)', rate: 10 },
+            { emoji: '🧺', text: 'cyklů praní v pračce (eko program ~0.8 kWh/cyklus)', rate: 1.25 }
+        ];
+        
+        const appliance = appliances[Math.floor(Math.random() * appliances.length)];
+        const applianceValue = Math.max(1, Math.round(totalEnergyKwh * appliance.rate));
+        
+        const appEmojiEl = document.getElementById('wrappedApplianceEmoji');
+        const appTextEl = document.getElementById('wrappedApplianceText');
+        
+        if (appEmojiEl) appEmojiEl.textContent = appliance.emoji;
+        if (appTextEl) appTextEl.textContent = `${applianceValue.toLocaleString('cs-CZ')} ${appliance.text}`;
+        
+        const funFacts = [
+            "Každá plechovka se počítá! Zrecyklovaný hliník může být do 60 dnů zpět v regálu.",
+            "Recyklace hliníku ušetří až 95 % energie ve srovnání s výrobou z bauxitu.",
+            "Hliník lze recyklovat donekonečna, aniž by ztratil na své kvalitě.",
+            "Věděli jste, že recyklace 1 tuny hliníku ušetří 9 tun emisí skleníkových plynů?",
+            "Každá plechovka, kterou sebereš, pomáhá chránit zvířata a lesy v okolí."
+        ];
+        const randomFact = funFacts[Math.floor(Math.random() * funFacts.length)];
+        const factEl = document.getElementById('wrappedRandomFunFact');
+        if (factEl) factEl.textContent = randomFact;
+
         // Zobrazení modálního okna
         if (wrappedModal) {
             wrappedModal.classList.remove('hidden');
@@ -2115,7 +2296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,user_volumes`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -2271,6 +2452,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (notesEl) notesEl.textContent = pickup.notes ? `"${pickup.notes}"` : 'Bez poznámky';
         if (photoEl) photoEl.src = pickup.photo_url || 'can-marker-transparent.png';
         
+        const userVolsEl = document.getElementById('adminEditUserVolumes');
+        if (userVolsEl) {
+            if (pickup.user_volumes && Array.isArray(pickup.user_volumes)) {
+                userVolsEl.textContent = pickup.user_volumes.map(v => v === null ? 'Neznámý' : v + ' L').join(', ');
+            } else {
+                userVolsEl.textContent = 'Bez specifikace';
+            }
+        }
+        
         window.renderAdminCansEditList();
         
         const editModal = document.getElementById('adminEditPickupModal');
@@ -2315,10 +2505,11 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                     <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); width: 20px;">#${index + 1}</span>
-                    <input type="text" list="dynamicBrandsList" class="can-brand" style="flex: 1; min-width: 0; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" value="${inputValue}" onchange="window.updateLocalCanBrandCustom(${index}, this.value)" onfocus="if(this.value==='Nerozpoznáno') this.value='';" onblur="if(this.value.trim()===''){ this.value='Nerozpoznáno'; window.updateLocalCanBrandCustom(${index}, 'Nerozpoznáno'); }" placeholder="Značka...">
-                    <select class="can-volume" style="width: 90px;" onchange="window.updateLocalCanVolume(${index}, this.value)">
+                    <input type="text" list="dynamicBrandsList" class="can-brand" style="flex: 1; min-width: 0; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff;" value="${inputValue}" onchange="window.updateLocalCanBrandCustom(${index}, this.value)" onfocus="if(this.value==='Nerozpoznáno') this.value='';" onblur="if(this.value.trim()===''){ this.value='Nerozpoznáno'; window.updateLocalCanBrandCustom(${index}, 'Nerozpoznáno'); }" placeholder="Značka...">
+                    <select class="can-volume" style="width: 90px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff; color: var(--text-dark);" onchange="window.updateLocalCanVolume(${index}, this.value)">
                         ${volOptions}
                     </select>
+                    <button onclick="window.prefillBrandRule(${index})" class="teach-brand-btn" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px;" title="Učit AI tuto značku">🎓</button>
                     <button onclick="window.removeCanFromEditList(${index})" class="delete-btn" style="background: none; border: none; cursor: pointer; color: var(--rust-red, #ef4444); font-size: 14px; padding: 4px;" title="Odstranit">🗑️</button>
                 </div>
             `;
@@ -2422,6 +2613,151 @@ document.addEventListener('DOMContentLoaded', () => {
         if (liveCo2El) liveCo2El.textContent = `${co2Saved.toFixed(2).replace('.', ',')} kg`;
     };
 
+    window.prefillBrandRule = function(index) {
+        const can = adminEditCansLocal[index];
+        if (!can) return;
+        
+        const brandInput = document.getElementById('teachBrandInput');
+        const volumesInput = document.getElementById('teachVolumesInput');
+        
+        if (brandInput) {
+            brandInput.value = (can.brand === 'Nerozpoznáno' || can.brand === 'Unknown') ? '' : can.brand;
+        }
+        if (volumesInput) {
+            volumesInput.value = (can.volume_liters === 'Unknown' || !can.volume_liters) ? '' : can.volume_liters;
+        }
+        
+        const hintInput = document.getElementById('teachHintInput');
+        if (hintInput) hintInput.focus();
+    };
+
+    let recognition = null;
+    window.dictateBrandHint = function() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Rozpoznávání hlasu není v tomto prohlížeči podporováno. Zkuste to v Chrome nebo Safari.");
+            return;
+        }
+        
+        const dictateBtn = document.getElementById('dictateHintBtn');
+        const hintInput = document.getElementById('teachHintInput');
+        if (!hintInput) return;
+        
+        if (recognition) {
+            recognition.stop();
+            return;
+        }
+        
+        recognition = new SpeechRecognition();
+        recognition.lang = 'cs-CZ';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        
+        recognition.onstart = function() {
+            if (dictateBtn) {
+                dictateBtn.textContent = '🔴';
+                dictateBtn.title = 'Nahrávám... kliknutím zastavíte';
+                dictateBtn.style.color = '#ef4444';
+            }
+        };
+        
+        recognition.onend = function() {
+            if (dictateBtn) {
+                dictateBtn.textContent = '🎙️';
+                dictateBtn.title = 'Diktovat nápovědu (česky)';
+                dictateBtn.style.color = 'inherit';
+            }
+            recognition = null;
+        };
+        
+        recognition.onerror = function(event) {
+            console.error("Speech recognition error", event);
+            if (dictateBtn) {
+                dictateBtn.textContent = '🎙️';
+                dictateBtn.title = 'Diktovat nápovědu (česky)';
+                dictateBtn.style.color = 'inherit';
+            }
+            recognition = null;
+        };
+        
+        recognition.onresult = function(event) {
+            const resultText = event.results[0][0].transcript;
+            if (resultText) {
+                const existing = hintInput.value.trim();
+                hintInput.value = existing ? `${existing} ${resultText}` : resultText;
+            }
+        };
+        
+        recognition.start();
+    };
+
+    window.saveBrandRule = async function() {
+        const brandInput = document.getElementById('teachBrandInput');
+        const volumesInput = document.getElementById('teachVolumesInput');
+        const hintInput = document.getElementById('teachHintInput');
+        
+        if (!brandInput || !volumesInput || !hintInput) return;
+        
+        const brand = brandInput.value.trim();
+        const volumes = volumesInput.value.trim();
+        const hint = hintInput.value.trim();
+        
+        if (!brand) {
+            alert("Zadejte prosím název značky.");
+            brandInput.focus();
+            return;
+        }
+        
+        if (!volumes) {
+            alert("Zadejte prosím objemy (např. 0.5 nebo 0.33, 0.5).");
+            volumesInput.focus();
+            return;
+        }
+        
+        let adminPassword = sessionStorage.getItem('adminPassword');
+        if (!adminPassword) {
+            adminPassword = prompt("Zadejte administrátorské heslo pro uložení pravidla:");
+            if (!adminPassword) return;
+            sessionStorage.setItem('adminPassword', adminPassword);
+        }
+        
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_upsert_brand_rule`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    p_secret: adminPassword,
+                    p_brand: brand,
+                    p_volumes: volumes,
+                    p_hint: hint
+                })
+            });
+            
+            if (!response.ok) {
+                if (response.status === 400 || response.status === 403) {
+                    sessionStorage.removeItem('adminPassword');
+                    throw new Error("Špatné heslo nebo chyba oprávnění.");
+                }
+                throw new Error('Nepodařilo se uložit pravidlo.');
+            }
+            
+            alert('Pravidlo bylo úspěšně uloženo do databáze.');
+            
+            brandInput.value = '';
+            volumesInput.value = '';
+            hintInput.value = '';
+            
+            loadData();
+        } catch (e) {
+            console.error(e);
+            alert("Chyba při ukládání pravidla: " + e.message);
+        }
+    };
+
     window.saveAdminEditChanges = async function() {
         if (!adminSelectedPickup) return;
         
@@ -2494,6 +2830,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const totalEnergy = allPickups.reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
         globalEnergy = totalEnergy;
+
+        const myEnergy = allPickups.filter(item => item.nickname === userNick)
+            .reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
         
         myHistory = allPickups.filter(item => item.nickname === userNick)
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -2506,6 +2845,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
         
         myTotalEl.textContent = myStats;
+        const myEnergyValEl = document.getElementById('myEnergyValue');
+        if (myEnergyValEl) {
+            myEnergyValEl.textContent = myEnergy.toFixed(1).replace('.', ',');
+        }
         if (globalTotalEl) {
             globalTotalEl.textContent = globalStats.toLocaleString('cs-CZ');
         }

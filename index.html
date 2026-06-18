@@ -123,6 +123,7 @@
                     <h3>Moje plechovky</h3>
                     <div class="stat-value" id="myTotal">0</div>
                     <p id="userNickDisplay">...</p>
+                    <p id="myEnergyDisplay" style="margin: 4px 0 0 0; font-size: 11px; font-weight: 700; color: #10b981; display: flex; align-items: center; justify-content: center; gap: 4px;"><span style="font-size:12px;">⚡</span> Ušetřeno: <span id="myEnergyValue">0</span> kWh</p>
                     <button id="openWrappedBtn" class="primary-btn-small" style="margin-top: 8px; width: 100%; display: none; padding: 6px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, var(--forest-green) 0%, #3b82f6 100%); border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.25);">✨ Můj Kvartální Report</button>
                 </div>
                 <div class="stat-card">
@@ -186,6 +187,18 @@
             <div class="form-group">
                 <label for="canCount">Kolik plechovek je na fotce?</label>
                 <input type="number" id="canCount" value="1" min="1" max="50">
+            </div>
+            <div class="form-group" id="userVolumesGroup" style="margin-top: 12px; margin-bottom: 12px; display: none;">
+                <details style="background: rgba(0, 0, 0, 0.03); padding: 10px 12px; border-radius: 8px; border: 1px dashed var(--border-color, #cbd5e1);">
+                    <summary style="font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text-dark); outline: none; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Doplnit velikosti (nepovinné) 🥫</span>
+                        <span style="font-size: 10px; color: var(--text-dim);">Zobrazit ▼</span>
+                    </summary>
+                    <p style="font-size: 11px; color: var(--text-dim); margin: 6px 0 10px 0; line-height: 1.4;">Pokud znáš objemy plechovek na fotce, můžeš je zadat a pomoci tak přesnějšímu ekologickému výpočtu.</p>
+                    <div id="userVolumesContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Zde se dynamicky vygenerují dropdowny podle canCount -->
+                    </div>
+                </details>
             </div>
             <div class="form-group">
                 <label for="notes">Poznámka:</label>
@@ -320,6 +333,7 @@
             <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
             <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
             <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
         </div>
 
         <!-- Tlačítko zavřít -->
@@ -426,6 +440,35 @@
                     <img src="logo.png" style="width: 90px; height: auto; margin-top: 5px; object-fit: contain;">
                 </div>
             </div>
+
+            <!-- SLIDE 6: Žebříček a srovnání se spotřebiči -->
+            <div class="wrapped-slide" id="wrappedSlide6">
+                <div class="wrapped-content" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                    <div style="width: 100%;">
+                        <span class="wrapped-slide-badge">Tvoje Síň Slávy</span>
+                        <h2 style="margin-top: 10px;">Tvé hrdinské skóre</h2>
+                        
+                        <div class="wrapped-rank-box" style="margin: 15px 0; padding: 12px; background: rgba(59, 130, 246, 0.08); border: 2px solid #3b82f6; border-radius: 16px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-dim); font-weight: 800; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Tvoje pozice v žebříčku</span>
+                            <div id="wrappedRankValue" style="font-size: 36px; font-weight: 900; color: #3b82f6; text-shadow: 0 0 10px rgba(59,130,246,0.2);">#--</div>
+                            <span style="font-size: 11px; color: var(--text-dim);" id="wrappedRankPercentile">mezi všemi sběrateli</span>
+                        </div>
+
+                        <p class="wrapped-text" style="margin: 10px auto; font-size: 12px; max-width: 90%;">Recyklací tohoto hliníku jsi ušetřil energii, která odpovídá:</p>
+                        
+                        <div id="wrappedApplianceComparison" style="margin: 15px 0; padding: 15px; background: rgba(16, 185, 129, 0.08); border: 1px dashed #10b981; border-radius: 16px; text-align: center;">
+                            <div id="wrappedApplianceEmoji" style="font-size: 40px; margin-bottom: 6px;">🎮</div>
+                            <div id="wrappedApplianceText" style="font-size: 14px; font-weight: 800; color: var(--forest-green); line-height: 1.4;">-- hodin hraní na PlayStation 5</div>
+                        </div>
+                    </div>
+
+                    <div style="width: 100%;">
+                        <p class="wrapped-text" style="font-size: 11px; margin: 10px auto; opacity: 0.85; line-height: 1.4;" id="wrappedRandomFunFact">Každá plechovka se počítá! Zrecyklovaný hliník může být do 60 dnů zpět v regálu.</p>
+                        <div class="wrapped-thanks-text" style="font-size: 13px; font-weight: 900; color: var(--forest-green); margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px;">DĚKUJEME, SBĚRATELI! 💚</div>
+                        <img src="logo.png" style="width: 80px; height: auto; margin-top: 5px; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -493,6 +536,7 @@
                         </div>
                         <p><strong>Datum:</strong> <span id="adminEditDate">...</span></p>
                         <p><strong>Poznámka:</strong> <span id="adminEditNotes">...</span></p>
+                        <p><strong>Zadané objemy:</strong> <span id="adminEditUserVolumes" style="color: var(--forest-green); font-weight: 700;">Bez specifikace</span></p>
                     </div>
                     
                     <h4 style="margin: 15px 0 5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">🥫 Zjištěné plechovky</h4>
@@ -502,6 +546,22 @@
                     </div>
                     
                     <button onclick="addCanToEditList()" class="secondary-btn-small" style="width: 100%; margin-top: 10px; border-style: dashed; padding: 8px;">➕ Přidat další plechovku</button>
+                    
+                    <!-- Sekce pro učení AI pravidel -->
+                    <div class="admin-teach-ai-section" style="margin-top: 15px; padding: 12px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px;">
+                        <h4 style="margin: 0 0 8px; color: #3b82f6; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">🎓 Učit AI novou značku / pravidlo</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="teachBrandInput" placeholder="Značka (např. Relax)" style="flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff; color: var(--text-dark);">
+                                <input type="text" id="teachVolumesInput" placeholder="Objemy (např. 0.33, 0.5)" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff; color: var(--text-dark);">
+                            </div>
+                            <div style="display: flex; gap: 4px; align-items: center; position: relative;">
+                                <input type="text" id="teachHintInput" placeholder="Nápověda pro AI..." style="flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; padding-right: 32px; background: #fff; color: var(--text-dark);">
+                                <button id="dictateHintBtn" onclick="window.dictateBrandHint()" style="background: none; border: none; cursor: pointer; font-size: 16px; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); outline: none; padding: 0;" title="Diktovat nápovědu (česky)">🎙️</button>
+                            </div>
+                            <button onclick="window.saveBrandRule()" class="primary-btn-small" style="background-color: #3b82f6; font-size: 11px; padding: 6px; margin-top: 4px; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 700; width: 100%;">Uložit pravidlo do databáze</button>
+                        </div>
+                    </div>
                     
                     <!-- Náhled přepočítaného ekologického dopadu -->
                     <div class="admin-live-stats" style="margin-top: 20px; padding: 12px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 12px;">
@@ -524,6 +584,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=23"></script>
+    <script src="app.js?v=35"></script>
 </body>
 </html>
