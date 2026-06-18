@@ -337,7 +337,7 @@ end tell
         
         # Odeslání notifikace / emailu
         print("🔍 Kontroluji, zda nezůstaly fotky k ruční korekci...")
-        query_unverified = f"{SUPABASE_URL}/rest/v1/pickups?is_analyzed=eq.true&is_verified=eq.false&select=id,analysis_json"
+        query_unverified = f"{SUPABASE_URL}/rest/v1/pickups?is_analyzed=eq.true&select=id,analysis_json"
         res_unver = requests.get(query_unverified, headers=headers, timeout=30)
         
         if res_unver.status_code == 200:
@@ -346,7 +346,7 @@ end tell
             for p in unverified_pickups:
                 ajson = p.get('analysis_json')
                 if isinstance(ajson, list):
-                    if any(c.get('brand') in ['Nerozpoznáno', 'Unknown'] for c in ajson):
+                    if any(c.get('brand') in ['Nerozpoznáno', 'Unknown'] or c.get('volume_liters') in ['Unknown', 'unknown', None] for c in ajson):
                         needs_review_count += 1
             
             if needs_review_count > 0:
