@@ -1633,9 +1633,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const transaction = db.transaction(['pendingPickups'], 'readonly');
             const store = transaction.objectStore('pendingPickups');
-            const countRequest = store.count();
-            countRequest.onsuccess = () => {
-                const pendingCount = countRequest.result;
+            const getAllRequest = store.getAll();
+            getAllRequest.onsuccess = () => {
+                const pending = getAllRequest.result;
+                // Počítáme pouze aktivní čekající úlovky (které mají méně než 5 chyb)
+                const activePending = pending.filter(item => (item.retryCount || 0) < 5);
+                const pendingCount = activePending.length;
+                
                 if (pendingCount > 0) {
                     // Odlišíme stav: aktivní odesílání vs. čeká na připojení
                     if (activelySyncing || isSyncing) {
@@ -1716,6 +1720,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let isSyncing = false;
     let syncStartedAt = 0; // Timestamp startu – pojistka proti zaseknutí
+
+    async function incrementRetryCount(item) {
+        try {
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(['pendingPickups'], 'readwrite');
+                const store = tx.objectStore('pendingPickups');
+                const updatedItem = { ...item, retryCount: (item.retryCount || 0) + 1 };
+                store.put(updatedItem);
+                tx.oncomplete = () => resolve();
+                tx.onerror = (err) => reject(err);
+            });
+            console.log(`Zvýšen počet pokusů pro úlovek ID ${item.id} na ${(item.retryCount || 0) + 1}`);
+        } catch (e) {
+            console.error("Chyba při ukládání retryCount do IDB:", e);
+        }
+    }
+
     async function syncOfflinePickups() {
         // Pokud sync běží déle než 60s, považujeme ho za zaseknutý a resetujeme
         const SYNC_TIMEOUT_MS = 60000;
@@ -1733,18 +1754,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             getAllRequest.onsuccess = async () => {
                 const pending = getAllRequest.result;
-                if (pending.length === 0) return;
+                // Ignorujeme úlovky, které již selhaly 5krát (dead-letter queue)
+                const activePending = pending.filter(item => (item.retryCount || 0) < 5);
+                if (activePending.length === 0) return;
                 
                 isSyncing = true;
                 syncStartedAt = Date.now(); // Zaznamenat čas startu pro timeout pojistku
                 updateSyncBanner(true); // Zobrazit „Právě odesílám…"
-                console.log(`Spouštím synchronizaci ${pending.length} offline úlovků...`);
+                console.log(`Spouštím synchronizaci ${activePending.length} offline úlovků...`);
                 
                 let syncedCount = 0;
-                for (const item of pending) {
+                for (const item of activePending) {
                     try {
                         let photoUrl = item.photoUrl || null;
                         let uploadSuccess = true;
+                        let isNetworkError = false;
                         
                         if (item.photoBase64 && !photoUrl) {
                             const fileExt = 'jpg';
@@ -1757,7 +1781,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             const uploadBody = await response.blob();
                             
                             // AbortController: přeruší upload pokud trvá déle než 30s
-                            // Toto je permanentní oprava – bez tohoto fetch visí donekonečna při špatném signálu
                             const uploadAbort = new AbortController();
                             const uploadTimeout = setTimeout(() => uploadAbort.abort(), 30000);
                             
@@ -1776,14 +1799,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (uploadResponse.ok) {
                                     photoUrl = `${SUPABASE_URL}/storage/v1/object/public/pickups-v3/${filename}`;
                                     
-                                    // Uložíme photoUrl do IndexedDB a vymažeme photoBase64, abychom fotku příště nemuseli uploadovat znovu a uvolnili místo v mobilu!
+                                    // Uložíme photoUrl do IndexedDB a vymažeme photoBase64
                                     try {
                                         await new Promise((resolve, reject) => {
                                             const updateTx = db.transaction(['pendingPickups'], 'readwrite');
                                             const updateStore = updateTx.objectStore('pendingPickups');
                                             const updateItem = { ...item, photoUrl: photoUrl };
                                             delete updateItem.photoBase64;
-                                            const updateReq = updateStore.put(updateItem);
+                                            updateStore.put(updateItem);
                                             updateTx.oncomplete = () => {
                                                 item.photoUrl = photoUrl;
                                                 delete item.photoBase64;
@@ -1796,24 +1819,33 @@ document.addEventListener('DOMContentLoaded', () => {
                                         console.error("Nepodařilo se aktualizovat položku v IndexedDB s photoUrl:", updateErr);
                                     }
                                 } else {
-                                    console.error("Storage sync upload failed");
+                                    console.error(`Storage sync upload failed with status: ${uploadResponse.status}`);
                                     uploadSuccess = false;
+                                    isNetworkError = false; // permanentní serverová chyba
                                 }
                             } catch (uploadErr) {
+                                uploadSuccess = false;
                                 if (uploadAbort.signal.aborted) {
                                     console.warn("Upload fotky přerušen – vypršel timeout 30s (špatný signál).");
+                                    isNetworkError = true;
                                 } else {
                                     console.error("Upload fotky selhal:", uploadErr);
+                                    isNetworkError = true; // předpokládáme síťovou chybu
                                 }
-                                uploadSuccess = false;
                             } finally {
                                 clearTimeout(uploadTimeout);
                             }
                         }
                         
                         if (!uploadSuccess) {
-                            console.warn(`Přeskakuji synchronizaci záznamu ${item.id} kvůli chybě nahrávání fotky.`);
-                            break; // Zastavíme sync loop, fotka se uchová v paměti do dalšího pokusu
+                            if (isNetworkError) {
+                                console.warn(`Přerušuji synchronizaci kvůli síťové chybě nahrávání fotky pro ID ${item.id}.`);
+                                break; // Přerušíme celou frontu, abychom zamezili zbytečným timeoutům
+                            } else {
+                                console.warn(`Přeskakuji vadný záznam ID ${item.id} kvůli trvalé chybě serveru při nahrávání fotky.`);
+                                await incrementRetryCount(item);
+                                continue; // Jdeme na další soubor, tento je vadný
+                            }
                         }
                         
                         // AbortController: přeruší zápis do DB pokud trvá déle než 15s
@@ -1821,6 +1853,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const dbTimeout = setTimeout(() => dbAbort.abort(), 15000);
                         
                         let dbResponse;
+                        let isDbNetworkError = false;
                         try {
                             dbResponse = await fetch(`${SUPABASE_URL}/rest/v1/pickups`, {
                                 method: 'POST',
@@ -1842,53 +1875,67 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }),
                                 signal: dbAbort.signal
                             });
+                            
+                            if (!dbResponse.ok) {
+                                console.error(`Database sync write failed with status: ${dbResponse.status}`);
+                                isDbNetworkError = false; // serverová odmítnutí
+                            }
+                        } catch (dbErr) {
+                            if (dbAbort.signal.aborted) {
+                                console.warn("Zápis do DB přerušen – vypršel timeout 15s.");
+                            } else {
+                                console.error("Zápis do DB selhal:", dbErr);
+                            }
+                            isDbNetworkError = true;
                         } finally {
                             clearTimeout(dbTimeout);
                         }
                         
                         if (dbResponse && dbResponse.ok) {
-                            // Smazat z IndexedDB – vlastní try/catch, aby selhání delete
-                            // nezpůsobilo retry celého uploadu (root cause smyčky 100× uploadů)
+                            // Smazat z IndexedDB
                             try {
                                 await new Promise((resolve, reject) => {
                                     const deleteTx = db.transaction(['pendingPickups'], 'readwrite');
                                     const deleteStore = deleteTx.objectStore('pendingPickups');
-                                    const deleteReq = deleteStore.delete(item.id);
+                                    deleteStore.delete(item.id);
                                     deleteTx.oncomplete = () => resolve();
                                     deleteTx.onerror = (err) => reject(err);
                                 });
                                 console.log(`Offline úlovek ID ${item.id} úspěšně synchronizován.`);
                                 syncedCount++;
                             } catch (deleteErr) {
-                                // DB zápis proběhl, IDB delete selhal – položka je na serveru,
-                                // nezkoušíme znovu (jinak by vznikly duplikáty v DB!)
                                 console.error(`IDB delete selhal pro ID ${item.id}, ale DB zápis byl úspěšný. Označuji jako hotové.`, deleteErr);
                                 syncedCount++;
                             }
                         } else {
-                            console.error(`Chyba zápisu DB při synchronizaci úlovku ID ${item.id}`);
-                            break; // Zastavit synchronizaci při chybě, zkusíme příště
+                            if (isDbNetworkError) {
+                                console.warn(`Přerušuji synchronizaci kvůli síťové chybě zápisu do DB pro ID ${item.id}.`);
+                                break; // Síťová chyba, zkusíme příště
+                            } else {
+                                console.warn(`Přeskakuji vadný záznam ID ${item.id} kvůli trvalé chybě zápisu do DB.`);
+                                await incrementRetryCount(item);
+                                continue; // Jdeme na další soubor
+                            }
                         }
                     } catch (err) {
-                        console.error("Chyba při síťovém odesílání offline úlovku:", err);
-                        break; // Síťové chyby zastaví smyčku čistě
+                        console.error("Neočekávaná chyba při zpracování offline úlovku:", err);
+                        break;
                     }
                 }
                 
                 isSyncing = false;
                 updateSyncBanner(false);
                 if (syncedCount > 0) {
-                    await loadData(true); // Aktualizovat celá data a žebříček bez opětovného spuštění synchronizace
+                    await loadData(true);
                 }
             };
             getAllRequest.onerror = () => {
-                // Chyba čtení z IndexedDB – vždy uvolnit flag
                 isSyncing = false;
                 updateSyncBanner(false);
             };
         } catch (e) {
             console.error("Chyba při čtení z IndexedDB pro synchronizaci:", e);
-            isSyncing = false; // Pojistka: uvolnit flag i při neočekávané výjimce
+            isSyncing = false;
             updateSyncBanner(false);
         }
     }
