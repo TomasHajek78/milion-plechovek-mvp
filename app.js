@@ -2363,15 +2363,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const nick = (p.nickname || '').toLowerCase();
             if (searchNick && !nick.includes(searchNick)) return false;
             
+            const hasUnknown = p.is_analyzed && p.analysis_json && Array.isArray(p.analysis_json) && 
+                p.analysis_json.some(c => {
+                    const b = c.brand || 'Nerozpoznáno';
+                    const v = c.volume_liters || 'Unknown';
+                    return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown' ||
+                           v === 'Unknown' || v === 'unknown' || v === null;
+                });
+                
+            const isNsfw = p.is_analyzed && p.analysis_json && Array.isArray(p.analysis_json) &&
+                p.analysis_json.some(c => c.brand === 'NSFW');
+
             if (statusFilter === 'unanalyzed') {
                 return !p.is_analyzed;
-            } else if (statusFilter === 'unknown') {
-                if (!p.is_analyzed) return false;
-                if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
-                return p.analysis_json.some(c => {
-                    const b = c.brand || 'Nerozpoznáno';
-                    return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
-                });
+            } else if (statusFilter === 'unverified_unknown') {
+                return p.is_analyzed && hasUnknown && !isNsfw;
+            } else if (statusFilter === 'unverified_ai') {
+                return p.is_analyzed && !hasUnknown && !isNsfw;
+            } else if (statusFilter === 'nsfw') {
+                return isNsfw;
+            } else if (statusFilter === 'verified') {
+                return p.is_analyzed && !hasUnknown && !isNsfw;
             }
             return true;
         });
@@ -2397,7 +2409,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 badgeHtml = '<span class="admin-badge warning">Čeká</span>';
             } else {
                 const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
-                    p.analysis_json.some(c => c.brand === 'Nerozpoznáno' || c.brand === 'Unknown');
+                    p.analysis_json.some(c => {
+                        const b = c.brand || 'Nerozpoznáno';
+                        const v = c.volume_liters || 'Unknown';
+                        return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown' ||
+                               v === 'Unknown' || v === 'unknown' || v === null;
+                    });
                 if (hasUnknown) {
                     badgeHtml = '<span class="admin-badge error">Neznámé</span>';
                 } else {
