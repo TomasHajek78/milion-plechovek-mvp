@@ -1189,6 +1189,74 @@ def generate_html_report(stats, output_path):
                 saveBtn.disabled = false;
             }}
         }};
+
+        function getFilteredPickups() {{
+            const searchInput = document.getElementById('adminSearchNick');
+            const statusSelect = document.getElementById('adminStatusFilter');
+            const searchNick = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            const statusFilter = statusSelect ? statusSelect.value : 'all';
+            
+            const sorted = [...allPickups].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            return sorted.filter(p => {{
+                const nick = (p.nickname || '').toLowerCase();
+                if (searchNick && !nick.includes(searchNick)) return false;
+                
+                if (statusFilter === 'unanalyzed') {{
+                    return !p.is_analyzed;
+                }} else if (statusFilter === 'unknown') {{
+                    if (!p.is_analyzed) return false;
+                    if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
+                    return p.analysis_json.some(c => {{
+                        const b = c.brand || 'Nerozpoznáno';
+                        const v = c.volume_liters || 'Unknown';
+                        return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown' ||
+                               v === 'Unknown' || v === 'unknown' || v === null;
+                    }});
+                }}
+                return true;
+            }});
+        }}
+
+        window.openNextAdminPickup = function() {{
+            if (!adminSelectedPickup) return;
+            const filtered = getFilteredPickups();
+            const idx = filtered.findIndex(p => p.id === adminSelectedPickup.id);
+            if (idx !== -1 && idx < filtered.length - 1) {{
+                openAdminEditModal(filtered[idx + 1].id);
+            }}
+        }};
+
+        window.openPrevAdminPickup = function() {{
+            if (!adminSelectedPickup) return;
+            const filtered = getFilteredPickups();
+            const idx = filtered.findIndex(p => p.id === adminSelectedPickup.id);
+            if (idx > 0) {{
+                openAdminEditModal(filtered[idx - 1].id);
+            }}
+        }};
+
+        document.addEventListener('keydown', function(e) {{
+            const editModal = document.getElementById('adminEditPickupModal');
+            if (editModal && !editModal.classList.contains('hidden')) {{
+                const active = document.activeElement;
+                const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+                
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {{
+                    if (!isTyping || e.altKey || e.ctrlKey || e.metaKey) {{
+                        e.preventDefault();
+                        window.openNextAdminPickup();
+                    }}
+                }} else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {{
+                    if (!isTyping || e.altKey || e.ctrlKey || e.metaKey) {{
+                        e.preventDefault();
+                        window.openPrevAdminPickup();
+                    }}
+                }} else if (e.key === 'Escape') {{
+                    closeAdminEditModal();
+                }}
+            }}
+        }});
     </script>
 </body>
 </html>"""
