@@ -88,6 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeDetailPickup = null;
     const likedPickups = new Set();
     let teamReportOpened = false;
+
+    function updateTomFeaturesVisibility() {
+        const cleanNick = userNick ? userNick.trim().toLowerCase() : '';
+        const isTom = cleanNick === 'tom' || cleanNick === 'tomáš hájek' || cleanNick === 'tomas hajek' || cleanNick === 'tomashajek';
+        
+        const openWrappedBtn = document.getElementById('openWrappedBtn');
+        if (openWrappedBtn) {
+            openWrappedBtn.style.display = (isTom && myStats > 0) ? 'block' : 'none';
+        }
+        
+        const myEnergyDisplay = document.getElementById('myEnergyDisplay');
+        if (myEnergyDisplay) {
+            myEnergyDisplay.style.display = isTom ? 'flex' : 'none';
+        }
+    }
     
     // --- IndexedDB Inicializace pro Offline úlovky ---
     let db = null;
@@ -128,6 +143,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 tx.objectStore('pendingPickups').clear();
                 localStorage.setItem('queue_cleared_v3', 'true');
                 console.log("Zaseklá fronta v3 vymazána – zastavení upload smyčky");
+            }
+        }
+        
+        // v4: Automatické vymazání zablokované fronty po zavedení opraveného sync kódu (pouze pro uživatele Tom k odblokování zařízení, chráníme data ostatních sběratelů!)
+        if (!localStorage.getItem('queue_cleared_v4')) {
+            if (db.objectStoreNames.contains('pendingPickups')) {
+                const isTom = userNick && (userNick.toLowerCase() === 'tom' || userNick.toLowerCase() === 'tomáš hájek' || userNick.toLowerCase() === 'tomas hajek');
+                if (isTom) {
+                    const tx = db.transaction(['pendingPickups'], 'readwrite');
+                    tx.objectStore('pendingPickups').clear();
+                    console.log("Zaseklá fronta v4 vymazána automaticky pro uživatele Tom");
+                }
+                localStorage.setItem('queue_cleared_v4', 'true');
             }
         }
         
@@ -221,11 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
             }
 
-            // Zobrazení tlačítka pro Wrapped
-            const openWrappedBtn = document.getElementById('openWrappedBtn');
-            if (openWrappedBtn) {
-                openWrappedBtn.style.display = myStats > 0 ? 'block' : 'none';
-            }
+            // Zobrazení tlačítka pro Wrapped a osobní úspory
+            updateTomFeaturesVisibility();
 
             renderHistory();
             renderLeaderboard(data);
@@ -270,11 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
             }
 
-            // Zobrazení tlačítka pro Wrapped v offline fallbacku
-            const openWrappedBtn = document.getElementById('openWrappedBtn');
-            if (openWrappedBtn) {
-                openWrappedBtn.style.display = myStats > 0 ? 'block' : 'none';
-            }
+            // Zobrazení tlačítka pro Wrapped a osobní úspory
+            updateTomFeaturesVisibility();
 
             renderHistory();
             renderLeaderboard(); 
@@ -560,6 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userNick) {
         userNickDisplay.textContent = userNick;
     }
+    updateTomFeaturesVisibility();
     initMap();
     loadData();
     initRealtime();
@@ -580,6 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
             userNick = e.target.value.trim();
             localStorage.setItem('milion_nickname', userNick);
             userNickDisplay.textContent = userNick;
+            updateTomFeaturesVisibility();
         });
     }
 
@@ -616,6 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
             userNick = val;
             localStorage.setItem('milion_nickname', userNick);
             userNickDisplay.textContent = userNick;
+            updateTomFeaturesVisibility();
             if (errorEl) errorEl.style.display = 'none';
             loginScreen.classList.add('hidden');
             sections.home.classList.remove('hidden');
@@ -626,6 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
             userNick = val;
             localStorage.setItem('milion_nickname', userNick);
             userNickDisplay.textContent = userNick;
+            updateTomFeaturesVisibility();
             loginScreen.classList.add('hidden');
             sections.home.classList.remove('hidden');
             document.querySelector('.bottom-nav').classList.remove('hidden');
@@ -2920,10 +2946,7 @@ document.addEventListener('DOMContentLoaded', () => {
             globalEnergyEl.textContent = globalEnergy.toFixed(1).replace('.', ',') + ' kWh';
         }
         
-        const openWrappedBtn = document.getElementById('openWrappedBtn');
-        if (openWrappedBtn) {
-            openWrappedBtn.style.display = myStats > 0 ? 'block' : 'none';
-        }
+        updateTomFeaturesVisibility();
         
         renderHistory();
         renderLeaderboard(allPickups);
