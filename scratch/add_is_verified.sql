@@ -34,32 +34,6 @@ DECLARE
     v_energy numeric := 0;
     v_money numeric := 0;
     v_co2 numeric := 0;
-END;
-$$;
-
--- POZNÁMKA: Kompletní definice funkce je níže
-CREATE OR REPLACE FUNCTION admin_update_pickup(
-    p_id uuid, 
-    p_secret text, 
-    p_nickname text, 
-    p_team text, 
-    p_notes text, 
-    p_is_analyzed boolean, 
-    p_analysis_json jsonb, 
-    p_count integer
-)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_can jsonb;
-    v_vol text;
-    v_weight numeric;
-    v_total_weight numeric := 0;
-    v_energy numeric := 0;
-    v_money numeric := 0;
-    v_co2 numeric := 0;
 BEGIN
     -- Ověření administrátorského hesla (akceptujeme jak původní, tak zjednodušené z PWA)
     IF p_secret != 'tomasadmin123' AND p_secret != 'milion2026' THEN
