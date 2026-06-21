@@ -48,6 +48,8 @@ BEGIN
             -- Váhy plechovek dle objemu
             IF v_vol = '0.5' OR v_vol = '0.5 L' OR v_vol = '0.5 l' THEN
                 v_weight := 16.0;
+            ELSIF v_vol = '0.44' OR v_vol = '0.44 L' OR v_vol = '0.44 l' THEN
+                v_weight := 15.0;
             ELSIF v_vol = '0.33' OR v_vol = '0.33 L' OR v_vol = '0.33 l' THEN
                 v_weight := 13.5;
             ELSIF v_vol = '0.25' OR v_vol = '0.25 L' OR v_vol = '0.25 l' THEN

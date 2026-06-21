@@ -20,6 +20,7 @@ if not GEMINI_API_KEY:
 # Konfigurace průměrných vah a ekologických úspor
 CAN_WEIGHTS = {
     0.5: 16.0,       # 0.5 l = 16.0g
+    0.44: 15.0,      # 0.44 l = 15.0g
     0.33: 13.5,      # 0.33 l = 13.5g
     0.25: 10.0,      # 0.25 l = 10.0g
     0.2: 8.0,        # 0.2 l / 0.15 l = 8.0g
