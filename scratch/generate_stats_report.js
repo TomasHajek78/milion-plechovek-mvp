@@ -486,7 +486,7 @@ async function main() {
     console.log("🚀 Spouštím generování statistik...");
     
     try {
-        const queryUrl = `${SUPABASE_URL}/rest/v1/pickups?select=count,is_analyzed,analysis_json,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,team_code,nickname,created_at`;
+        const queryUrl = `${SUPABASE_URL}/rest/v1/pickups?select=count,is_analyzed,analysis_json,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,team_code,nickname,created_at,is_verified`;
         const response = await fetch(queryUrl, {
             headers: {
                 'apikey': SUPABASE_KEY,

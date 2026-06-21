@@ -419,7 +419,10 @@ def generate_html_report(stats, output_path):
                 <select id="adminStatusFilter" onchange="filterAdminPickups()" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 text-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500">
                     <option value="all">Všechny sběry</option>
                     <option value="unanalyzed">Pouze neanalyzované</option>
-                    <option value="unknown">Obsahuje "Nerozpoznáno" / "Unknown"</option>
+                    <option value="unverified_unknown">Kontrola: Neznámé značky</option>
+                    <option value="unverified_ai">Kontrola: Zpracováno AI (Bez chyb)</option>
+                    <option value="nsfw">Blokováno (NSFW)</option>
+                    <option value="verified">Schválené / Ověřené</option>
                 </select>
             </div>
             
@@ -534,7 +537,7 @@ def generate_html_report(stats, output_path):
 
         async function loadDashboardData() {{
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified`, {{
                     headers: {{
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${{SUPABASE_KEY}}`
@@ -862,7 +865,7 @@ def generate_html_report(stats, output_path):
             }}
             
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified`, {{
                     headers: {{
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${{SUPABASE_KEY}}`
@@ -929,17 +932,27 @@ def generate_html_report(stats, output_path):
                 const nick = (p.nickname || '').toLowerCase();
                 if (searchNick && !nick.includes(searchNick)) return false;
                 
-                if (statusFilter === 'unanalyzed') {{
-                    return !p.is_analyzed;
-                }} else if (statusFilter === 'unknown') {{
-                    if (!p.is_analyzed) return false;
-                    if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
-                    return p.analysis_json.some(c => {{
+                const hasUnknown = p.is_analyzed && p.analysis_json && Array.isArray(p.analysis_json) && 
+                    p.analysis_json.some(c => {{
                         const b = (c.brand || 'Nerozpoznáno').trim().toLowerCase();
                         const v = (c.volume_liters || c.volume || 'Unknown').toString().trim().toLowerCase();
                         return b === 'nerozpoznáno' || b === 'unknown' || b === 'neznámý' || b === 'neznámé' ||
                                v === 'unknown' || v === 'null' || v === 'undefined';
                     }});
+                
+                const isNsfw = p.is_analyzed && p.analysis_json && Array.isArray(p.analysis_json) &&
+                    p.analysis_json.some(c => c.brand === 'NSFW');
+
+                if (statusFilter === 'unanalyzed') {{
+                    return !p.is_analyzed;
+                }} else if (statusFilter === 'unverified_unknown') {{
+                    return p.is_analyzed && hasUnknown && !isNsfw && !p.is_verified;
+                }} else if (statusFilter === 'unverified_ai') {{
+                    return p.is_analyzed && !hasUnknown && !isNsfw && !p.is_verified;
+                }} else if (statusFilter === 'nsfw') {{
+                    return isNsfw;
+                }} else if (statusFilter === 'verified') {{
+                    return p.is_verified === true;
                 }}
                 return true;
             }});
@@ -961,7 +974,9 @@ def generate_html_report(stats, output_path):
                 }});
                 
                 let badgeHtml = '';
-                if (!p.is_analyzed) {{
+                if (p.is_verified) {{
+                    badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider">Ověřeno</span>';
+                }} else if (!p.is_analyzed) {{
                     badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">Čeká</span>';
                 }} else {{
                     const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
@@ -1339,7 +1354,7 @@ def main():
     print("🚀 Spouštím generování statistik...")
     
     try:
-        query_url = f"{SUPABASE_URL}/rest/v1/pickups?select=count,is_analyzed,analysis_json,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,team_code,nickname,created_at"
+        query_url = f"{SUPABASE_URL}/rest/v1/pickups?select=count,is_analyzed,analysis_json,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,team_code,nickname,created_at,is_verified"
         headers = {
             'apikey': SUPABASE_KEY,
             'Authorization': f"Bearer {SUPABASE_KEY}"

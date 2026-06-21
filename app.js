@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData(skipSync = false) {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes,is_verified`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -2397,7 +2397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,user_volumes`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,user_volumes,is_verified`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -2478,13 +2478,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusFilter === 'unanalyzed') {
                 return !p.is_analyzed;
             } else if (statusFilter === 'unverified_unknown') {
-                return p.is_analyzed && hasUnknown && !isNsfw;
+                return p.is_analyzed && hasUnknown && !isNsfw && !p.is_verified;
             } else if (statusFilter === 'unverified_ai') {
-                return p.is_analyzed && !hasUnknown && !isNsfw;
+                return p.is_analyzed && !hasUnknown && !isNsfw && !p.is_verified;
             } else if (statusFilter === 'nsfw') {
                 return isNsfw;
             } else if (statusFilter === 'verified') {
-                return p.is_analyzed && !hasUnknown && !isNsfw;
+                return p.is_verified === true;
             }
             return true;
         });
@@ -2506,7 +2506,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             let badgeHtml = '';
-            if (!p.is_analyzed) {
+            if (p.is_verified) {
+                badgeHtml = '<span class="admin-badge info">Ověřeno</span>';
+            } else if (!p.is_analyzed) {
                 badgeHtml = '<span class="admin-badge warning">Čeká</span>';
             } else {
                 const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
