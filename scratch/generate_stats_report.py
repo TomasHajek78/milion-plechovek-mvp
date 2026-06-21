@@ -427,12 +427,13 @@ def generate_html_report(stats, output_path):
             </div>
             
             <div class="flex flex-col flex-1 overflow-hidden border border-slate-800 rounded-xl bg-slate-950/40">
-                <div class="grid grid-cols-[80px_1fr_60px_80px_50px] gap-2 items-center px-4 py-3 bg-slate-800/40 border-b border-slate-800 font-bold text-[10px] text-slate-400 uppercase tracking-wider">
+                <div class="grid grid-cols-[80px_1fr_60px_80px_35px_50px] gap-2 items-center px-4 py-3 bg-slate-800/40 border-b border-slate-800 font-bold text-[10px] text-slate-400 uppercase tracking-wider">
                     <span>Datum</span>
                     <span>Přezdívka</span>
                     <span class="text-right">Kusy</span>
                     <span class="text-center">Stav</span>
-                    <span>Akce</span>
+                    <span class="text-center">Ověř.</span>
+                    <span class="text-right pr-2">Akce</span>
                 </div>
                 <div id="adminPickupsList" class="flex-1 overflow-y-auto divide-y divide-slate-800/40">
                     <!-- Řádky se načtou dynamicky -->
@@ -964,7 +965,7 @@ def generate_html_report(stats, output_path):
             
             filtered.forEach(p => {{
                 const row = document.createElement('div');
-                row.className = 'grid grid-cols-[80px_1fr_60px_80px_50px] gap-2 items-center px-4 py-3 border-b border-slate-800/60 hover:bg-slate-800/30 text-xs text-slate-300';
+                row.className = 'grid grid-cols-[80px_1fr_60px_80px_35px_50px] gap-2 items-center px-4 py-3 border-b border-slate-800/60 hover:bg-slate-800/30 text-xs text-slate-300';
                 
                 const dateStr = new Date(p.created_at).toLocaleDateString('cs-CZ', {{
                     day: '2-digit',
@@ -993,12 +994,14 @@ def generate_html_report(stats, output_path):
                     }}
                 }}
                 
+                const verifiedHtml = p.is_verified ? '<span class="text-center">✅</span>' : '<span class="text-center text-slate-600">–</span>';
                 row.innerHTML = `
                     <span class="text-slate-500 font-bold">${{dateStr}}</span>
                     <span class="font-bold text-slate-200 truncate" title="${{p.nickname || '@anonym'}}">${{p.nickname || '@anonym'}}</span>
                     <span class="font-extrabold text-emerald-400 text-right pr-2">${{p.count || 0}} ks</span>
                     <span class="flex justify-center">${{badgeHtml}}</span>
-                    <button onclick="openAdminEditModal('${{p.id}}')" class="text-base hover:scale-125 transition-transform duration-200" title="Upravit">✏️</button>
+                    <span class="flex justify-center">${{verifiedHtml}}</span>
+                    <button onclick="openAdminEditModal('${{p.id}}')" class="text-base hover:scale-125 transition-transform duration-200 justify-self-end mr-2" title="Upravit">✏️</button>
                 `;
                 listContainer.appendChild(row);
             }});

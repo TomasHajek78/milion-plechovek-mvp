@@ -2526,11 +2526,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             
+            const verifiedHtml = p.is_verified ? '<span class="verified-cell">✅</span>' : '<span class="verified-cell" style="color: var(--text-dim); opacity: 0.3;">–</span>';
             row.innerHTML = `
                 <span class="date">${dateStr}</span>
                 <span class="nick" title="${p.nickname || '@anonym'}">${p.nickname || '@anonym'}</span>
                 <span class="count">${p.count || 0} ks</span>
                 <span class="badge-cell">${badgeHtml}</span>
+                ${verifiedHtml}
                 <button onclick="window.openAdminEditModal('${p.id}')" class="admin-edit-btn" title="Upravit">✏️</button>
             `;
             listContainer.appendChild(row);
