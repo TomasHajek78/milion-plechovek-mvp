@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v40';
+const CACHE_NAME = 'milion-plechovek-v41';
 
 // Soubory aplikace – načítáme vždy ze sítě (network-first)
 // Důvod: při každém deployi musí testeři vidět okamžitě novou verzi

@@ -584,6 +584,11 @@
         </div>
     </div>
 
-    <script src="app.js?v=40"></script>
+    <!-- Lightbox pro detailní náhled fotografie v administraci -->
+    <div id="adminPhotoLightbox" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 99999; cursor: zoom-out;">
+        <img id="adminLightboxImg" src="" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    </div>
+
+    <script src="app.js?v=41"></script>
 </body>
 </html>

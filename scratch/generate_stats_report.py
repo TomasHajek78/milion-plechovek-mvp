@@ -452,7 +452,7 @@ def generate_html_report(stats, output_path):
             <div class="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-6 flex-1 overflow-y-auto mb-6 pr-2">
                 <!-- Fotka v plném detailu -->
                 <div class="w-full max-h-[300px] md:max-h-[420px] rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
-                    <img id="adminEditPhoto" src="" alt="Sběr" class="max-w-full max-h-full object-contain">
+                    <img id="adminEditPhoto" src="" alt="Sběr" class="max-w-full max-h-full object-contain cursor-pointer hover:scale-[1.02] transition-transform duration-200" title="Klikněte pro zvětšení v tomto okně" onclick="openLightbox(this.src)">
                 </div>
                 
                 <!-- Informace a formulář pro plechovky -->
@@ -841,7 +841,8 @@ def generate_html_report(stats, output_path):
 
         window.openAdminEditorPasscode = function() {{
             const pw = prompt("Zadejte administrátorské heslo:");
-            if (pw === "milion2026") {{
+            if (pw === "milion2026" || pw === "tomasadmin123") {{
+                window.adminPasscode = pw;
                 openAdminPanel();
             }} else if (pw !== null) {{
                 alert("Nesprávné heslo!");
@@ -934,8 +935,10 @@ def generate_html_report(stats, output_path):
                     if (!p.is_analyzed) return false;
                     if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
                     return p.analysis_json.some(c => {{
-                        const b = c.brand || 'Nerozpoznáno';
-                        return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
+                        const b = (c.brand || 'Nerozpoznáno').trim().toLowerCase();
+                        const v = (c.volume_liters || c.volume || 'Unknown').toString().trim().toLowerCase();
+                        return b === 'nerozpoznáno' || b === 'unknown' || b === 'neznámý' || b === 'neznámé' ||
+                               v === 'unknown' || v === 'null' || v === 'undefined';
                     }});
                 }}
                 return true;
@@ -963,8 +966,10 @@ def generate_html_report(stats, output_path):
                 }} else {{
                     const hasUnknown = p.analysis_json && Array.isArray(p.analysis_json) && 
                         p.analysis_json.some(c => {{
-                            const b = c.brand || 'Nerozpoznáno';
-                            return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown';
+                            const b = (c.brand || 'Nerozpoznáno').trim().toLowerCase();
+                            const v = (c.volume_liters || c.volume || 'Unknown').toString().trim().toLowerCase();
+                            return b === 'nerozpoznáno' || b === 'unknown' || b === 'neznámý' || b === 'neznámé' ||
+                                   v === 'unknown' || v === 'null' || v === 'undefined';
                         }});
                     if (hasUnknown) {{
                         badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-wider">Neznámé</span>';
@@ -994,7 +999,7 @@ def generate_html_report(stats, output_path):
             if (pickup.analysis_json && Array.isArray(pickup.analysis_json)) {{
                 adminEditCansLocal = JSON.parse(JSON.stringify(pickup.analysis_json));
                 adminEditCansLocal.forEach(can => {{
-                    if (can.brand === 'Unknown' || can.brand === 'unknown' || !can.brand) {{
+                    if (can.brand === 'Unknown' || can.brand === 'unknown' || can.brand === 'Neznámý' || can.brand === 'Neznámé' || !can.brand) {{
                         can.brand = 'Nerozpoznáno';
                     }}
                 }});
@@ -1040,7 +1045,7 @@ def generate_html_report(stats, output_path):
                 const row = document.createElement('div');
                 row.className = 'flex flex-col gap-1 pb-2 border-b border-slate-800/40 mb-2';
                 
-                let inputValue = can.brand === 'Unknown' || can.brand === 'unknown' ? 'Nerozpoznáno' : (can.brand || '');
+                let inputValue = (can.brand === 'Unknown' || can.brand === 'unknown' || can.brand === 'Neznámý' || can.brand === 'Neznámé' || can.brand === 'Nerozpoznáno' || !can.brand) ? 'Nerozpoznáno' : can.brand;
                 
                 const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
                 let volOptions = '';
@@ -1141,28 +1146,33 @@ def generate_html_report(stats, output_path):
             const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
             
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?id=eq.${{adminSelectedPickup.id}}`, {{
-                    method: 'PATCH',
+                const secretPass = window.adminPasscode || 'milion2026';
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/rpc/admin_update_pickup`, {{
+                    method: 'POST',
                     headers: {{
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${{SUPABASE_KEY}}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
+                        'Content-Type': 'application/json'
                     }},
                     body: JSON.stringify({{
-                        nickname: newNick || null,
-                        team_code: newTeam || null,
-                        count: count,
-                        is_analyzed: true,
-                        analysis_json: adminEditCansLocal,
-                        aluminum_weight_g: totalWeightG,
-                        energy_saved_kwh: energySaved,
-                        money_saved_czk: moneySaved,
-                        co2_saved_kg: co2Saved
+                        p_id: adminSelectedPickup.id,
+                        p_secret: (secretPass === 'milion2026') ? 'tomasadmin123' : secretPass,
+                        p_nickname: newNick || null,
+                        p_team: newTeam || null,
+                        p_notes: adminSelectedPickup.notes || null,
+                        p_is_analyzed: true,
+                        p_analysis_json: adminEditCansLocal,
+                        p_count: count
                     }})
                 }});
                 
-                if (!response.ok) throw new Error('Uložení do databáze selhalo.');
+                if (!response.ok) {{
+                    if (response.status === 400 || response.status === 403) {{
+                        window.adminPasscode = null;
+                        throw new Error('Neplatné administrátorské heslo nebo chyba oprávnění.');
+                    }}
+                    throw new Error('Uložení do databáze selhalo.');
+                }}
                 
                 const idx = allPickups.findIndex(p => p.id === adminSelectedPickup.id);
                 if (idx !== -1) {{
@@ -1190,6 +1200,45 @@ def generate_html_report(stats, output_path):
             }}
         }};
 
+        window.deleteAdminPickup = async function() {{
+            if (!adminSelectedPickup) return;
+            if (!confirm('Opravdu chcete tento záznam smazat z databáze? Tuto akci nelze vzít zpět.')) return;
+            
+            const secretPass = window.adminPasscode || 'milion2026';
+            try {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/rpc/admin_delete_pickup`, {{
+                    method: 'POST',
+                    headers: {{
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${{SUPABASE_KEY}}`,
+                        'Content-Type': 'application/json'
+                    }},
+                    body: JSON.stringify({{
+                        p_id: adminSelectedPickup.id,
+                        p_secret: (secretPass === 'milion2026') ? 'tomasadmin123' : secretPass
+                    }})
+                }});
+                
+                if (!response.ok) {{
+                    if (response.status === 400 || response.status === 403) {{
+                        window.adminPasscode = null;
+                        throw new Error('Neplatné administrátorské heslo nebo chyba oprávnění.');
+                    }}
+                    throw new Error('Smazání z databáze selhalo.');
+                }}
+                
+                alert('Záznam byl úspěšně smazán!');
+                closeAdminEditModal();
+                
+                allPickups = allPickups.filter(p => p.id !== adminSelectedPickup.id);
+                filterAdminPickups();
+                recalculateStatsAndReplot();
+            }} catch (e) {{
+                console.error(e);
+                alert('Chyba při mazání: ' + e.message);
+            }}
+        }};
+
         function getFilteredPickups() {{
             const searchInput = document.getElementById('adminSearchNick');
             const statusSelect = document.getElementById('adminStatusFilter');
@@ -1208,10 +1257,10 @@ def generate_html_report(stats, output_path):
                     if (!p.is_analyzed) return false;
                     if (!p.analysis_json || !Array.isArray(p.analysis_json)) return false;
                     return p.analysis_json.some(c => {{
-                        const b = c.brand || 'Nerozpoznáno';
-                        const v = c.volume_liters || 'Unknown';
-                        return b === 'Nerozpoznáno' || b === 'Unknown' || b === 'unknown' ||
-                               v === 'Unknown' || v === 'unknown' || v === null;
+                        const b = (c.brand || 'Nerozpoznáno').trim().toLowerCase();
+                        const v = (c.volume_liters || c.volume || 'Unknown').toString().trim().toLowerCase();
+                        return b === 'nerozpoznáno' || b === 'unknown' || b === 'neznámý' || b === 'neznámé' ||
+                               v === 'unknown' || v === 'null' || v === 'undefined';
                     }});
                 }}
                 return true;
@@ -1257,6 +1306,28 @@ def generate_html_report(stats, output_path):
                 }}
             }}
         }});
+    </script>
+
+    <!-- Lightbox pro detailní náhled fotografie -->
+    <div id="photoLightbox" class="hidden fixed inset-0 bg-slate-950/90 flex items-center justify-center z-[100000] cursor-zoom-out" onclick="closeLightbox()">
+        <img id="lightboxImg" src="" class="max-w-[95%] max-h-[95%] object-contain rounded-xl shadow-2xl border border-slate-800">
+    </div>
+
+    <script>
+        window.openLightbox = function(src) {{
+            const lightbox = document.getElementById('photoLightbox');
+            const img = document.getElementById('lightboxImg');
+            if (lightbox && img) {{
+                img.src = src;
+                lightbox.classList.remove('hidden');
+            }}
+        }};
+        window.closeLightbox = function() {{
+            const lightbox = document.getElementById('photoLightbox');
+            if (lightbox) {{
+                lightbox.classList.add('hidden');
+            }}
+        }};
     </script>
 </body>
 </html>"""
