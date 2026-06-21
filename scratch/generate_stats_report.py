@@ -523,6 +523,7 @@ def generate_html_report(stats, output_path):
         ];
         const CAN_WEIGHTS = {{
             0.5: 16.0,
+            0.44: 15.0,
             0.33: 13.5,
             0.25: 10.0,
             0.2: 8.0,
@@ -1065,7 +1066,7 @@ def generate_html_report(stats, output_path):
                 
                 let inputValue = (can.brand === 'Unknown' || can.brand === 'unknown' || can.brand === 'Neznámý' || can.brand === 'Neznámé' || can.brand === 'Nerozpoznáno' || !can.brand) ? 'Nerozpoznáno' : can.brand;
                 
-                const vols = [0.5, 0.33, 0.25, 0.2, 'Unknown'];
+                const vols = [0.5, 0.44, 0.33, 0.25, 0.2, 'Unknown'];
                 let volOptions = '';
                 vols.forEach(v => {{
                     const isMatch = (can.volume_liters == v || (v === 'Unknown' && (can.volume_liters === 'Unknown' || !can.volume_liters)));
@@ -1117,6 +1118,7 @@ def generate_html_report(stats, output_path):
                 const vol = can.volume_liters;
                 let weight = CAN_WEIGHTS['Unknown'];
                 if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
+                else if (vol === 0.44 || vol === '0.44') weight = CAN_WEIGHTS[0.44];
                 else if (vol === 0.33 || vol === '0.33') weight = CAN_WEIGHTS[0.33];
                 else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
                 else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
@@ -1148,6 +1150,7 @@ def generate_html_report(stats, output_path):
                 const vol = can.volume_liters;
                 let weight = CAN_WEIGHTS['Unknown'];
                 if (vol === 0.5 || vol === '0.5') weight = CAN_WEIGHTS[0.5];
+                else if (vol === 0.44 || vol === '0.44') weight = CAN_WEIGHTS[0.44];
                 else if (vol === 0.33 || vol === '0.33') weight = CAN_WEIGHTS[0.33];
                 else if (vol === 0.25 || vol === '0.25') weight = CAN_WEIGHTS[0.25];
                 else if (vol === 0.2 || vol === '0.2') weight = CAN_WEIGHTS[0.2];
