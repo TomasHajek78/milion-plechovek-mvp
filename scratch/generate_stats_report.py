@@ -150,11 +150,14 @@ def aggregate_data(pickups):
             total_co2_kg += float(p.get('co2_saved_kg') or 0)
 
             cans_array = p.get('analysis_json') or []
-            for can in cans_array:
+            user_vols = p.get('user_volumes') or []
+            for i, can in enumerate(cans_array):
                 brand = can.get('brand') or 'Nerozpoznáno'
                 if brand in ['Unknown', 'unknown', '']:
                     brand = 'Nerozpoznáno'
                 vol = can.get('volume_liters') or 'Unknown'
+                if vol == 'Unknown' and i < len(user_vols) and user_vols[i] is not None:
+                    vol = user_vols[i]
 
                 if brand != 'Nerozpoznáno':
                     brands[brand] = brands.get(brand, 0) + 1
@@ -539,7 +542,7 @@ def generate_html_report(stats, output_path):
 
         async function loadDashboardData() {{
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes`, {{
                     headers: {{
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${{SUPABASE_KEY}}`
@@ -592,12 +595,16 @@ def generate_html_report(stats, output_path):
                     total_co2_kg += parseFloat(p.co2_saved_kg) || 0;
 
                     const cans_array = p.analysis_json || [];
-                    cans_array.forEach(can => {{
+                    const user_vols = p.user_volumes || [];
+                    cans_array.forEach((can, i) => {{
                         let brand = can.brand || 'Nerozpoznáno';
                         if (brand === 'Unknown' || brand === 'unknown' || brand === '') {{
                             brand = 'Nerozpoznáno';
                         }}
-                        const vol = can.volume_liters || 'Unknown';
+                        let vol = can.volume_liters || 'Unknown';
+                        if (vol === 'Unknown' && i < user_vols.length && user_vols[i] !== null && user_vols[i] !== undefined) {{
+                            vol = user_vols[i];
+                        }}
 
                         if (brand !== 'Nerozpoznáno') {{
                             brands[brand] = (brands[brand] || 0) + 1;
@@ -867,7 +874,7 @@ def generate_html_report(stats, output_path):
             }}
             
             try {{
-                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified`, {{
+                const response = await fetch(`${{SUPABASE_URL}}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes`, {{
                     headers: {{
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${{SUPABASE_KEY}}`
@@ -1201,6 +1208,7 @@ def generate_html_report(stats, output_path):
                     allPickups[idx].team_code = newTeam || null;
                     allPickups[idx].count = count;
                     allPickups[idx].is_analyzed = true;
+                    allPickups[idx].is_verified = true;
                     allPickups[idx].analysis_json = adminEditCansLocal;
                     allPickups[idx].aluminum_weight_g = totalWeightG;
                     allPickups[idx].energy_saved_kwh = energySaved;
@@ -1360,7 +1368,7 @@ def main():
     print("🚀 Spouštím generování statistik...")
     
     try:
-        query_url = f"{SUPABASE_URL}/rest/v1/pickups?select=count,is_analyzed,analysis_json,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,team_code,nickname,created_at,is_verified"
+        query_url = f"{SUPABASE_URL}/rest/v1/pickups?select=count,is_analyzed,analysis_json,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,team_code,nickname,created_at,is_verified,user_volumes"
         headers = {
             'apikey': SUPABASE_KEY,
             'Authorization': f"Bearer {SUPABASE_KEY}"

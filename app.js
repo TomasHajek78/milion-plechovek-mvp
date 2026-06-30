@@ -770,8 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 generateUserVolumeSelects(1);
                 
                 if (userVolumesGroup) {
-                    const isTom = userNick && userNick.trim().toLowerCase() === 'tom';
-                    userVolumesGroup.style.display = isTom ? 'block' : 'none';
+                    userVolumesGroup.style.display = 'block';
                 }
                 
                 if (useGPS) {
@@ -826,6 +825,15 @@ document.addEventListener('DOMContentLoaded', () => {
         canCountInput.addEventListener('input', () => {
             const count = Math.max(1, Math.min(50, parseInt(canCountInput.value) || 1));
             generateUserVolumeSelects(count);
+        });
+        canCountInput.addEventListener('focus', () => {
+            canCountInput.value = '';
+        });
+        canCountInput.addEventListener('blur', () => {
+            if (canCountInput.value.trim() === '') {
+                canCountInput.value = '1';
+                generateUserVolumeSelects(1);
+            }
         });
     }
 
@@ -897,11 +905,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const count = parseInt(canCountInput.value) || 1;
         const notes = document.getElementById('notes').value.trim();
         
-        // Sběr dobrovolně zadaných velikostí (user_volumes) - pouze pro uživatele Tom
-        const isTom = userNick && userNick.trim().toLowerCase() === 'tom';
+        // Sběr dobrovolně zadaných velikostí (user_volumes) pro všechny uživatele
         let userVolumesPayload = null;
-        if (isTom) {
-            const volumeSelects = document.querySelectorAll('#userVolumesContainer select');
+        const volumeSelects = document.querySelectorAll('#userVolumesContainer select');
+        if (volumeSelects.length > 0) {
             let userVolumes = [];
             volumeSelects.forEach(select => {
                 const val = select.value;
@@ -2387,17 +2394,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.openAdminPanel = async function() {
-        const modal = document.getElementById('adminPanelModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-        
+    window.refreshAdminPickupsList = async function() {
         const listContainer = document.getElementById('adminPickupsList');
-        if (listContainer) {
-            listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px;">Načítám data z databáze...</div>';
-        }
-        
         try {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,user_volumes,is_verified`, {
                 headers: {
@@ -2415,6 +2413,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 listContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--rust-red); font-size: 12px;">Chyba: ${e.message}</div>`;
             }
         }
+    };
+
+    window.openAdminPanel = async function() {
+        const modal = document.getElementById('adminPanelModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+        
+        const listContainer = document.getElementById('adminPickupsList');
+        if (listContainer) {
+            listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px;">Načítám data z databáze...</div>';
+        }
+        
+        await window.refreshAdminPickupsList();
     };
 
     window.closeAdminPanel = function() {
@@ -2938,6 +2950,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             alert('Změny úspěšně uloženy.');
             window.closeAdminEditModal();
+            await window.refreshAdminPickupsList();
             loadData();
         } catch (e) {
             console.error(e);
