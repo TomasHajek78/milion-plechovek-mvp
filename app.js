@@ -212,14 +212,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Načítání dat ze Supabase ---
     async function loadData(skipSync = false) {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes,is_verified`, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
+            let data = [];
+            let offset = 0;
+            const limit = 1000;
+            let keepFetching = true;
+
+            while (keepFetching) {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes,is_verified&limit=${limit}&offset=${offset}`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                if (!response.ok) throw new Error('Chyba komunikace s databází');
+                
+                const chunk = await response.json();
+                data = data.concat(chunk);
+                
+                if (chunk.length < limit) {
+                    keepFetching = false;
+                } else {
+                    offset += limit;
                 }
-            });
-            if (!response.ok) throw new Error('Chyba komunikace s databází');
-            let data = await response.json();
+            }
             
             // Odstranění spam botů (příliš vysoké počty)
             data = data.filter(item => item.count <= 50 && item.count > 0);
@@ -2397,14 +2412,30 @@ document.addEventListener('DOMContentLoaded', () => {
     window.refreshAdminPickupsList = async function() {
         const listContainer = document.getElementById('adminPickupsList');
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,user_volumes,is_verified`, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
+            let data = [];
+            let offset = 0;
+            const limit = 1000;
+            let keepFetching = true;
+
+            while (keepFetching) {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,user_volumes,is_verified&limit=${limit}&offset=${offset}`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                if (!response.ok) throw new Error('Načítání selhalo');
+                
+                const chunk = await response.json();
+                data = data.concat(chunk);
+                
+                if (chunk.length < limit) {
+                    keepFetching = false;
+                } else {
+                    offset += limit;
                 }
-            });
-            if (!response.ok) throw new Error('Načítání selhalo');
-            allPickups = await response.json();
+            }
+            allPickups = data;
             window.populateDynamicBrands();
             window.filterAdminPickups();
         } catch (e) {
