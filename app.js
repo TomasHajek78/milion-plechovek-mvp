@@ -3031,8 +3031,10 @@ function initializeMilionPlechovek() {
         saveBtn.disabled = true;
         
         const count = adminEditCansLocal.length;
-        const newNick = document.getElementById('adminEditNickInput')?.value.trim() || '';
-        const newTeam = document.getElementById('adminEditTeamInput')?.value.trim() || '';
+        const nickInput = document.getElementById('adminEditNickInput');
+        const teamInput = document.getElementById('adminEditTeamInput');
+        const newNick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
+        const newTeam = (teamInput && teamInput.value) ? teamInput.value.trim() : '';
         
         try {
             let adminPassword = sessionStorage.getItem('adminPassword');
