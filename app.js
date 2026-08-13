@@ -69,7 +69,7 @@ window.migrateDataToAuthUser = async function(session) {
     // Zde později napojíme volání databáze, které přepíše staré záznamy na bezpečné UUID
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+function initializeMilionPlechovek() {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
     const sections = {
@@ -3128,4 +3128,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     newPickupBtn.addEventListener('click', () => { window.location.reload(); });
     cancelBtn.addEventListener('click', () => { window.location.reload(); });
-});
+} // Konec initializeMilionPlechovek
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeMilionPlechovek);
+} else {
+    initializeMilionPlechovek();
+}
