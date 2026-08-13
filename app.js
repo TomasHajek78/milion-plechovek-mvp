@@ -18,10 +18,12 @@ window.closeAuthModal = function() {
 };
 
 window.signInWithProvider = async function(provider) {
-    if (provider === 'google') {
+    if (provider === 'google' || provider === 'facebook' || provider === 'instagram') {
         try {
+            // Instagram a Facebook používají stejný Meta účet (poskytovatele facebook)
+            const supabaseProvider = (provider === 'instagram') ? 'facebook' : provider;
             const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
+                provider: supabaseProvider,
                 options: {
                     redirectTo: window.location.origin + window.location.pathname
                 }
