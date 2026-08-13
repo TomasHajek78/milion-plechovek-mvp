@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v47';
+const CACHE_NAME = 'milion-plechovek-v48';
 
 // Soubory aplikace – načítáme vždy ze sítě (network-first)
 // Důvod: při každém deployi musí testeři vidět okamžitě novou verzi
@@ -57,8 +57,13 @@ self.addEventListener('fetch', (event) => {
   // Pokud jsme offline, použije zálohu z cache.
   const isAppFile = APP_FILES.some((f) => url.pathname.endsWith(f) || url.pathname === '/' || url.pathname === '');
   if (isAppFile) {
+    // Vynucení obejití prohlížečové cache přidáním náhodného parametru a cache: 'no-cache'
+    const fetchOptions = { cache: 'no-store' };
+    const networkUrl = new URL(event.request.url);
+    networkUrl.searchParams.set('_cacheBuster', Date.now());
+    
     event.respondWith(
-      fetch(event.request)
+      fetch(networkUrl.toString(), fetchOptions)
         .then((networkResponse) => {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
