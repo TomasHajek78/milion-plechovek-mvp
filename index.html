@@ -230,7 +230,7 @@
                 });
 
                 // Fetch data
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=count,co2_saved_kg,lat,lng`, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=count,co2_saved_kg,latitude,longitude`, {
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -245,14 +245,14 @@
                     totalCollected += (item.count || 0);
                     totalCO2 += (item.co2_saved_kg || 0);
 
-                    if (item.lat && item.lng) {
+                    if (item.latitude && item.longitude) {
                         const icon = L.divIcon({
                             html: item.count || 1,
                             className: 'custom-div-icon',
                             iconSize: [30, 40],
                             iconAnchor: [15, 40]
                         });
-                        markers.addLayer(L.marker([item.lat, item.lng], { icon: icon }));
+                        markers.addLayer(L.marker([item.latitude, item.longitude], { icon: icon }));
                     }
                 });
                 
