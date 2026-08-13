@@ -13,8 +13,9 @@
     <style>
         .hidden { display: none !important; }
     </style>
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=6">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Leaflet Mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -126,6 +127,15 @@
                     <p id="userNickDisplay">...</p>
                     <p id="myEnergyDisplay" style="margin: 4px 0 0 0; font-size: 11px; font-weight: 700; color: #10b981; display: none; align-items: center; justify-content: center; gap: 4px;"><span style="font-size:12px;">⚡</span> Ušetřeno: <span id="myEnergyValue">0</span> kWh</p>
                     <button id="openWrappedBtn" class="primary-btn-small" style="margin-top: 8px; width: 100%; display: none; padding: 6px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, var(--forest-green) 0%, #3b82f6 100%); border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.25);">✨ Můj Kvartální Report</button>
+                </div>
+                <div class="settings-menu">
+                    <a href="index.html">
+                        <span class="icon">🌍</span> O projektu (Web)
+                    </a>
+                    <!-- Tajné tlačítko pouze pro Tomáše -->
+                    <a href="#" onclick="document.getElementById('authModal').classList.remove('hidden'); return false;" style="color: var(--rust-red);">
+                        <span class="icon">🧪</span> Test: Zobrazit okno přihlášení
+                    </a>
                 </div>
                 <div class="stat-card">
                     <h3>Zbývá sebrat</h3>
@@ -583,6 +593,49 @@
                 <button onclick="deleteAdminPickup()" class="primary-btn-small" style="flex: 1; margin: 0; background-color: var(--rust-red); color: white; border: none;">Smazat</button>
                 <button onclick="closeAdminEditModal()" class="secondary-btn" style="flex: 1; margin: 0;">Zrušit</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal (Přihlášení / Registrace) -->
+    <div id="authModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 50000;">
+        <div class="card" style="max-width: 400px; width: 90%; background: white; border-radius: 20px; padding: 25px; text-align: center; position: relative;">
+            <button onclick="closeAuthModal()" style="position: absolute; right: 15px; top: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #94a3b8;">&times;</button>
+            <h2 style="color: var(--forest-green); margin-bottom: 10px;">Připoj se ke sběračům</h2>
+            <p style="color: var(--text-dim); margin-bottom: 25px; font-size: 14px;">Zaregistruj se a tvé úlovky se bezpečně uloží do žebříčku.</p>
+
+            <!-- Tlačítka pro sociální sítě -->
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+                <button onclick="signInWithProvider('google')" class="btn-social btn-google" style="background: white; border: 1px solid #cbd5e1; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: bold; font-family: 'Montserrat', sans-serif;">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style="width: 20px;">
+                    Pokračovat s Google
+                </button>
+                <button onclick="signInWithProvider('apple')" class="btn-social btn-apple" style="background: black; color: white; border: none; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: bold; font-family: 'Montserrat', sans-serif;">
+                    <img src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" style="width: 20px; filter: invert(1);">
+                    Pokračovat s Apple
+                </button>
+                <button onclick="signInWithProvider('facebook')" class="btn-social btn-facebook" style="background: #1877F2; color: white; border: none; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: bold; font-family: 'Montserrat', sans-serif;">
+                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" style="width: 20px; filter: brightness(0) invert(1);">
+                    Pokračovat s Facebook
+                </button>
+            </div>
+
+            <!-- Oddělovač -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 25px; color: #94a3b8; font-size: 12px;">
+                <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                <span>NEBO E-MAILEM</span>
+                <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+            </div>
+
+            <!-- Formulář pro Magic Link -->
+            <form onsubmit="handleMagicLink(event)" style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="email" id="authEmailInput" placeholder="tvuj@email.cz" required style="padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-family: 'Montserrat', sans-serif; text-align: center; font-size: 16px;">
+                <button type="submit" class="primary-btn" id="authEmailBtn" style="border-radius: 10px; padding: 12px;">Poslat přihlašovací odkaz</button>
+                <div id="authMessage" style="font-size: 12px; margin-top: 10px; min-height: 15px; color: var(--forest-green);"></div>
+            </form>
+            
+            <p style="font-size: 10px; color: #94a3b8; margin-top: 20px;">
+                Přihlášením souhlasíte se <a href="zasady_ochrany_soukromi.md" style="color: var(--forest-green);">Zásadami ochrany soukromí</a>.
+            </p>
         </div>
     </div>
 
