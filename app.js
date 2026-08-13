@@ -75,7 +75,6 @@ window.migrateDataToAuthUser = async function(session) {
 };
 
 function initializeMilionPlechovek() {
-    alert("SYSTEM DEBUG: Init started! Nick=" + localStorage.getItem('milion_nickname'));
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
     const sections = {
