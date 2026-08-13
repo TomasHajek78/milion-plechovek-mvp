@@ -8,6 +8,11 @@
     <title>Milion Plechovek | Zachraňme přírodu hrou</title>
     <link rel="stylesheet" href="style.css?v=5">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <style>
         .landing-container {
             max-width: 1000px;
@@ -175,6 +180,12 @@
             <p>Rádi s vámi vymyslíme, jak náš projekt posunout dál.</p>
         </div>
 
+        <!-- Mapa -->
+        <div class="content-section" style="padding: 15px;">
+            <h2 style="margin-left: 15px;"><img src="icon_world.jpg" style="height: 50px; width: auto; border-radius: 50%;" alt=""> Mapa úlovků</h2>
+            <div id="landingMap" style="height: 400px; width: 100%; border-radius: 15px; z-index: 1; border: 2px solid #e2e8f0;"></div>
+        </div>
+
         <!-- Kontakt -->
         <div class="content-section">
             <h2><img src="icon_mailbox.jpg" style="height: 50px; width: auto; border-radius: 50%;" alt=""> Kontakt</h2>
@@ -205,8 +216,21 @@
 
         async function loadStats() {
             try {
-                // Použijeme jednoduchý fetch dat pro MVP. Později přejdeme na agregaci na backendu kvůli limitu 1000.
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=count,co2_saved_kg`, {
+                // Initialize map
+                const map = L.map('landingMap', { maxZoom: 21, scrollWheelZoom: false }).setView([49.8175, 15.473], 7);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                    maxZoom: 21
+                }).addTo(map);
+
+                const markers = L.markerClusterGroup({
+                    iconCreateFunction: function(cluster) {
+                        return L.divIcon({ html: '<b>' + cluster.getChildCount() + '</b>', className: 'cluster-can-icon', iconSize: [40, 40] });
+                    }
+                });
+
+                // Fetch data
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=count,co2_saved_kg,lat,lng`, {
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -220,7 +244,19 @@
                 data.forEach(item => {
                     totalCollected += (item.count || 0);
                     totalCO2 += (item.co2_saved_kg || 0);
+
+                    if (item.lat && item.lng) {
+                        const icon = L.divIcon({
+                            html: item.count || 1,
+                            className: 'custom-div-icon',
+                            iconSize: [30, 40],
+                            iconAnchor: [15, 40]
+                        });
+                        markers.addLayer(L.marker([item.lat, item.lng], { icon: icon }));
+                    }
                 });
+                
+                map.addLayer(markers);
                 
                 const remaining = Math.max(0, 1000000 - totalCollected);
                 
@@ -230,7 +266,7 @@
                 document.getElementById('stat-co2').innerText = totalCO2.toFixed(1).toLocaleString('cs-CZ');
 
             } catch (err) {
-                console.error("Nepodařilo se načíst statistiky:", err);
+                console.error("Nepodařilo se načíst statistiky a mapu:", err);
             }
         }
 
