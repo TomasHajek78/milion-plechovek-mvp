@@ -30,6 +30,15 @@ window.handleMagicLink = function(event) {
     }, 1500);
 };
 
+// Funkce pro migraci starých testovacích dat na nový ověřený účet (zatím spící)
+window.migrateDataToAuthUser = async function(session) {
+    const oldNick = localStorage.getItem('userNick');
+    if (!oldNick || !session || !session.user) return;
+    
+    console.log(`[AUTH] Zahajuji migraci dat z přezdívky ${oldNick} na nový účet ${session.user.email}`);
+    // Zde později napojíme volání databáze, které přepíše staré záznamy na bezpečné UUID
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
