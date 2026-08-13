@@ -22,8 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
 const SUPABASE_URL = 'https://dxlyjugmeucevosmhage.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bHlqdWdtZXVjZXZvc21oYWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzIzOTUsImV4cCI6MjA5NTEwODM5NX0.cG-DVzuKL1VOj8pwQG_Uu_sS_lJ3Wx5L-QmRbrBxIWw';
 
-// Inicializace Supabase JS klienta (Auth)
-const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+// Inicializace Supabase JS klienta
+let supabase = null;
+try {
+    supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+} catch (e) {
+    console.error("Supabase init failed:", e);
+}
 
 // --- Autentizace a Registrace (Zatím spící logika) ---
 window.closeAuthModal = function() {
@@ -70,6 +75,7 @@ window.migrateDataToAuthUser = async function(session) {
 };
 
 function initializeMilionPlechovek() {
+    alert("SYSTEM DEBUG: Init started! Nick=" + localStorage.getItem('milion_nickname'));
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
     const sections = {
@@ -119,9 +125,16 @@ function initializeMilionPlechovek() {
     let myStats = parseInt(localStorage.getItem('milion_mystats')) || 0;
     let globalStats = parseInt(localStorage.getItem('milion_globalstats')) || 999171;
     let globalEnergy = parseFloat(localStorage.getItem('milion_globalenergy')) || 0;
-    let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
+    let myHistory = [];
+    try {
+        const parsed = JSON.parse(localStorage.getItem('milion_history'));
+        if (Array.isArray(parsed)) myHistory = parsed;
+    } catch(e) {
+        console.warn("Chyba parsování milion_history:", e);
+    }
+    
     const originalLength = myHistory.length;
-    myHistory = myHistory.filter(item => item.status !== 'pending');
+    myHistory = myHistory.filter(item => item && item.status !== 'pending');
     if (myHistory.length < originalLength) {
         localStorage.setItem('milion_history', JSON.stringify(myHistory));
         console.log("Zaseklé položky byly úspěšně vymazány.");
@@ -134,6 +147,9 @@ function initializeMilionPlechovek() {
         window.history.replaceState({}, '', window.location.pathname);
     }
     let userNick = localStorage.getItem('milion_nickname') || '';
+    if (userNick && userNickDisplay) {
+        userNickDisplay.textContent = userNick;
+    }
     // UUID zařízení – jedinečný identifikátor zařízení, přežije změnu přezdívky
     let deviceId = localStorage.getItem('milion_device_id');
     if (!deviceId) {
