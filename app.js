@@ -5,6 +5,19 @@ if ('serviceWorker' in navigator) {
         .catch(err => console.log('Service Worker selhal', err));
 }
 
+// --- Developer / Admin Mode Check ---
+if (window.location.search.includes('admin=1')) {
+    localStorage.setItem('adminMode', '1');
+    // Vyčištění URL, aby to nebylo vidět
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('adminMode') === '1') {
+        const adminTestArea = document.getElementById('adminTestArea');
+        if (adminTestArea) adminTestArea.style.display = 'block';
+    }
+});
+
 // --- Konfigurace Supabase Databáze ---
 const SUPABASE_URL = 'https://dxlyjugmeucevosmhage.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bHlqdWdtZXVjZXZvc21oYWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzIzOTUsImV4cCI6MjA5NTEwODM5NX0.cG-DVzuKL1VOj8pwQG_Uu_sS_lJ3Wx5L-QmRbrBxIWw';
