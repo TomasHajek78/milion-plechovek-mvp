@@ -166,10 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- IndexedDB Inicializace pro Offline úlovky ---
     let db = null;
-    const dbRequest = indexedDB.open('MilionPlechovekDB', 1);
-    dbRequest.onupgradeneeded = (e) => {
-        const localDb = e.target.result;
-        // Jednorázová čistička zablokovaných fotek v telefonu
+    try {
+        const dbRequest = indexedDB.open('MilionPlechovekDB', 1);
+        dbRequest.onupgradeneeded = (e) => {
+            const localDb = e.target.result;
+            // Jednorázová čistička zablokovaných fotek v telefonu
         if (!localStorage.getItem('queue_cleared_v1')) {
             if (localDb.objectStoreNames.contains('pendingPickups')) {
                 const tx = localDb.transaction(['pendingPickups'], 'readwrite');
@@ -254,6 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
     dbRequest.onerror = (e) => {
         console.error("IndexedDB error:", e);
     };
+    } catch (dbErr) {
+        console.error("IndexedDB initialization failed (e.g., Private mode):", dbErr);
+    }
 
     // --- Mock Data pro Žebříček (Fallback) ---
     const mockLeaderboard = [
@@ -546,48 +550,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Mapa ---
     function initMap() {
-        map = L.map('map', { maxZoom: 21, closePopupOnClick: false }).setView([49.8175, 15.473], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 21,
-            maxNativeZoom: 19
-        }).addTo(map);
-        
-        // Inicializace MarkerClusteru se sčítáním celkového počtu plechovek
-        markersLayer = L.markerClusterGroup({
-            disableClusteringAtZoom: 18, // Od přiblížení 18 výše už body neshlukujeme (budou vidět samostatně)
-            spiderfyOnMaxZoom: true,     // Pokud jsou body na stejném místě, rozbalí se do paprsků
-            iconCreateFunction: function(cluster) {
-                const childMarkers = cluster.getAllChildMarkers();
-                let sum = 0;
-                childMarkers.forEach(m => {
-                    sum += m.options.canCount || 1;
-                });
-                
-                // Dynamická velikost plechovky podle počtu seskupených kusů
-                let size = 42;
-                let fontSize = 12;
-                if (sum >= 10 && sum < 100) {
-                    size = 50;
-                    fontSize = 14;
-                } else if (sum >= 100) {
-                    size = 58;
-                    fontSize = 16;
-                }
-                
-                // Stabilní barva shluku podle jeho středu
-                const latlng = cluster.getLatLng();
-                const colorClass = getMarkerColorClass({ latitude: latlng.lat, longitude: latlng.lng });
-                
-                return L.divIcon({
-                    html: `<div style="font-size: ${fontSize}px; font-weight: 900; color: white; text-shadow: 0 0 5px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding-top: 2px;">${sum}</div>`,
-                    className: `cluster-can-icon ${colorClass}`,
-                    iconSize: [size, size],
-                    iconAnchor: [size / 2, size / 2]
-                });
+        try {
+            const mapEl = document.getElementById('map');
+            if (!mapEl) return;
+            if (typeof L === 'undefined') {
+                console.warn('Leaflet (L) is not defined. Map will not initialize.');
+                return;
             }
-        }).addTo(map);
-        
-        renderMarkers();
+            map = L.map('map', { maxZoom: 21, closePopupOnClick: false }).setView([49.8175, 15.473], 7);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 21,
+                maxNativeZoom: 19
+            }).addTo(map);
+            
+            // Inicializace MarkerClusteru se sčítáním celkového počtu plechovek
+            markersLayer = L.markerClusterGroup({
+                disableClusteringAtZoom: 18, // Od přiblížení 18 výše už body neshlukujeme (budou vidět samostatně)
+                spiderfyOnMaxZoom: true,     // Pokud jsou body na stejném místě, rozbalí se do paprsků
+                iconCreateFunction: function(cluster) {
+                    const childMarkers = cluster.getAllChildMarkers();
+                    let sum = 0;
+                    childMarkers.forEach(m => {
+                        sum += m.options.canCount || 1;
+                    });
+                    
+                    // Dynamická velikost plechovky podle počtu seskupených kusů
+                    let size = 42;
+                    let fontSize = 12;
+                    if (sum >= 10 && sum < 100) {
+                        size = 50;
+                        fontSize = 14;
+                    } else if (sum >= 100) {
+                        size = 58;
+                        fontSize = 16;
+                    }
+                    
+                    // Stabilní barva shluku podle jeho středu
+                    const latlng = cluster.getLatLng();
+                    const colorClass = getMarkerColorClass({ latitude: latlng.lat, longitude: latlng.lng });
+                    
+                    return L.divIcon({
+                        html: `<div style="font-size: ${fontSize}px; font-weight: 900; color: white; text-shadow: 0 0 5px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding-top: 2px;">${sum}</div>`,
+                        className: `cluster-can-icon ${colorClass}`,
+                        iconSize: [size, size],
+                        iconAnchor: [size / 2, size / 2]
+                    });
+                }
+            }).addTo(map);
+            
+            renderMarkers();
+        } catch (err) {
+            console.error("Chyba při inicializaci mapy:", err);
+        }
     }
 
     // Vykreslení všech bodů z databáze
@@ -1482,12 +1496,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initRealtime() {
-        const wsUrl = `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`;
-        let ws = new WebSocket(wsUrl);
-        let heartbeatInterval = null;
-        let refCounter = 1;
+        try {
+            const wsUrl = `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`;
+            let ws = new WebSocket(wsUrl);
+            let heartbeatInterval = null;
+            let refCounter = 1;
 
-        ws.onopen = () => {
+            ws.onopen = () => {
             console.log("Supabase Realtime WebSocket připojen.");
             
             // Phoenix heartbeat každých 30 sekund
@@ -1574,6 +1589,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Chyba WebSocketu:", err);
             ws.close();
         };
+        } catch (err) {
+            console.error("Chyba při inicializaci real-time WebSocketu:", err);
+        }
     }
 
     window.toggleDesatero = () => {
