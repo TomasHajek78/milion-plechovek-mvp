@@ -225,15 +225,12 @@
 
                 const markers = L.markerClusterGroup({
                     iconCreateFunction: function(cluster) {
-                        const latlng = cluster.getLatLng();
-                        const hash = Math.abs(Math.sin(latlng.lat * 12.9898 + latlng.lng * 78.233) * 43758.5453);
-                        const rand = hash - Math.floor(hash);
+                        const count = cluster.getChildCount();
                         let colorClass = 'can-green';
-                        if (rand < 0.33) colorClass = 'can-green';
-                        else if (rand < 0.66) colorClass = 'can-teal';
-                        else colorClass = 'can-red';
+                        if (count % 3 === 0) colorClass = 'can-teal';
+                        else if (count % 3 === 1) colorClass = 'can-red';
 
-                        return L.divIcon({ html: '<b>' + cluster.getChildCount() + '</b>', className: `cluster-can-icon ${colorClass}`, iconSize: [40, 40] });
+                        return L.divIcon({ html: '<b>' + count + '</b>', className: `cluster-can-icon ${colorClass}`, iconSize: [40, 40] });
                     }
                 });
 
@@ -250,20 +247,17 @@
                 let totalCO2 = 0;
                 
                 data.forEach(item => {
-                    totalCollected += (item.count || 0);
+                    const c = item.count || 1;
+                    totalCollected += c;
                     totalCO2 += (item.co2_saved_kg || 0);
 
                     if (item.latitude && item.longitude) {
-                        // Vypocet barvy na zaklade souradnic
-                        const hash = Math.abs(Math.sin(item.latitude * 12.9898 + item.longitude * 78.233) * 43758.5453);
-                        const rand = hash - Math.floor(hash);
                         let colorClass = 'can-green';
-                        if (rand < 0.33) colorClass = 'can-green';
-                        else if (rand < 0.66) colorClass = 'can-teal';
-                        else colorClass = 'can-red';
+                        if (c % 3 === 0) colorClass = 'can-teal';
+                        else if (c % 3 === 1) colorClass = 'can-red';
 
                         const icon = L.divIcon({
-                            html: item.count || 1,
+                            html: c,
                             className: `custom-div-icon ${colorClass}`,
                             iconSize: [30, 40],
                             iconAnchor: [15, 40]
