@@ -17,8 +17,23 @@ window.closeAuthModal = function() {
     document.getElementById('authModal').classList.add('hidden');
 };
 
-window.signInWithProvider = function(provider) {
-    alert(`Přihlášení přes ${provider} se právě připravuje! Brzy bude aktivní.`);
+window.signInWithProvider = async function(provider) {
+    if (provider === 'google') {
+        try {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname
+                }
+            });
+            if (error) throw error;
+        } catch (err) {
+            console.error("Chyba při přihlašování:", err);
+            alert("Nepodařilo se spustit přihlášení. Zkuste to prosím později.");
+        }
+    } else {
+        alert(`Přihlášení přes ${provider} se právě připravuje! Brzy bude aktivní.`);
+    }
 };
 
 window.handleMagicLink = function(event) {
