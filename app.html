@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="logo.png?v=2">
+    <link rel="icon" type="image/png" href="logo.png?v=2">
+    <link rel="manifest" href="manifest.json?v=2">
+    <title>Milion Plechovek | Sběrač</title>
+    <style>
+        .hidden { display: none !important; }
+    </style>
+    <link rel="stylesheet" href="style.css?v=4">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Leaflet Mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet MarkerCluster -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Hlavička s logem -->
+        <header class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="width: 40px;"></div> <!-- Spacer -->
+                <a href="index.html">
+                    <img src="logo.png" alt="Milion Plechovek Logo" class="brand-logo">
+                </a>
+                <button id="settingsBtn" onclick="toggleSettings()" style="background:none; border:none; cursor:pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); padding: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Modální okno Nastavení (Záloha) -->
+        <div id="settingsModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; width:90%; max-width:400px;">
+            <h3>Nastavení & Záloha</h3>
+            <p class="small-text">Pro jistotu si jednou za čas stáhni zálohu svých dat, aby se ti sběry při promazání telefonu neztratily.</p>
+            <button onclick="exportData()" class="primary-btn-small" style="width:100%; margin-bottom:10px;">📥 Stáhnout zálohu (.json)</button>
+            
+            <div style="margin: 15px 0; text-align: left;">
+                <label for="settingsNickname" style="font-size: 11px; font-weight: 700; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase;">Přezdívka:</label>
+                <input type="text" id="settingsNickname" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; background: var(--bg-card); color: var(--text-dark); box-sizing: border-box;" placeholder="@pepa_sbira">
+            </div>
+            
+            <div style="margin: 15px 0 5px 0; display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left;">
+                <input type="checkbox" id="gpsToggle" checked style="width: auto; height: auto; padding: 0; margin: 0; transform: scale(1.2); cursor: pointer;">
+                <label for="gpsToggle" style="font-size: 13px; font-weight: 700; color: var(--text-dark); cursor: pointer;">Zjišťovat GPS polohu automaticky</label>
+            </div>
+            <p class="small-text" style="color: var(--text-dim); margin-top: 0px; margin-bottom: 15px; font-size: 11px; text-align: left; line-height: 1.3;">
+                Tip: Pokud se telefon na polohu ptá při každé fotce, přidejte si aplikaci na plochu (Sdílet -> Přidat na plochu) nebo povolte polohu trvale v nastavení Safari.
+            </p>
+
+            <button onclick="forceRefresh()" class="secondary-btn" style="width:100%; margin-bottom:10px; font-size: 12px; color: var(--rust-red);">🔄 Vynutit aktualizaci (vymazat mezipaměť)</button>
+            
+            <p class="small-text" style="margin-top:15px;">Obnovit ze souboru:</p>
+            <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(this)">
+            <button onclick="document.getElementById('importFileInput').click()" class="secondary-btn" style="width:100%;">📤 Nahrát zálohu</button>
+            
+            <button onclick="toggleDesatero(); toggleSettings();" class="primary-btn-small" style="width:100%; margin-top:15px; background-color: var(--forest-green);">📖 Desatero sběrače</button>
+            <a href="mailto:tomas@tomashajek.cz?subject=Milion%20Plechovek%20-%20Zpetna%20vazba" class="secondary-btn" style="display: block; width: 100%; margin-top: 15px; border-color: #f59e0b; color: #d97706; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box;">💡 Nápad na zlepšení / Nahlásit chybu</a>
+            <button onclick="openAdminEditorPasscode(); toggleSettings();" class="secondary-btn" style="width:100%; margin-top:15px; border-color: #64748b; color: #475569; font-weight: bold;">🛠️ Administrace dat (korekce)</button>
+            <button onclick="toggleSettings()" class="secondary-btn" style="width:100%; margin-top:10px; color:var(--rust-red);">Zavřít</button>
+        </div>
+
+        <!-- Modální okno Desatero -->
+        <div id="desateroModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1010; width:90%; max-width:400px; max-height:85vh; overflow-y:auto; padding:20px; border: 2px solid var(--forest-green);">
+            <h3 style="margin-bottom:10px;">Desatero správného sběrače 🥫♻️</h3>
+            <p class="small-text" style="color:var(--text-dim); margin-bottom:15px; text-align: center;">Důvěra je základ. Focením se zavazuješ k poctivému, ekologickému a bezpečnému sběru.</p>
+            
+            <ol class="desatero-list" style="padding-left:15px; font-size:12px; line-height:1.5; color:var(--text-light); text-align:left; margin-bottom: 20px;">
+                <li style="margin-bottom:8px;"><strong>Poctivost:</strong> Vyfocení plechovky je závazek ji zvednout a uklidit. Nefoť plechovky, které tam necháš ležet.</li>
+                <li style="margin-bottom:8px;"><strong>Kam s ní? Do recyklace:</strong> Každá plechovka patří do žlutého/šedého kontejneru na plasty/kovy nebo do sběrného dvora.</li>
+                <li style="margin-bottom:8px;"><strong>Chraň si ruce:</strong> Při sběru vždy používej pevné rukavice nebo sběrací kleště. Hliník může být ostrý.</li>
+                <li style="margin-bottom:8px;"><strong>Pozor na hmyz a zvířata:</strong> Plechovky v lese jsou skvělým úkrytem pro vosy, sršně či pavouky. Před sešlápnutím ji zkontroluj.</li>
+                <li style="margin-bottom:8px;"><strong>Vylévej opatrně:</strong> Uvnitř může být zkažená tekutina, plíseň či dešťová voda. Vylévej vždy směrem od těla.</li>
+                <li style="margin-bottom:8px;"><strong>Bezpečnost na prvním místě:</strong> Nesbírej na soukromých pozemcích, staveništích, železničních tratích nebo v jiných nebezpečných místech.</li>
+                <li style="margin-bottom:8px;"><strong>Respektuj přírodu:</strong> Nenič chráněné rostliny a neruš zvěř jen proto, abys dosáhl na plechovku v křoví.</li>
+                <li style="margin-bottom:8px;"><strong>Hygiena:</strong> Po sběru si vždy pečlivě umyj nebo vydezinfikuj ruce. Hygiena je základ zdraví.</li>
+                <li style="margin-bottom:8px;"><strong>Jdi příkladem:</strong> Svým chováním ukazuješ ostatním, že sbírat odpadky není ostuda, ale hrdost.</li>
+                <li style="margin-bottom:8px;"><strong>Hrajeme fér:</strong> Žebříček slouží pro radost a motivaci. Jakékoliv podvody (focení v obchodě) kazí hru celé komunitě.</li>
+            </ol>
+            
+            <button onclick="toggleDesatero()" class="primary-btn-small" style="width:100%;">Rozumím a souhlasím</button>
+        </div>
+
+        <!-- Instalační Overlay (PWA) -->
+        <div id="installOverlay" class="card hidden" style="position:fixed; bottom:20px; left:20px; right:20px; z-index:2000; border: 2px solid var(--rust-red);">
+            <h3>Nainstaluj si Sběrače! 🥫</h3>
+            <p class="small-text" id="installInstructions">Přidej si aplikaci na plochu pro rychlejší přístup a stabilnější ukládání dat.</p>
+            <button id="installBtn" class="primary-btn-small" style="width:100%; margin-top:10px;">Přidat na plochu</button>
+            <button onclick="document.getElementById('installOverlay').classList.add('hidden')" class="secondary-btn" style="width:100%; margin-top:5px;">Možná později</button>
+        </div>
+
+        <!-- Registrace Nickname -->
+        <div id="loginScreen" class="card hidden">
+            <h3>Jak ti máme říkat?</h3>
+            <p class="small-text">Vymysli si přezdívku nebo zadej svůj IG, ať se najdeš v žebříčku.</p>
+            <p class="small-text" style="color: var(--text-dim); margin-top: -6px;">💡 Už jsi tu byl? Zadej svou původní přezdívku a tvé sběry se načtou.</p>
+            <input type="text" id="nicknameInput" placeholder="@pepa_sbira" autocomplete="off" autocorrect="off" autocapitalize="off">
+            <p id="nickErrorMsg" style="color: var(--rust-red); font-size: 12px; margin: 4px 0 0 0; display: none;"></p>
+            <button id="saveNickBtn" class="primary-btn-small" style="margin-top: 10px;">Uložit a pokračovat</button>
+        </div>
+
+        <!-- HLAVNÍ SEKCE (HOME) -->
+        <div id="homeSection" class="view-section">
+            <!-- Indikátor offline synchronizace -->
+            <div id="syncBanner" class="sync-banner hidden">
+                <span class="sync-icon">🔄</span>
+                <span id="syncStatusText">Synchronizuji 0 neodeslaných úlovků...</span>
+            </div>
+
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card" id="myStatsCard" style="position: relative;">
+                    <h3>Moje plechovky</h3>
+                    <div class="stat-value" id="myTotal">0</div>
+                    <p id="userNickDisplay">...</p>
+                    <p id="myEnergyDisplay" style="margin: 4px 0 0 0; font-size: 11px; font-weight: 700; color: #10b981; display: none; align-items: center; justify-content: center; gap: 4px;"><span style="font-size:12px;">⚡</span> Ušetřeno: <span id="myEnergyValue">0</span> kWh</p>
+                    <button id="openWrappedBtn" class="primary-btn-small" style="margin-top: 8px; width: 100%; display: none; padding: 6px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, var(--forest-green) 0%, #3b82f6 100%); border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.25);">✨ Můj Kvartální Report</button>
+                </div>
+                <div class="stat-card">
+                    <h3>Zbývá sebrat</h3>
+                    <div class="stat-value highlight" id="globalTotal">999 171</div>
+                    <p>z cílového milionu</p>
+                </div>
+            </div>
+
+            <!-- Samostatná karta pro ekologickou úsporu energie pod hlavními kartami -->
+            <div class="stats-row" style="margin-bottom: 24px;">
+                <div class="stat-card" id="energyStatsCard" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;">
+                    <div>
+                        <h3 style="margin: 0 0 2px 0;">Ušetřená energie <span style="font-size:12px; color:var(--text-dim);">ⓘ</span></h3>
+                        <p style="margin: 0; font-size: 11px; color: var(--text-dim);">Celkem zrecyklováno hliníku</p>
+                    </div>
+                    <div class="stat-value highlight" id="globalEnergy" style="font-size: 20px; margin: 0; color: var(--forest-green); font-weight: 900;">0 kWh</div>
+                </div>
+            </div>
+
+            <!-- Vycentrované Tlačítko s pulzem -->
+            <div class="main-action-center" id="mainAction">
+                <div class="btn-pulse-wrapper">
+                    <div class="pulse-ring"></div>
+                    <button id="cameraBtn" class="primary-btn-large">
+                        <span class="icon">📸</span>FOTIT
+                    </button>
+                </div>
+                <button id="galleryBtn" class="gallery-link">📂 nebo vybrat z galerie</button>
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+                <input type="file" id="galleryInput" accept="image/*" style="display: none;">
+            </div>
+
+            <div id="historyPanel" class="card history-card">
+                <h3>Poslední úlovky</h3>
+                <ul id="historyList" class="history-list"></ul>
+            </div>
+        </div>
+
+        <!-- SEKCE MAPA -->
+        <div id="mapSection" class="view-section hidden">
+            <div class="card map-full-card">
+                <h3>Mapa nálezů</h3>
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <!-- SEKCE ŽEBŘÍČEK -->
+        <div id="leaderboardSection" class="view-section hidden">
+            <div class="card leaderboard-card">
+                <h3>Žebříček sběračů</h3>
+                <ul id="leaderboardList" class="leaderboard-list">
+                    <!-- Tady bude TOP 10 + uživatel -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- FORMULÁŘE (MIMO HLAVNÍ NAVIGACI) -->
+        <div id="pickupForm" class="card pickup-form hidden">
+            <img id="photoPreview" alt="Náhled úlovku" class="photo-preview">
+            <div class="form-group">
+                <label for="canCount">Kolik plechovek je na fotce?</label>
+                <input type="number" id="canCount" value="1" min="1" max="50">
+            </div>
+            <div class="form-group" id="userVolumesGroup" style="margin-top: 12px; margin-bottom: 12px; display: none;">
+                <details style="background: rgba(0, 0, 0, 0.03); padding: 10px 12px; border-radius: 8px; border: 1px dashed var(--border-color, #cbd5e1);">
+                    <summary style="font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text-dark); outline: none; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Doplnit velikosti (nepovinné) 🥫</span>
+                        <span style="font-size: 10px; color: var(--text-dim);">Zobrazit ▼</span>
+                    </summary>
+                    <p style="font-size: 11px; color: var(--text-dim); margin: 6px 0 10px 0; line-height: 1.4;">Pokud znáš objemy plechovek na fotce, můžeš je zadat a pomoci tak přesnějšímu ekologickému výpočtu.</p>
+                    <div id="userVolumesContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Zde se dynamicky vygenerují dropdowny podle canCount -->
+                    </div>
+                </details>
+            </div>
+            <div class="form-group">
+                <label for="notes">Poznámka:</label>
+                <textarea id="notes" placeholder="Kde jsi to našel?"></textarea>
+            </div>
+            <div class="gps-status" id="gpsStatus">📍 Zjišťuji polohu...</div>
+            <button id="submitBtn" class="submit-btn">Odeslat do odpočtu</button>
+            <button id="cancelBtn" class="secondary-btn">Zrušit</button>
+        </div>
+        
+        <div id="successScreen" class="card success-screen hidden">
+            <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+            <h2>Skvělá práce!</h2>
+            <p style="color: var(--text-dim); margin-bottom: 24px;">Právě jsi planetu zbavil další zátěže. Tvé plechovky byly odečteny z celkového milionu.</p>
+            <button id="shareBtn" class="share-btn">Sdílet na Instagramu</button>
+            <button id="newPickupBtn" class="secondary-btn">Zpět na začátek</button>
+        </div>
+
+        <!-- SPODNÍ NAVIGACE -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-view="home">
+                <span class="nav-icon"><img src="ikona_sheet2_8.png" class="nav-image-icon" alt="Domů"></span>
+                <span class="nav-label">Domů</span>
+            </button>
+            <button class="nav-item" data-view="map">
+                <span class="nav-icon"><img src="ikona_sheet2_9.png" class="nav-image-icon" alt="Mapa"></span>
+                <span class="nav-label">Mapa</span>
+            </button>
+            <button class="nav-item" data-view="leaderboard">
+                <span class="nav-icon"><img src="ikona_sheet2_13.png" class="nav-image-icon" alt="Žebříček"></span>
+                <span class="nav-label">Žebříček</span>
+            </button>
+        </nav>
+
+        <!-- Modal Galerie Uživatelů -->
+        <div id="userGalleryModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1020; width:95%; max-width:440px; max-height:85vh; overflow-y:auto; box-shadow: 0 20px 50px rgba(0,0,0,0.15);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+                <h3 id="galleryTitle" style="margin:0; font-size:16px;">Galerie úlovků</h3>
+                <button id="closeGalleryBtn" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-dim); font-weight:bold; padding: 0 5px;">&times;</button>
+            </div>
+            
+            <!-- Mřížka fotek -->
+            <div id="galleryGrid" class="gallery-grid"></div>
+            
+            <!-- Detail konkrétní fotky (výchozí skrytý, zobrazí se po kliknutí v mřížce) -->
+            <div id="photoDetailViewer" class="photo-detail-viewer hidden" style="margin-top:20px; padding-top:15px; border-top:1px solid #e2e8f0; text-align: left;">
+                <img id="detailImage" src="" style="width:100%; border-radius:12px; max-height:250px; object-fit:cover; margin-bottom:10px; border: 1px solid #e2e8f0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:700; color:var(--text-dark); margin-bottom:5px;">
+                    <!-- Počet plechovek v grafice jako na mapce -->
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div id="detailCountIcon" class="custom-div-icon" style="width:36px; height:36px; background-size:contain; position:relative; display:block;">
+                            <div id="detailCountNumber" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-weight: 900; font-size: 11px; color: white; text-shadow: 0 0 4px rgba(0,0,0,0.8); padding-top: 2px;">0</div>
+                        </div>
+                        <span style="font-size:12px; font-weight:700; color:var(--text-dark);">ks</span>
+                    </div>
+                    <!-- Lajkovací plechovka -->
+                    <button id="likeBtn" style="background:none; border:none; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:700; color:var(--text-dark); font-size:13px; padding:4px 8px; border-radius:10px; transition:transform 0.15s ease;">
+                        <img id="likeCanIcon" src="can-marker-transparent.png" style="width:16px; height:20px; object-fit:contain; transition:transform 0.15s ease;">
+                        <span id="likeCount">0</span>
+                    </button>
+                    <span id="detailDate" style="color:var(--text-dim); font-weight:400;">...</span>
+                </div>
+                <p id="detailNotes" style="font-size:12px; font-style:italic; color:var(--text-dim); margin:0; line-height:1.4;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-time notifikační toast -->
+    <div id="activityToast" class="activity-toast hidden" style="position:fixed; bottom:95px; left:20px; right:20px; z-index:10000; border-radius:18px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+        <span id="toastEmoji" style="font-size: 20px;">🥫</span>
+        <span id="toastText" style="font-size: 13px; font-weight: 700;">Tom právě nasbíral 4 plechovky!</span>
+    </div>
+
+    <!-- Modální okno Info o energii -->
+    <div id="energyInfoModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1030; width:90%; max-width:400px; padding:20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 2px solid var(--forest-green);">
+        <h3 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">⚡ Ušetřená energie</h3>
+        <p style="font-size:12px; line-height:1.5; color:var(--text-light); text-align:left; margin-bottom:15px;">
+            1. Výroba nového hliníku z bauxitu je extrémně energeticky náročná.<br><br>
+            2. Recyklací jedné hliníkové plechovky ušetříme až 95 % této energie oproti výrobě nové z primárních surovin.<br><br>
+            3. Každá ušetřená kilowatthodina (kWh) v této statistice představuje čistou úsporu elektřiny, kterou lze využít pro svícení, nabíjení telefonů nebo provoz spotřebičů.
+        </p>
+        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; text-align: left; line-height: 1.4;">
+            <strong style="color: var(--text-dark); display: block; margin-bottom: 4px;">🤔 Kam s vysbíranými plechovkami?</strong>
+            Kovy patří primárně do <strong>šedých kontejnerů</strong> nebo sběrných dvorů. V některých obcích je lze házet i do žlutých plastů (pokud mají nálepku "kovy").<br>
+            <a href="https://www.kamsnim.cz/" target="_blank" style="color: var(--forest-green); font-weight: 700; text-decoration: none; display: inline-block; margin-top: 6px;">📍 Najít nejbližší kontejner na mapě →</a>
+        </div>
+        <button id="closeEnergyInfoBtn" class="primary-btn-small" style="width:100%;">Rozumím</button>
+    </div>
+
+    <!-- Modální okno Týmového Reportu -->
+    <div id="teamReportModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1015; width:95%; max-width:440px; max-height:85vh; overflow-y:auto; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 2px solid var(--forest-green);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+            <h3 id="teamReportTitle" style="margin:0; font-size:15px;">Týmový Report</h3>
+            <button id="closeTeamReportBtn" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-dim); font-weight:bold; padding: 0 5px;">&times;</button>
+        </div>
+        
+        <div class="stats-row" style="margin-bottom:15px; display:flex; gap:10px;">
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Plechovky</h4>
+                <div class="stat-value" id="teamCansTotal" style="font-size:20px; margin:5px 0; font-weight:900;">0 ks</div>
+            </div>
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Úspora energie</h4>
+                <div class="stat-value highlight" id="teamEnergyTotal" style="font-size:20px; margin:5px 0; color:var(--forest-green); font-weight:900;">0 kWh</div>
+            </div>
+        </div>
+        
+        <div class="stats-row" style="margin-bottom:15px; display:flex; gap:10px;">
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Váha hliníku</h4>
+                <div class="stat-value" id="teamWeightTotal" style="font-size:16px; margin:5px 0; font-weight:700;">0 kg</div>
+            </div>
+            <div class="stat-card" style="padding:10px; flex:1; min-width:0;">
+                <h4 style="margin:0; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Ušetřeno CO₂</h4>
+                <div class="stat-value" id="teamCo2Total" style="font-size:16px; margin:5px 0; font-weight:700;">0 kg</div>
+            </div>
+        </div>
+        
+        <h4 style="text-align:left; margin:15px 0 5px 0; font-size:13px; color:var(--text-dark); font-weight:700; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">🏆 Pořadí ve třídě</h4>
+        <ul id="teamLeaderboardList" class="leaderboard-list" style="margin-bottom:15px; padding:0; list-style:none;"></ul>
+        
+        <h4 style="text-align:left; margin:15px 0 5px 0; font-size:13px; color:var(--text-dark); font-weight:700; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">📸 Fotky ze společného sběru</h4>
+        <div id="teamGalleryGrid" class="gallery-grid" style="margin-bottom:10px; display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
+    </div>
+
+    <!-- Modální okno Sběratelského Wrapped -->
+    <div id="wrappedModal" class="wrapped-modal hidden">
+        <!-- Progress bar nahoře (Stories styl) -->
+        <div class="wrapped-progress-container">
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+            <div class="wrapped-progress-bar"><div class="wrapped-progress-fill"></div></div>
+        </div>
+
+        <!-- Tlačítko zavřít -->
+        <button id="closeWrappedBtn" class="wrapped-close-btn">&times;</button>
+
+        <!-- Navigační zóny pro mobilní poklepání -->
+        <div class="wrapped-nav-zone left" onclick="window.prevWrappedSlide()"></div>
+        <div class="wrapped-nav-zone right" onclick="window.nextWrappedSlide()"></div>
+
+        <!-- Kontejner pro slidy (každý slide má 9:16 poměr a vlastní ID) -->
+        <div class="wrapped-slides-wrapper">
+            <!-- SLIDE 1: Intro -->
+            <div class="wrapped-slide active" id="wrappedSlide1">
+                <div class="wrapped-decorations">
+                    <span class="floating-emoji e1">🥫</span>
+                    <span class="floating-emoji e2">♻️</span>
+                    <span class="floating-emoji e3">🌱</span>
+                </div>
+                <div class="wrapped-content">
+                    <img src="logo.png" style="width: 120px; height: auto; margin-top: 15px; margin-bottom: 5px; object-fit: contain;">
+                    <span class="wrapped-subtitle">Tvůj sběratelský přehled</span>
+                    <h1 class="wrapped-title-glowing" style="margin: 10px 0;">MILION<br>PLECHOVEK</h1>
+                    <div class="wrapped-tag">DÁREK PRO TEBE 🎁</div>
+                    <p class="wrapped-text">Podívej se, jak jsi za poslední 3 měsíce pomohl vyčistit naši přírodu!</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 2: První plechovka -->
+            <div class="wrapped-slide" id="wrappedSlide2">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">První zářez</span>
+                    <h2>Tvoje první plechovka</h2>
+                    <p class="wrapped-slide-date" id="wrappedFirstDate">...</p>
+                    <div class="polaroid-wrapper">
+                        <img id="wrappedFirstImage" src="can-marker-transparent.png" class="polaroid-image">
+                    </div>
+                    <p class="wrapped-highlight" id="wrappedFirstBrand">...</p>
+                    <p class="wrapped-slide-notes" id="wrappedFirstNotes">...</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 3: Největší úlovek -->
+            <div class="wrapped-slide" id="wrappedSlide3">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">Zlatý jackpot</span>
+                    <h2>Největší úlovek</h2>
+                    <div class="polaroid-wrapper">
+                        <img id="wrappedMaxImage" src="can-marker-transparent.png" class="polaroid-image">
+                    </div>
+                    <div class="wrapped-giant-number" id="wrappedMaxCount">0 ks</div>
+                    <p class="wrapped-text">plechovek na jediné fotce!</p>
+                    <p class="wrapped-slide-notes" id="wrappedMaxNotes">...</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 4: Nejčastější značka -->
+            <div class="wrapped-slide" id="wrappedSlide4">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">Tvoje věrná značka</span>
+                    <h2>Tvoje slabost</h2>
+                    <div class="wrapped-can-avatar-container">
+                        <div id="wrappedBrandCanIcon" class="custom-div-icon large-can-icon" style="background-image: url('can-marker-transparent.png');"></div>
+                    </div>
+                    <div class="wrapped-brand-title" id="wrappedBrandName">...</div>
+                    <p class="wrapped-text">Byla to tvá nejčastěji sbíraná plechovka. Celkem jsi jich odevzdal:</p>
+                    <div class="wrapped-giant-number" id="wrappedBrandCount">0 ks</div>
+                </div>
+            </div>
+
+            <!-- SLIDE 5: Celkový dopad & Poděkování -->
+            <div class="wrapped-slide" id="wrappedSlide5">
+                <div class="wrapped-content">
+                    <span class="wrapped-slide-badge">Tvoje zelená stopa</span>
+                    <h2>Tvůj zelený otisk</h2>
+                    
+                    <div class="wrapped-impact-grid">
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalCans">0 ks</span>
+                            <span class="lbl">nasbíráno</span>
+                        </div>
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalWeight">0 kg</span>
+                            <span class="lbl">hliníku</span>
+                        </div>
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalEnergy">0 kWh</span>
+                            <span class="lbl">energie ušetřeno</span>
+                        </div>
+                        <div class="wrapped-impact-card">
+                            <span class="val" id="wrappedTotalCo2">0 kg</span>
+                            <span class="lbl">CO₂ ušetřeno</span>
+                        </div>
+                    </div>
+                    
+                    <div class="wrapped-gift-box">
+                        <span class="gift-icon">💚</span>
+                        <p class="wrapped-thanks-text">Ze srdce děkujeme za podporu projektu!</p>
+                        <p class="wrapped-thanks-sub">Díky tobě je svět o kousek čistší.</p>
+                    </div>
+                    
+                    <div class="wrapped-share-tip">
+                        📸 Udělej si screenshot a nasdílej ho na sítě s tagem #MilionPlechovek
+                    </div>
+                    <img src="logo.png" style="width: 90px; height: auto; margin-top: 5px; object-fit: contain;">
+                </div>
+            </div>
+
+            <!-- SLIDE 6: Žebříček a srovnání se spotřebiči -->
+            <div class="wrapped-slide" id="wrappedSlide6">
+                <div class="wrapped-content" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                    <div style="width: 100%;">
+                        <span class="wrapped-slide-badge">Tvoje Síň Slávy</span>
+                        <h2 style="margin-top: 10px;">Tvé hrdinské skóre</h2>
+                        
+                        <div class="wrapped-rank-box" style="margin: 15px 0; padding: 12px; background: rgba(59, 130, 246, 0.08); border: 2px solid #3b82f6; border-radius: 16px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-dim); font-weight: 800; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Tvoje pozice v žebříčku</span>
+                            <div id="wrappedRankValue" style="font-size: 36px; font-weight: 900; color: #3b82f6; text-shadow: 0 0 10px rgba(59,130,246,0.2);">#--</div>
+                            <span style="font-size: 11px; color: var(--text-dim);" id="wrappedRankPercentile">mezi všemi sběrateli</span>
+                        </div>
+
+                        <p class="wrapped-text" style="margin: 10px auto; font-size: 12px; max-width: 90%;">Recyklací tohoto hliníku jsi ušetřil energii, která odpovídá:</p>
+                        
+                        <div id="wrappedApplianceComparison" style="margin: 15px 0; padding: 15px; background: rgba(16, 185, 129, 0.08); border: 1px dashed #10b981; border-radius: 16px; text-align: center;">
+                            <div id="wrappedApplianceEmoji" style="font-size: 40px; margin-bottom: 6px;">🎮</div>
+                            <div id="wrappedApplianceText" style="font-size: 14px; font-weight: 800; color: var(--forest-green); line-height: 1.4;">-- hodin hraní na PlayStation 5</div>
+                        </div>
+                    </div>
+
+                    <div style="width: 100%;">
+                        <p class="wrapped-text" style="font-size: 11px; margin: 10px auto; opacity: 0.85; line-height: 1.4;" id="wrappedRandomFunFact">Každá plechovka se počítá! Zrecyklovaný hliník může být do 60 dnů zpět v regálu.</p>
+                        <div class="wrapped-thanks-text" style="font-size: 13px; font-weight: 900; color: var(--forest-green); margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px;">DĚKUJEME, SBĚRATELI! 💚</div>
+                        <img src="logo.png" style="width: 80px; height: auto; margin-top: 5px; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modální okno pro administrátorský přehled -->
+    <div id="adminPanelModal" class="admin-modal hidden">
+        <div class="admin-modal-content card">
+            <div class="admin-modal-header">
+                <h2>🛠️ Administrace dat (Korekce)</h2>
+                <button onclick="closeAdminPanel()" class="admin-close-x">&times;</button>
+            </div>
+            
+            <div class="admin-filters-row">
+                <input type="text" id="adminSearchNick" placeholder="Hledat přezdívku..." oninput="filterAdminPickups()">
+                <select id="adminStatusFilter" onchange="filterAdminPickups()">
+                    <option value="all">Všechny sběry</option>
+                    <option value="unanalyzed">Pouze neanalyzované</option>
+                    <option value="unverified_unknown">Kontrola: Neznámé značky</option>
+                    <option value="unverified_ai">Kontrola: Zpracováno AI (Bez chyb)</option>
+                    <option value="nsfw">Blokováno (NSFW)</option>
+                    <option value="verified">Schválené / Ověřené</option>
+                </select>
+            </div>
+            
+            <div class="admin-list-container">
+                <div class="admin-list-header">
+                    <span>Datum</span>
+                    <span>Přezdívka</span>
+                    <span>Plechovek</span>
+                    <span>Stav</span>
+                    <span style="text-align: center;">Ověř.</span>
+                    <span>Akce</span>
+                </div>
+                <div id="adminPickupsList" class="admin-pickups-list">
+                    <!-- Řádky se načtou dynamicky -->
+                </div>
+            </div>
+            
+            <button onclick="closeAdminPanel()" class="secondary-btn" style="width: 100%; margin-top: 15px;">Zavřít administraci</button>
+        </div>
+    </div>
+
+    <!-- Modální okno pro ruční úpravu konkrétního sběru -->
+    <div id="adminEditPickupModal" class="admin-modal hidden" style="z-index: 25000;">
+        <div class="admin-modal-content card" style="max-width: 600px; width: 95%; max-height: 90vh; overflow-y: auto;">
+            <div class="admin-modal-header">
+                <h3>✏️ Korekce záznamu</h3>
+                <button onclick="closeAdminEditModal()" class="admin-close-x">&times;</button>
+            </div>
+            
+            <div class="admin-edit-layout">
+                <!-- Fotka v plném detailu -->
+                <div class="admin-edit-photo-container">
+                    <img id="adminEditPhoto" src="" alt="Sběr">
+                </div>
+                
+                <!-- Informace a formulář pro plechovky -->
+                <div class="admin-edit-form">
+                    <div class="admin-pickup-meta" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                            <strong style="width: 80px; text-align: left;">Uživatel:</strong>
+                            <input type="text" id="adminEditNickInput" style="flex: 1; min-width: 0; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff;" />
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                            <strong style="width: 80px; text-align: left;">Třída / Tým:</strong>
+                            <input type="text" id="adminEditTeamInput" style="flex: 1; min-width: 0; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff;" placeholder="Např. 8.A" />
+                        </div>
+                        <p><strong>Datum:</strong> <span id="adminEditDate">...</span></p>
+                        <p><strong>Poznámka:</strong> <span id="adminEditNotes">...</span></p>
+                        <p><strong>Zadané objemy:</strong> <span id="adminEditUserVolumes" style="color: var(--forest-green); font-weight: 700;">Bez specifikace</span></p>
+                    </div>
+                    
+                    <h4 style="margin: 15px 0 5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">🥫 Zjištěné plechovky</h4>
+                    <datalist id="dynamicBrandsList"></datalist>
+                    <div id="adminCansList" class="admin-cans-list">
+                        <!-- Plechovky se načtou dynamicky jako řádky formuláře -->
+                    </div>
+                    
+                    <button onclick="addCanToEditList()" class="secondary-btn-small" style="width: 100%; margin-top: 10px; border-style: dashed; padding: 8px;">➕ Přidat další plechovku</button>
+                    
+                    <!-- Sekce pro učení AI pravidel -->
+                    <div class="admin-teach-ai-section" style="margin-top: 15px; padding: 12px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px;">
+                        <h4 style="margin: 0 0 8px; color: #3b82f6; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">🎓 Učit AI novou značku / pravidlo</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="teachBrandInput" placeholder="Značka (např. Relax)" style="flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff; color: var(--text-dark);">
+                                <input type="text" id="teachVolumesInput" placeholder="Objemy (např. 0.33, 0.5)" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #fff; color: var(--text-dark);">
+                            </div>
+                            <div style="display: flex; gap: 4px; align-items: center; position: relative;">
+                                <input type="text" id="teachHintInput" placeholder="Nápověda pro AI..." style="flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; padding-right: 32px; background: #fff; color: var(--text-dark);">
+                                <button id="dictateHintBtn" onclick="window.dictateBrandHint()" style="background: none; border: none; cursor: pointer; font-size: 16px; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); outline: none; padding: 0;" title="Diktovat nápovědu (česky)">🎙️</button>
+                            </div>
+                            <button onclick="window.saveBrandRule()" class="primary-btn-small" style="background-color: #3b82f6; font-size: 11px; padding: 6px; margin-top: 4px; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 700; width: 100%;">Uložit pravidlo do databáze</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Náhled přepočítaného ekologického dopadu -->
+                    <div class="admin-live-stats" style="margin-top: 20px; padding: 12px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 12px;">
+                        <h4 style="margin: 0 0 8px; color: var(--forest-green); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">📊 Živý náhled ekologických hodnot</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; text-align: left;">
+                            <div>Počet: <strong id="liveCansCount">0 ks</strong></div>
+                            <div>Hmotnost: <strong id="liveWeight">0 g</strong></div>
+                            <div>Energie: <strong id="liveEnergy">0 kWh</strong></div>
+                            <div>CO₂ úspora: <strong id="liveCo2">0 kg</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="adminSaveBtn" onclick="saveAdminEditChanges()" class="primary-btn-small" style="flex: 1; background-color: var(--forest-green);">Uložit změny</button>
+                <button onclick="deleteAdminPickup()" class="primary-btn-small" style="flex: 1; margin: 0; background-color: var(--rust-red); color: white; border: none;">Smazat</button>
+                <button onclick="closeAdminEditModal()" class="secondary-btn" style="flex: 1; margin: 0;">Zrušit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox pro detailní náhled fotografie v administraci -->
+    <div id="adminPhotoLightbox" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 99999; cursor: zoom-out;">
+        <img id="adminLightboxImg" src="" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    </div>
+
+    <script src="app.js?v=41"></script>
+</body>
+</html>
