@@ -225,7 +225,15 @@
 
                 const markers = L.markerClusterGroup({
                     iconCreateFunction: function(cluster) {
-                        return L.divIcon({ html: '<b>' + cluster.getChildCount() + '</b>', className: 'cluster-can-icon', iconSize: [40, 40] });
+                        const latlng = cluster.getLatLng();
+                        const hash = Math.abs(Math.sin(latlng.lat * 12.9898 + latlng.lng * 78.233) * 43758.5453);
+                        const rand = hash - Math.floor(hash);
+                        let colorClass = 'can-green';
+                        if (rand < 0.33) colorClass = 'can-green';
+                        else if (rand < 0.66) colorClass = 'can-teal';
+                        else colorClass = 'can-red';
+
+                        return L.divIcon({ html: '<b>' + cluster.getChildCount() + '</b>', className: `cluster-can-icon ${colorClass}`, iconSize: [40, 40] });
                     }
                 });
 
