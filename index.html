@@ -246,9 +246,17 @@
                     totalCO2 += (item.co2_saved_kg || 0);
 
                     if (item.latitude && item.longitude) {
+                        // Vypocet barvy na zaklade souradnic
+                        const hash = Math.abs(Math.sin(item.latitude * 12.9898 + item.longitude * 78.233) * 43758.5453);
+                        const rand = hash - Math.floor(hash);
+                        let colorClass = 'can-green';
+                        if (rand < 0.33) colorClass = 'can-green';
+                        else if (rand < 0.66) colorClass = 'can-teal';
+                        else colorClass = 'can-red';
+
                         const icon = L.divIcon({
                             html: item.count || 1,
-                            className: 'custom-div-icon',
+                            className: `custom-div-icon ${colorClass}`,
                             iconSize: [30, 40],
                             iconAnchor: [15, 40]
                         });
