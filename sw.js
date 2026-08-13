@@ -1,8 +1,8 @@
-const CACHE_NAME = 'milion-plechovek-v44';
+const CACHE_NAME = 'milion-plechovek-v45';
 
 // Soubory aplikace – načítáme vždy ze sítě (network-first)
 // Důvod: při každém deployi musí testeři vidět okamžitě novou verzi
-const APP_FILES = ['app.js', 'app.html', 'index.html', 'style.css', 'sw.js'];
+const APP_FILES = ['app.js', 'index.html', 'uvod.html', 'style.css', 'sw.js'];
 
 // Statické assety – cachujeme pro rychlost a offline (cache-first)
 const STATIC_ASSETS = [

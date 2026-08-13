@@ -2,7 +2,7 @@
   "name": "Milion Plechovek",
   "short_name": "Plechovky",
   "description": "Sběračská aplikace projektu Milion Plechovek - čistíme Česko společně.",
-  "start_url": "app.html",
+  "start_url": "index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f8fafc",
