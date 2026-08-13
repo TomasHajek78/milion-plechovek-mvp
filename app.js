@@ -488,8 +488,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!item || !item.latitude || !item.longitude) return 'can-green';
         // Jednoduchý stabilní hash ze souřadnic
         const hash = Math.abs(Math.sin(item.latitude * 12.9898 + item.longitude * 78.233) * 43758.5453);
-        const index = Math.floor((hash % 1) * 3); // 0 = zelená, 1 = teal, 2 = červená
-        const classes = ['can-green', 'can-teal', 'can-red'];
+        const index = Math.floor((hash % 1) * 5); // 5 různých barev
+        const classes = ['can-green', 'can-teal', 'can-blue', 'can-purple', 'can-red'];
         return classes[index];
     }
 

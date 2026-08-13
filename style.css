@@ -445,6 +445,14 @@ input:focus, textarea:focus {
     background-image: url('can_marker_teal_transparent.png') !important;
 }
 
+.can-blue {
+    background-image: url('can_marker_blue_transparent.png') !important;
+}
+
+.can-purple {
+    background-image: url('can_marker_purple_transparent.png') !important;
+}
+
 .can-red {
     background-image: url('can_marker_red_transparent.png') !important;
 }
