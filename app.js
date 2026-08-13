@@ -9,6 +9,27 @@ if ('serviceWorker' in navigator) {
 const SUPABASE_URL = 'https://dxlyjugmeucevosmhage.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bHlqdWdtZXVjZXZvc21oYWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzIzOTUsImV4cCI6MjA5NTEwODM5NX0.cG-DVzuKL1VOj8pwQG_Uu_sS_lJ3Wx5L-QmRbrBxIWw';
 
+// Inicializace Supabase JS klienta (Auth)
+const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// --- Autentizace a Registrace (Zatím spící logika) ---
+window.closeAuthModal = function() {
+    document.getElementById('authModal').classList.add('hidden');
+};
+
+window.signInWithProvider = function(provider) {
+    alert(`Přihlášení přes ${provider} se právě připravuje! Brzy bude aktivní.`);
+};
+
+window.handleMagicLink = function(event) {
+    event.preventDefault();
+    const email = document.getElementById('authEmailInput').value;
+    document.getElementById('authMessage').innerText = `Odesílám odkaz na ${email}... (Zatím pouze testovací režim)`;
+    setTimeout(() => {
+        document.getElementById('authMessage').innerText = `Odkaz by byl úspěšně odeslán na e-mail: ${email}. Zkontrolujte schránku.`;
+    }, 1500);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
