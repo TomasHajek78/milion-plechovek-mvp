@@ -5,76 +5,11 @@ if ('serviceWorker' in navigator) {
         .catch(err => console.log('Service Worker selhal', err));
 }
 
-// --- Developer / Admin Mode Check ---
-if (window.location.search.includes('admin=1')) {
-    localStorage.setItem('adminMode', '1');
-    // Vyčištění URL, aby to nebylo vidět
-    window.history.replaceState({}, document.title, window.location.pathname);
-}
-document.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('adminMode') === '1') {
-        const adminTestArea = document.getElementById('adminTestArea');
-        if (adminTestArea) adminTestArea.style.display = 'block';
-    }
-});
-
 // --- Konfigurace Supabase Databáze ---
 const SUPABASE_URL = 'https://dxlyjugmeucevosmhage.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bHlqdWdtZXVjZXZvc21oYWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzIzOTUsImV4cCI6MjA5NTEwODM5NX0.cG-DVzuKL1VOj8pwQG_Uu_sS_lJ3Wx5L-QmRbrBxIWw';
 
-// Inicializace Supabase JS klienta
-let supabase = null;
-try {
-    supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-} catch (e) {
-    console.error("Supabase init failed:", e);
-}
-
-// --- Autentizace a Registrace (Zatím spící logika) ---
-window.closeAuthModal = function() {
-    document.getElementById('authModal').classList.add('hidden');
-};
-
-window.signInWithProvider = async function(provider) {
-    if (provider === 'google' || provider === 'facebook' || provider === 'instagram') {
-        try {
-            // Instagram a Facebook používají stejný Meta účet (poskytovatele facebook)
-            const supabaseProvider = (provider === 'instagram') ? 'facebook' : provider;
-            const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: supabaseProvider,
-                options: {
-                    redirectTo: window.location.origin + window.location.pathname
-                }
-            });
-            if (error) throw error;
-        } catch (err) {
-            console.error("Chyba při přihlašování:", err);
-            alert("Nepodařilo se spustit přihlášení. Zkuste to prosím později.");
-        }
-    } else {
-        alert(`Přihlášení přes ${provider} se právě připravuje! Brzy bude aktivní.`);
-    }
-};
-
-window.handleMagicLink = function(event) {
-    event.preventDefault();
-    const email = document.getElementById('authEmailInput').value;
-    document.getElementById('authMessage').innerText = `Odesílám odkaz na ${email}... (Zatím pouze testovací režim)`;
-    setTimeout(() => {
-        document.getElementById('authMessage').innerText = `Odkaz by byl úspěšně odeslán na e-mail: ${email}. Zkontrolujte schránku.`;
-    }, 1500);
-};
-
-// Funkce pro migraci starých testovacích dat na nový ověřený účet (zatím spící)
-window.migrateDataToAuthUser = async function(session) {
-    const oldNick = localStorage.getItem('userNick');
-    if (!oldNick || !session || !session.user) return;
-    
-    console.log(`[AUTH] Zahajuji migraci dat z přezdívky ${oldNick} na nový účet ${session.user.email}`);
-    // Zde později napojíme volání databáze, které přepíše staré záznamy na bezpečné UUID
-};
-
-function initializeMilionPlechovek() {
+document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
     const sections = {
@@ -124,16 +59,9 @@ function initializeMilionPlechovek() {
     let myStats = parseInt(localStorage.getItem('milion_mystats')) || 0;
     let globalStats = parseInt(localStorage.getItem('milion_globalstats')) || 999171;
     let globalEnergy = parseFloat(localStorage.getItem('milion_globalenergy')) || 0;
-    let myHistory = [];
-    try {
-        const parsed = JSON.parse(localStorage.getItem('milion_history'));
-        if (Array.isArray(parsed)) myHistory = parsed;
-    } catch(e) {
-        console.warn("Chyba parsování milion_history:", e);
-    }
-    
+    let myHistory = JSON.parse(localStorage.getItem('milion_history')) || [];
     const originalLength = myHistory.length;
-    myHistory = myHistory.filter(item => item && item.status !== 'pending');
+    myHistory = myHistory.filter(item => item.status !== 'pending');
     if (myHistory.length < originalLength) {
         localStorage.setItem('milion_history', JSON.stringify(myHistory));
         console.log("Zaseklé položky byly úspěšně vymazány.");
@@ -146,9 +74,6 @@ function initializeMilionPlechovek() {
         window.history.replaceState({}, '', window.location.pathname);
     }
     let userNick = localStorage.getItem('milion_nickname') || '';
-    if (userNick && userNickDisplay) {
-        userNickDisplay.textContent = userNick;
-    }
     // UUID zařízení – jedinečný identifikátor zařízení, přežije změnu přezdívky
     let deviceId = localStorage.getItem('milion_device_id');
     if (!deviceId) {
@@ -181,11 +106,10 @@ function initializeMilionPlechovek() {
     
     // --- IndexedDB Inicializace pro Offline úlovky ---
     let db = null;
-    try {
-        const dbRequest = indexedDB.open('MilionPlechovekDB', 1);
-        dbRequest.onupgradeneeded = (e) => {
-            const localDb = e.target.result;
-            // Jednorázová čistička zablokovaných fotek v telefonu
+    const dbRequest = indexedDB.open('MilionPlechovekDB', 1);
+    dbRequest.onupgradeneeded = (e) => {
+        const localDb = e.target.result;
+        // Jednorázová čistička zablokovaných fotek v telefonu
         if (!localStorage.getItem('queue_cleared_v1')) {
             if (localDb.objectStoreNames.contains('pendingPickups')) {
                 const tx = localDb.transaction(['pendingPickups'], 'readwrite');
@@ -270,9 +194,6 @@ function initializeMilionPlechovek() {
     dbRequest.onerror = (e) => {
         console.error("IndexedDB error:", e);
     };
-    } catch (dbErr) {
-        console.error("IndexedDB initialization failed (e.g., Private mode):", dbErr);
-    }
 
     // --- Mock Data pro Žebříček (Fallback) ---
     const mockLeaderboard = [
@@ -429,30 +350,16 @@ function initializeMilionPlechovek() {
 
     // --- Navigace ---
     function switchView(viewName) {
-        if (!viewName || !sections[viewName]) return;
         // Skrýt vše
-        Object.values(sections).forEach(s => {
-            if (s && s.classList) s.classList.add('hidden');
-        });
-        if (navItems) {
-            navItems.forEach(n => {
-                if (n && n.classList) n.classList.remove('active');
-            });
-        }
+        Object.values(sections).forEach(s => s.classList.add('hidden'));
+        navItems.forEach(n => n.classList.remove('active'));
 
         // Zobrazit vybrané
-        if (sections[viewName]) {
-            sections[viewName].classList.remove('hidden');
-        }
-        const activeNav = document.querySelector(`[data-view="${viewName}"]`);
-        if (activeNav) {
-            activeNav.classList.add('active');
-        }
+        sections[viewName].classList.remove('hidden');
+        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
 
-        if (viewName === 'map' && map) {
-            setTimeout(() => {
-                try { if (map) map.invalidateSize(); } catch(e) {}
-            }, 100);
+        if (viewName === 'map') {
+            setTimeout(() => map.invalidateSize(), 100);
         }
         
         // Načíst čerstvá data z databáze při každém přepnutí záložky
@@ -551,8 +458,8 @@ function initializeMilionPlechovek() {
         if (!item || !item.latitude || !item.longitude) return 'can-green';
         // Jednoduchý stabilní hash ze souřadnic
         const hash = Math.abs(Math.sin(item.latitude * 12.9898 + item.longitude * 78.233) * 43758.5453);
-        const index = Math.floor((hash % 1) * 5); // 5 různých barev
-        const classes = ['can-green', 'can-teal', 'can-blue', 'can-purple', 'can-red'];
+        const index = Math.floor((hash % 1) * 3); // 0 = zelená, 1 = teal, 2 = červená
+        const classes = ['can-green', 'can-teal', 'can-red'];
         return classes[index];
     }
 
@@ -579,58 +486,48 @@ function initializeMilionPlechovek() {
 
     // --- Mapa ---
     function initMap() {
-        try {
-            const mapEl = document.getElementById('map');
-            if (!mapEl) return;
-            if (typeof L === 'undefined') {
-                console.warn('Leaflet (L) is not defined. Map will not initialize.');
-                return;
-            }
-            map = L.map('map', { maxZoom: 21, closePopupOnClick: false }).setView([49.8175, 15.473], 7);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 21,
-                maxNativeZoom: 19
-            }).addTo(map);
-            
-            // Inicializace MarkerClusteru se sčítáním celkového počtu plechovek
-            markersLayer = L.markerClusterGroup({
-                disableClusteringAtZoom: 18, // Od přiblížení 18 výše už body neshlukujeme (budou vidět samostatně)
-                spiderfyOnMaxZoom: true,     // Pokud jsou body na stejném místě, rozbalí se do paprsků
-                iconCreateFunction: function(cluster) {
-                    const childMarkers = cluster.getAllChildMarkers();
-                    let sum = 0;
-                    childMarkers.forEach(m => {
-                        sum += m.options.canCount || 1;
-                    });
-                    
-                    // Dynamická velikost plechovky podle počtu seskupených kusů
-                    let size = 42;
-                    let fontSize = 12;
-                    if (sum >= 10 && sum < 100) {
-                        size = 50;
-                        fontSize = 14;
-                    } else if (sum >= 100) {
-                        size = 58;
-                        fontSize = 16;
-                    }
-                    
-                    // Stabilní barva shluku podle jeho středu
-                    const latlng = cluster.getLatLng();
-                    const colorClass = getMarkerColorClass({ latitude: latlng.lat, longitude: latlng.lng });
-                    
-                    return L.divIcon({
-                        html: `<div style="font-size: ${fontSize}px; font-weight: 900; color: white; text-shadow: 0 0 5px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding-top: 2px;">${sum}</div>`,
-                        className: `cluster-can-icon ${colorClass}`,
-                        iconSize: [size, size],
-                        iconAnchor: [size / 2, size / 2]
-                    });
+        map = L.map('map', { maxZoom: 21, closePopupOnClick: false }).setView([49.8175, 15.473], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 21,
+            maxNativeZoom: 19
+        }).addTo(map);
+        
+        // Inicializace MarkerClusteru se sčítáním celkového počtu plechovek
+        markersLayer = L.markerClusterGroup({
+            disableClusteringAtZoom: 18, // Od přiblížení 18 výše už body neshlukujeme (budou vidět samostatně)
+            spiderfyOnMaxZoom: true,     // Pokud jsou body na stejném místě, rozbalí se do paprsků
+            iconCreateFunction: function(cluster) {
+                const childMarkers = cluster.getAllChildMarkers();
+                let sum = 0;
+                childMarkers.forEach(m => {
+                    sum += m.options.canCount || 1;
+                });
+                
+                // Dynamická velikost plechovky podle počtu seskupených kusů
+                let size = 42;
+                let fontSize = 12;
+                if (sum >= 10 && sum < 100) {
+                    size = 50;
+                    fontSize = 14;
+                } else if (sum >= 100) {
+                    size = 58;
+                    fontSize = 16;
                 }
-            }).addTo(map);
-            
-            renderMarkers();
-        } catch (err) {
-            console.error("Chyba při inicializaci mapy:", err);
-        }
+                
+                // Stabilní barva shluku podle jeho středu
+                const latlng = cluster.getLatLng();
+                const colorClass = getMarkerColorClass({ latitude: latlng.lat, longitude: latlng.lng });
+                
+                return L.divIcon({
+                    html: `<div style="font-size: ${fontSize}px; font-weight: 900; color: white; text-shadow: 0 0 5px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding-top: 2px;">${sum}</div>`,
+                    className: `cluster-can-icon ${colorClass}`,
+                    iconSize: [size, size],
+                    iconAnchor: [size / 2, size / 2]
+                });
+            }
+        }).addTo(map);
+        
+        renderMarkers();
     }
 
     // Vykreslení všech bodů z databáze
@@ -726,7 +623,7 @@ function initializeMilionPlechovek() {
     }
 
     // --- Inicializace ---
-    if (userNick && userNickDisplay) {
+    if (userNick) {
         userNickDisplay.textContent = userNick;
     }
     updateTomFeaturesVisibility();
@@ -749,7 +646,7 @@ function initializeMilionPlechovek() {
         settingsNicknameInput.addEventListener('input', (e) => {
             userNick = e.target.value.trim();
             localStorage.setItem('milion_nickname', userNick);
-            if (userNickDisplay) userNickDisplay.textContent = userNick;
+            userNickDisplay.textContent = userNick;
             updateTomFeaturesVisibility();
         });
     }
@@ -765,14 +662,12 @@ function initializeMilionPlechovek() {
 
     // Kontrola nickname
     if (!userNick) {
-        if (loginScreen) loginScreen.classList.remove('hidden');
-        if (sections.home) sections.home.classList.add('hidden');
-        const bNav = document.querySelector('.bottom-nav');
-        if (bNav) bNav.classList.add('hidden');
+        loginScreen.classList.remove('hidden');
+        sections.home.classList.add('hidden');
+        document.querySelector('.bottom-nav').classList.add('hidden');
     }
 
-    if (saveNickBtn) {
-        saveNickBtn.addEventListener('click', async () => {
+    saveNickBtn.addEventListener('click', async () => {
         const val = nicknameInput.value.trim();
         if (!val) return;
         const errorEl = document.getElementById('nickErrorMsg');
@@ -810,7 +705,6 @@ function initializeMilionPlechovek() {
             saveNickBtn.textContent = 'Uložit a pokračovat';
         }
     });
-    }
 
     // --- Pomocná funkce pro kompresi obrázků na straně klienta ---
     function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.8) {
@@ -863,58 +757,56 @@ function initializeMilionPlechovek() {
     }
 
     // --- Akce ---
-    if (cameraBtn && cameraInput) cameraBtn.addEventListener('click', () => cameraInput.click());
-    if (galleryBtn && galleryInput) galleryBtn.addEventListener('click', () => galleryInput.click());
+    cameraBtn.addEventListener('click', () => cameraInput.click());
+    galleryBtn.addEventListener('click', () => galleryInput.click());
 
     [cameraInput, galleryInput].forEach(input => {
-        if (input) {
-            input.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    const originalFile = e.target.files[0];
-                    selectedFile = originalFile; // Použít jako zálohu, pokud komprese selže
-                    
-                    // Okamžitý náhled původního obrázku pro rychlou odezvu UI
-                    const reader = new FileReader();
-                    reader.onload = (e) => { photoPreview.src = e.target.result; };
-                    reader.readAsDataURL(originalFile);
-                    
-                    sections.home.classList.add('hidden');
-                    document.querySelector('.bottom-nav').classList.add('hidden');
-                    pickupForm.classList.remove('hidden');
-                    
-                    if (canCountInput) {
-                        canCountInput.value = 1;
-                    }
-                    const detailsEl = document.querySelector('#userVolumesGroup details');
-                    if (detailsEl) {
-                        detailsEl.removeAttribute('open');
-                    }
-                    generateUserVolumeSelects(1);
-                    
-                    if (userVolumesGroup) {
-                        userVolumesGroup.style.display = 'block';
-                    }
-                    
-                    if (useGPS) {
-                        getGPSLocation();
-                    } else {
-                        gpsStatus.innerHTML = "📍 Nemáte zapnutou polohu, vaše plechovky se nezobrazí na mapě.";
-                        gpsStatus.style.color = "var(--rust-red)";
-                        currentCoords = null;
-                    }
-
-                    // Spustit kompresi na pozadí
-                    compressImage(originalFile)
-                        .then(compressedFile => {
-                            selectedFile = compressedFile;
-                            console.log(`Obrázek zkomprimován ze ${(originalFile.size / 1024 / 1024).toFixed(2)} MB na ${(compressedFile.size / 1024).toFixed(2)} KB.`);
-                        })
-                        .catch(err => {
-                            console.error("Chyba při kompresi obrázku, použije se originál:", err);
-                        });
+        input.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const originalFile = e.target.files[0];
+                selectedFile = originalFile; // Použít jako zálohu, pokud komprese selže
+                
+                // Okamžitý náhled původního obrázku pro rychlou odezvu UI
+                const reader = new FileReader();
+                reader.onload = (e) => { photoPreview.src = e.target.result; };
+                reader.readAsDataURL(originalFile);
+                
+                sections.home.classList.add('hidden');
+                document.querySelector('.bottom-nav').classList.add('hidden');
+                pickupForm.classList.remove('hidden');
+                
+                if (canCountInput) {
+                    canCountInput.value = 1;
                 }
-            });
-        }
+                const detailsEl = document.querySelector('#userVolumesGroup details');
+                if (detailsEl) {
+                    detailsEl.removeAttribute('open');
+                }
+                generateUserVolumeSelects(1);
+                
+                if (userVolumesGroup) {
+                    userVolumesGroup.style.display = 'block';
+                }
+                
+                if (useGPS) {
+                    getGPSLocation();
+                } else {
+                    gpsStatus.innerHTML = "📍 Nemáte zapnutou polohu, vaše plechovky se nezobrazí na mapě.";
+                    gpsStatus.style.color = "var(--rust-red)";
+                    currentCoords = null;
+                }
+
+                // Spustit kompresi na pozadí
+                compressImage(originalFile)
+                    .then(compressedFile => {
+                        selectedFile = compressedFile;
+                        console.log(`Obrázek zkomprimován ze ${(originalFile.size / 1024 / 1024).toFixed(2)} MB na ${(compressedFile.size / 1024).toFixed(2)} KB.`);
+                    })
+                    .catch(err => {
+                        console.error("Chyba při kompresi obrázku, použije se originál:", err);
+                    });
+            }
+        });
     });
 
     function generateUserVolumeSelects(count) {
@@ -1024,8 +916,7 @@ function initializeMilionPlechovek() {
         );
     }
 
-    if (submitBtn) {
-        submitBtn.addEventListener('click', async () => {
+    submitBtn.addEventListener('click', async () => {
         const count = parseInt(canCountInput.value) || 1;
         const notes = document.getElementById('notes').value.trim();
         
@@ -1158,10 +1049,8 @@ function initializeMilionPlechovek() {
             setTimeout(() => confetti.remove(), 3000);
         }
     }
-    }
 
-    if (shareBtn) {
-        shareBtn.addEventListener('click', async () => {
+    shareBtn.addEventListener('click', async () => {
         const count = canCountInput.value;
         const text = `Právě jsem sebral ${count} plechovek a pomáhám vyčistit Česko! Sleduj @milionplechovek a přidej se taky. #milionplechovek ♻️🥫`;
         
@@ -1195,7 +1084,6 @@ function initializeMilionPlechovek() {
             alert("Váš prohlížeč nepodporuje přímé sdílení. Text popisku byl alespoň zkopírován do schránky!");
         }
     });
-    }
     
     // --- Záloha a Obnova (Ochrana proti promazání prohlížečem) ---
     window.exportData = () => {
@@ -1534,13 +1422,12 @@ function initializeMilionPlechovek() {
     }
 
     function initRealtime() {
-        try {
-            const wsUrl = `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`;
-            let ws = new WebSocket(wsUrl);
-            let heartbeatInterval = null;
-            let refCounter = 1;
+        const wsUrl = `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`;
+        let ws = new WebSocket(wsUrl);
+        let heartbeatInterval = null;
+        let refCounter = 1;
 
-            ws.onopen = () => {
+        ws.onopen = () => {
             console.log("Supabase Realtime WebSocket připojen.");
             
             // Phoenix heartbeat každých 30 sekund
@@ -1627,9 +1514,6 @@ function initializeMilionPlechovek() {
             console.error("Chyba WebSocketu:", err);
             ws.close();
         };
-        } catch (err) {
-            console.error("Chyba při inicializaci real-time WebSocketu:", err);
-        }
     }
 
     window.toggleDesatero = () => {
@@ -3052,11 +2936,10 @@ function initializeMilionPlechovek() {
         saveBtn.textContent = 'Ukládám...';
         saveBtn.disabled = true;
         
-        const count = adminEditCansLocal.length;
-        const nickInput = document.getElementById('adminEditNickInput');
-        const teamInput = document.getElementById('adminEditTeamInput');
-        const newNick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
-        const newTeam = (teamInput && teamInput.value) ? teamInput.value.trim() : '';
+        const nickInputEl = document.getElementById('adminEditNickInput');
+        const teamInputEl = document.getElementById('adminEditTeamInput');
+        const newNick = (nickInputEl && nickInputEl.value) ? nickInputEl.value.trim() : '';
+        const newTeam = (teamInputEl && teamInputEl.value) ? teamInputEl.value.trim() : '';
         
         try {
             let adminPassword = sessionStorage.getItem('adminPassword');
@@ -3166,21 +3049,6 @@ function initializeMilionPlechovek() {
         });
     }
 
-    if (newPickupBtn) newPickupBtn.addEventListener('click', () => { window.location.reload(); });
-    if (cancelBtn) cancelBtn.addEventListener('click', () => { window.location.reload(); });
-} // Konec initializeMilionPlechovek
-
-function runSafely() {
-    try {
-        initializeMilionPlechovek();
-    } catch (err) {
-        console.error("Init Error Caught:", err);
-        if (window.onerror) window.onerror(err.message || err, "app.js", 0, 0, err);
-    }
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runSafely);
-} else {
-    runSafely();
-}
+    newPickupBtn.addEventListener('click', () => { window.location.reload(); });
+    cancelBtn.addEventListener('click', () => { window.location.reload(); });
+});
