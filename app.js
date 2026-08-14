@@ -75,7 +75,6 @@ window.migrateDataToAuthUser = async function(session) {
 };
 
 function initializeMilionPlechovek() {
-    try {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
     const sections = {
@@ -811,6 +810,7 @@ function initializeMilionPlechovek() {
             saveNickBtn.textContent = 'Uložit a pokračovat';
         }
     });
+    }
 
     // --- Pomocná funkce pro kompresi obrázků na straně klienta ---
     function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.8) {
@@ -869,51 +869,52 @@ function initializeMilionPlechovek() {
     [cameraInput, galleryInput].forEach(input => {
         if (input) {
             input.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                const originalFile = e.target.files[0];
-                selectedFile = originalFile; // Použít jako zálohu, pokud komprese selže
-                
-                // Okamžitý náhled původního obrázku pro rychlou odezvu UI
-                const reader = new FileReader();
-                reader.onload = (e) => { photoPreview.src = e.target.result; };
-                reader.readAsDataURL(originalFile);
-                
-                sections.home.classList.add('hidden');
-                document.querySelector('.bottom-nav').classList.add('hidden');
-                pickupForm.classList.remove('hidden');
-                
-                if (canCountInput) {
-                    canCountInput.value = 1;
-                }
-                const detailsEl = document.querySelector('#userVolumesGroup details');
-                if (detailsEl) {
-                    detailsEl.removeAttribute('open');
-                }
-                generateUserVolumeSelects(1);
-                
-                if (userVolumesGroup) {
-                    userVolumesGroup.style.display = 'block';
-                }
-                
-                if (useGPS) {
-                    getGPSLocation();
-                } else {
-                    gpsStatus.innerHTML = "📍 Nemáte zapnutou polohu, vaše plechovky se nezobrazí na mapě.";
-                    gpsStatus.style.color = "var(--rust-red)";
-                    currentCoords = null;
-                }
+                if (e.target.files && e.target.files[0]) {
+                    const originalFile = e.target.files[0];
+                    selectedFile = originalFile; // Použít jako zálohu, pokud komprese selže
+                    
+                    // Okamžitý náhled původního obrázku pro rychlou odezvu UI
+                    const reader = new FileReader();
+                    reader.onload = (e) => { photoPreview.src = e.target.result; };
+                    reader.readAsDataURL(originalFile);
+                    
+                    sections.home.classList.add('hidden');
+                    document.querySelector('.bottom-nav').classList.add('hidden');
+                    pickupForm.classList.remove('hidden');
+                    
+                    if (canCountInput) {
+                        canCountInput.value = 1;
+                    }
+                    const detailsEl = document.querySelector('#userVolumesGroup details');
+                    if (detailsEl) {
+                        detailsEl.removeAttribute('open');
+                    }
+                    generateUserVolumeSelects(1);
+                    
+                    if (userVolumesGroup) {
+                        userVolumesGroup.style.display = 'block';
+                    }
+                    
+                    if (useGPS) {
+                        getGPSLocation();
+                    } else {
+                        gpsStatus.innerHTML = "📍 Nemáte zapnutou polohu, vaše plechovky se nezobrazí na mapě.";
+                        gpsStatus.style.color = "var(--rust-red)";
+                        currentCoords = null;
+                    }
 
-                // Spustit kompresi na pozadí
-                compressImage(originalFile)
-                    .then(compressedFile => {
-                        selectedFile = compressedFile;
-                        console.log(`Obrázek zkomprimován ze ${(originalFile.size / 1024 / 1024).toFixed(2)} MB na ${(compressedFile.size / 1024).toFixed(2)} KB.`);
-                    })
-                    .catch(err => {
-                        console.error("Chyba při kompresi obrázku, použije se originál:", err);
-                    });
-            }
-        });
+                    // Spustit kompresi na pozadí
+                    compressImage(originalFile)
+                        .then(compressedFile => {
+                            selectedFile = compressedFile;
+                            console.log(`Obrázek zkomprimován ze ${(originalFile.size / 1024 / 1024).toFixed(2)} MB na ${(compressedFile.size / 1024).toFixed(2)} KB.`);
+                        })
+                        .catch(err => {
+                            console.error("Chyba při kompresi obrázku, použije se originál:", err);
+                        });
+                }
+            });
+        }
     });
 
     function generateUserVolumeSelects(count) {
@@ -1157,6 +1158,7 @@ function initializeMilionPlechovek() {
             setTimeout(() => confetti.remove(), 3000);
         }
     }
+    }
 
     if (shareBtn) {
         shareBtn.addEventListener('click', async () => {
@@ -1193,6 +1195,7 @@ function initializeMilionPlechovek() {
             alert("Váš prohlížeč nepodporuje přímé sdílení. Text popisku byl alespoň zkopírován do schránky!");
         }
     });
+    }
     
     // --- Záloha a Obnova (Ochrana proti promazání prohlížečem) ---
     window.exportData = () => {
@@ -3165,14 +3168,19 @@ function initializeMilionPlechovek() {
 
     if (newPickupBtn) newPickupBtn.addEventListener('click', () => { window.location.reload(); });
     if (cancelBtn) cancelBtn.addEventListener('click', () => { window.location.reload(); });
+} // Konec initializeMilionPlechovek
+
+function runSafely() {
+    try {
+        initializeMilionPlechovek();
     } catch (err) {
         console.error("Init Error Caught:", err);
         if (window.onerror) window.onerror(err.message || err, "app.js", 0, 0, err);
     }
-} // Konec initializeMilionPlechovek
+}
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeMilionPlechovek);
+    document.addEventListener('DOMContentLoaded', runSafely);
 } else {
-    initializeMilionPlechovek();
+    runSafely();
 }

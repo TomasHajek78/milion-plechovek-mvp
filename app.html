@@ -40,7 +40,7 @@
     <!-- Núdzový indikátor selhání zobrazení skriptu pro 100% jistotu -->
     <div id="globalAppErrorBanner" style="display: none; position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: white; padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
         <span id="globalAppErrorText">Aplikaci se nepodařilo spustit.</span>
-        <button onclick="window.location.reload(true)" style="margin-left: 10px; padding: 4px 10px; background: white; color: #dc2626; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🔄 Obnovit čistou verzi</button>
+        <button onclick="window.location.href = window.location.pathname + '?v=' + Date.now()" style="margin-left: 10px; padding: 4px 10px; background: white; color: #dc2626; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🔄 Obnovit čistou verzi</button>
     </div>
     <div class="app-container">
         <!-- Hlavička s logem -->
@@ -663,6 +663,6 @@
         <img id="adminLightboxImg" src="" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
     </div>
 
-    <script src="app.js?v=50"></script>
+    <script src="app.js?v=52"></script>
 </body>
 </html>

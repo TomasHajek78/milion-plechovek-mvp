@@ -1,4 +1,4 @@
-const CACHE_NAME = 'milion-plechovek-v50';
+const CACHE_NAME = 'milion-plechovek-v52';
 
 // Soubory aplikace – načítáme vždy ze sítě (network-first)
 const APP_FILES = [
