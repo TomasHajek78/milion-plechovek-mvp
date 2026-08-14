@@ -75,6 +75,7 @@ window.migrateDataToAuthUser = async function(session) {
 };
 
 function initializeMilionPlechovek() {
+    try {
     // --- Prvky UI ---
     const loginScreen = document.getElementById('loginScreen');
     const sections = {
@@ -429,16 +430,30 @@ function initializeMilionPlechovek() {
 
     // --- Navigace ---
     function switchView(viewName) {
+        if (!viewName || !sections[viewName]) return;
         // Skrýt vše
-        Object.values(sections).forEach(s => s.classList.add('hidden'));
-        navItems.forEach(n => n.classList.remove('active'));
+        Object.values(sections).forEach(s => {
+            if (s && s.classList) s.classList.add('hidden');
+        });
+        if (navItems) {
+            navItems.forEach(n => {
+                if (n && n.classList) n.classList.remove('active');
+            });
+        }
 
         // Zobrazit vybrané
-        sections[viewName].classList.remove('hidden');
-        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+        if (sections[viewName]) {
+            sections[viewName].classList.remove('hidden');
+        }
+        const activeNav = document.querySelector(`[data-view="${viewName}"]`);
+        if (activeNav) {
+            activeNav.classList.add('active');
+        }
 
-        if (viewName === 'map') {
-            setTimeout(() => map.invalidateSize(), 100);
+        if (viewName === 'map' && map) {
+            setTimeout(() => {
+                try { if (map) map.invalidateSize(); } catch(e) {}
+            }, 100);
         }
         
         // Načíst čerstvá data z databáze při každém přepnutí záložky
@@ -712,7 +727,7 @@ function initializeMilionPlechovek() {
     }
 
     // --- Inicializace ---
-    if (userNick) {
+    if (userNick && userNickDisplay) {
         userNickDisplay.textContent = userNick;
     }
     updateTomFeaturesVisibility();
@@ -735,7 +750,7 @@ function initializeMilionPlechovek() {
         settingsNicknameInput.addEventListener('input', (e) => {
             userNick = e.target.value.trim();
             localStorage.setItem('milion_nickname', userNick);
-            userNickDisplay.textContent = userNick;
+            if (userNickDisplay) userNickDisplay.textContent = userNick;
             updateTomFeaturesVisibility();
         });
     }
@@ -751,12 +766,14 @@ function initializeMilionPlechovek() {
 
     // Kontrola nickname
     if (!userNick) {
-        loginScreen.classList.remove('hidden');
-        sections.home.classList.add('hidden');
-        document.querySelector('.bottom-nav').classList.add('hidden');
+        if (loginScreen) loginScreen.classList.remove('hidden');
+        if (sections.home) sections.home.classList.add('hidden');
+        const bNav = document.querySelector('.bottom-nav');
+        if (bNav) bNav.classList.add('hidden');
     }
 
-    saveNickBtn.addEventListener('click', async () => {
+    if (saveNickBtn) {
+        saveNickBtn.addEventListener('click', async () => {
         const val = nicknameInput.value.trim();
         if (!val) return;
         const errorEl = document.getElementById('nickErrorMsg');
@@ -846,11 +863,12 @@ function initializeMilionPlechovek() {
     }
 
     // --- Akce ---
-    cameraBtn.addEventListener('click', () => cameraInput.click());
-    galleryBtn.addEventListener('click', () => galleryInput.click());
+    if (cameraBtn && cameraInput) cameraBtn.addEventListener('click', () => cameraInput.click());
+    if (galleryBtn && galleryInput) galleryBtn.addEventListener('click', () => galleryInput.click());
 
     [cameraInput, galleryInput].forEach(input => {
-        input.addEventListener('change', (e) => {
+        if (input) {
+            input.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
                 const originalFile = e.target.files[0];
                 selectedFile = originalFile; // Použít jako zálohu, pokud komprese selže
@@ -1005,7 +1023,8 @@ function initializeMilionPlechovek() {
         );
     }
 
-    submitBtn.addEventListener('click', async () => {
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async () => {
         const count = parseInt(canCountInput.value) || 1;
         const notes = document.getElementById('notes').value.trim();
         
@@ -1139,7 +1158,8 @@ function initializeMilionPlechovek() {
         }
     }
 
-    shareBtn.addEventListener('click', async () => {
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async () => {
         const count = canCountInput.value;
         const text = `Právě jsem sebral ${count} plechovek a pomáhám vyčistit Česko! Sleduj @milionplechovek a přidej se taky. #milionplechovek ♻️🥫`;
         
@@ -3143,8 +3163,12 @@ function initializeMilionPlechovek() {
         });
     }
 
-    newPickupBtn.addEventListener('click', () => { window.location.reload(); });
-    cancelBtn.addEventListener('click', () => { window.location.reload(); });
+    if (newPickupBtn) newPickupBtn.addEventListener('click', () => { window.location.reload(); });
+    if (cancelBtn) cancelBtn.addEventListener('click', () => { window.location.reload(); });
+    } catch (err) {
+        console.error("Init Error Caught:", err);
+        if (window.onerror) window.onerror(err.message || err, "app.js", 0, 0, err);
+    }
 } // Konec initializeMilionPlechovek
 
 if (document.readyState === 'loading') {

@@ -1,8 +1,14 @@
-const CACHE_NAME = 'milion-plechovek-v48';
+const CACHE_NAME = 'milion-plechovek-v50';
 
 // Soubory aplikace – načítáme vždy ze sítě (network-first)
-// Důvod: při každém deployi musí testeři vidět okamžitě novou verzi
-const APP_FILES = ['app.js', 'app.html', 'index.html', 'style.css', 'sw.js'];
+const APP_FILES = [
+  'app.js',
+  'app.html',
+  'index.html',
+  'style.css',
+  'sw.js',
+  'manifest.json'
+];
 
 // Statické assety – cachujeme pro rychlost a offline (cache-first)
 const STATIC_ASSETS = [
@@ -23,15 +29,15 @@ const STATIC_ASSETS = [
   'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js'
 ];
 
-// Instalace – cachujeme jen statické assety, NE app soubory
+// Instalace – okamžitá aktivace
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).catch((err) => console.warn('Cache assets warning:', err))
   );
 });
 
-// Aktivace – smazat starou cache
+// Aktivace – převzetí kontroly a okamžité smazání staré cache
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
@@ -43,39 +49,47 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch – hybridní strategie
+// Fetch handler
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // Supabase – vždy rovnou na síť (data nesmí jít z cache)
+  // Supabase REST a Realtime – ignorovat v SW (vždy přímo na síť)
   if (url.hostname.includes('supabase.co')) return;
 
-  // Soubory aplikace (app.js, index.html, style.css) – NETWORK FIRST
-  // Pokud jsme online, vždy stáhne aktuální verzi a uloží do cache.
-  // Pokud jsme offline, použije zálohu z cache.
+  // Soubory aplikace (app.js, app.html, index.html, style.css) – NETWORK FIRST
   const isAppFile = APP_FILES.some((f) => url.pathname.endsWith(f) || url.pathname === '/' || url.pathname === '');
   if (isAppFile) {
-    // Vynucení obejití prohlížečové cache přidáním náhodného parametru a cache: 'no-cache'
-    const fetchOptions = { cache: 'no-store' };
-    const networkUrl = new URL(event.request.url);
-    networkUrl.searchParams.set('_cacheBuster', Date.now());
-    
     event.respondWith(
-      fetch(networkUrl.toString(), fetchOptions)
+      fetch(event.request)
         .then((networkResponse) => {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
           return networkResponse;
         })
-        .catch(() => caches.match(event.request))
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          return caches.match('app.html');
+        })
     );
     return;
   }
 
-  // Statické assety (obrázky, Leaflet, fonty) – CACHE FIRST pro rychlost
+  // Statické assety – CACHE FIRST
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+      return fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      });
+    })
   );
 });
