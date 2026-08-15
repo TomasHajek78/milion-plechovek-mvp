@@ -1010,14 +1010,30 @@
 
         async function loadDashboardData() {
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes`, {
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                let data = [];
+                let offset = 0;
+                const limit = 1000;
+                let hasMore = true;
+
+                while (hasMore) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes&limit=${limit}&offset=${offset}`, {
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    });
+                    if (!response.ok) throw new Error('Načítání dat ze Supabase selhalo');
+                    const batch = await response.json();
+                    if (Array.isArray(batch) && batch.length > 0) {
+                        data = data.concat(batch);
+                        offset += limit;
+                        if (batch.length < limit) hasMore = false;
+                    } else {
+                        hasMore = false;
                     }
-                });
-                if (!response.ok) throw new Error('Načítání dat ze Supabase selhalo');
-                allPickups = await response.json();
+                }
+
+                allPickups = data;
                 recalculateStatsAndReplot();
             } catch (e) {
                 console.error("Chyba při načítání dat:", e);
@@ -1342,14 +1358,30 @@
             }
             
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes`, {
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                let data = [];
+                let offset = 0;
+                const limit = 1000;
+                let hasMore = true;
+
+                while (hasMore) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes&limit=${limit}&offset=${offset}`, {
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    });
+                    if (!response.ok) throw new Error('Načítání selhalo');
+                    const batch = await response.json();
+                    if (Array.isArray(batch) && batch.length > 0) {
+                        data = data.concat(batch);
+                        offset += limit;
+                        if (batch.length < limit) hasMore = false;
+                    } else {
+                        hasMore = false;
                     }
-                });
-                if (!response.ok) throw new Error('Načítání selhalo');
-                allPickups = await response.json();
+                }
+
+                allPickups = data;
                 populateDynamicBrands();
                 filterAdminPickups();
             } catch (e) {
