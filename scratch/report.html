@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Report - Milion Plechovek</title>
+    <link rel="icon" type="image/jpeg" href="favicon-report.jpg?v=1">
+    <script defer src="/_vercel/insights/script.js"></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R89VGK08DV"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-R89VGK08DV');
+    </script>
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "y2rhvxrddl");
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -20,11 +38,15 @@
                 <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400">MILION PLECHOVEK</h1>
                 <p class="text-slate-400 text-sm mt-1">Kompletní statistický report projektu a dopadu na životní prostředí</p>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 flex-wrap justify-center md:justify-end">
                 <button onclick="openAdminEditorPasscode()" class="px-4 py-2 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 text-xs font-bold rounded-xl transition duration-200">🛠️ Administrace</button>
                 <div class="glass-card px-6 py-3 rounded-2xl text-center">
                     <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Celkem nasbíráno</span>
-                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">739 ks</span>
+                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">... ks</span>
+                </div>
+                <div class="glass-card px-6 py-3 rounded-2xl text-center">
+                    <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Chybí do milionu</span>
+                    <span id="overallRemainingCans" class="text-3xl font-black text-teal-400">... ks</span>
                 </div>
             </div>
         </header>
@@ -972,6 +994,37 @@
             <div class="flex gap-4 mt-4">
                 <button onclick="deleteAdminPickup()" class="w-full py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-900/50 font-bold rounded-xl transition duration-200 text-xs">🗑️ Smazat záznam úplně</button>
             </div>
+        <!-- Sekce Webové Analytiky -->
+        <section class="glass-card p-6 rounded-2xl mt-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-300">📊 Návštěvnost a Analytika Webu</h3>
+                    <p class="text-slate-400 text-xs mt-1">Měření návštěvnosti, zdrojů příchodů a zařízení v reálném čase</p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="https://vercel.com/analytics" target="_blank" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-emerald-900/30">🚀 Otevřít Vercel Analytics Dashboard</a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
+                    <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Aktivní Měření</span>
+                    <span class="text-xl font-bold text-emerald-400 mt-1 block">Vercel Web Analytics</span>
+                    <span class="text-slate-500 text-[10px]">Stránky, zařízení, časy</span>
+                </div>
+                <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
+                    <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Detekované Zdroje</span>
+                    <span class="text-xl font-bold text-teal-400 mt-1 block">Instagram / Facebook / Google</span>
+                    <span class="text-slate-500 text-[10px]">Odkud lidé na web přichází</span>
+                </div>
+                <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
+                    <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Soukromí Návštěvníků</span>
+                    <span class="text-xl font-bold text-indigo-400 mt-1 block">100% Anonymní</span>
+                    <span class="text-slate-500 text-[10px]">Bez cookie lišty (GDPR Compliant)</span>
+                </div>
+            </div>
+        </section>
+
         </div>
     </div>
 
@@ -1010,14 +1063,30 @@
 
         async function loadDashboardData() {
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes`, {
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                let data = [];
+                let offset = 0;
+                const limit = 1000;
+                let hasMore = true;
+
+                while (hasMore) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes&limit=${limit}&offset=${offset}`, {
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    });
+                    if (!response.ok) throw new Error('Načítání dat ze Supabase selhalo');
+                    const batch = await response.json();
+                    if (Array.isArray(batch) && batch.length > 0) {
+                        data = data.concat(batch);
+                        offset += limit;
+                        if (batch.length < limit) hasMore = false;
+                    } else {
+                        hasMore = false;
                     }
-                });
-                if (!response.ok) throw new Error('Načítání dat ze Supabase selhalo');
-                allPickups = await response.json();
+                }
+
+                allPickups = data;
                 recalculateStatsAndReplot();
             } catch (e) {
                 console.error("Chyba při načítání dat:", e);
@@ -1158,7 +1227,10 @@
         }
 
         function updateDashboardUI(stats) {
-            document.getElementById('overallTotalCans').textContent = stats.overall.total_cans_collected.toLocaleString('cs-CZ') + ' ks';
+            const totalCans = stats.overall.total_cans_collected;
+            const remainingCans = Math.max(0, 1000000 - totalCans);
+            document.getElementById('overallTotalCans').textContent = totalCans.toLocaleString('cs-CZ') + ' ks';
+            document.getElementById('overallRemainingCans').textContent = remainingCans.toLocaleString('cs-CZ') + ' ks';
             document.getElementById('overallWeight').textContent = stats.overall.total_weight_kg.toFixed(2).replace('.', ',') + ' kg';
             document.getElementById('overallEnergy').textContent = stats.overall.total_energy_saved_kwh.toFixed(1).replace('.', ',') + ' kWh';
             document.getElementById('overallEnergyNote').textContent = `odpovídá ${Math.round(stats.overall.total_energy_saved_kwh / 0.03).toLocaleString('cs-CZ')} hod. notebooku`;
@@ -1342,14 +1414,30 @@
             }
             
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes`, {
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                let data = [];
+                let offset = 0;
+                const limit = 1000;
+                let hasMore = true;
+
+                while (hasMore) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,notes,created_at,photo_url,is_analyzed,analysis_json,team_code,latitude,longitude,aluminum_weight_g,energy_saved_kwh,money_saved_czk,co2_saved_kg,is_verified,user_volumes&limit=${limit}&offset=${offset}`, {
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    });
+                    if (!response.ok) throw new Error('Načítání selhalo');
+                    const batch = await response.json();
+                    if (Array.isArray(batch) && batch.length > 0) {
+                        data = data.concat(batch);
+                        offset += limit;
+                        if (batch.length < limit) hasMore = false;
+                    } else {
+                        hasMore = false;
                     }
-                });
-                if (!response.ok) throw new Error('Načítání selhalo');
-                allPickups = await response.json();
+                }
+
+                allPickups = data;
                 populateDynamicBrands();
                 filterAdminPickups();
             } catch (e) {
