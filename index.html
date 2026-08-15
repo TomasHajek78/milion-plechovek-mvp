@@ -172,15 +172,15 @@
             margin-bottom: 15px;
         }
 
-        /* Desatero – 5 bublin ve 2 sloupcích */
-        .desatero-5-grid {
+        /* Desatero – 10 samostatných stejných bublin ve 2 sloupcích */
+        .desatero-10-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            gap: 16px;
             margin-top: 20px;
         }
         @media (max-width: 768px) {
-            .desatero-5-grid {
+            .desatero-10-grid {
                 grid-template-columns: 1fr;
             }
             .nav-links {
@@ -190,27 +190,24 @@
                 padding-top: 65px;
             }
         }
-        .desatero-bubble {
+        .desatero-card-single {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 16px;
-            padding: 20px;
+            padding: 18px 20px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
             text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
         }
-        .desatero-item {
-            margin-bottom: 14px;
-        }
-        .desatero-item:last-child {
-            margin-bottom: 0;
-        }
-        .desatero-item h4 {
-            margin: 0 0 4px 0;
+        .desatero-card-single h4 {
+            margin: 0 0 6px 0;
             font-size: 14px;
             font-weight: 800;
             color: var(--forest-green);
         }
-        .desatero-item p {
+        .desatero-card-single p {
             margin: 0;
             font-size: 12px;
             color: var(--text-dim);
@@ -328,71 +325,46 @@
             <h2><img src="icon_world.jpg" style="height: 50px; width: auto; border-radius: 50%;" alt=""> Desatero správného sběrače 🥫♻️</h2>
             <p style="margin-bottom: 20px; font-size: 13px; color: var(--text-dim);">Důvěra je základ. Focením se zavazuješ k poctivému, ekologickému a bezpečnému sběru.</p>
             
-            <div class="desatero-5-grid">
-                <!-- Bublina 1 -->
-                <div class="desatero-bubble">
-                    <div class="desatero-item">
-                        <h4>1. Poctivost 🤝</h4>
-                        <p>Vyfocení plechovky je závazek ji zvednout a uklidit. Nefoť plechovky, které tam necháš ležet.</p>
-                    </div>
-                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0;">
-                    <div class="desatero-item">
-                        <h4>2. Kam s ní? Do recyklace ♻️</h4>
-                        <p>Každá plechovka patří do žlutého/šedého kontejneru na plasty/kovy nebo do sběrného dvora.</p>
-                    </div>
+            <div class="desatero-10-grid">
+                <div class="desatero-card-single">
+                    <h4>1. Poctivost 🤝</h4>
+                    <p>Vyfocení plechovky je závazek ji zvednout a uklidit. Nefoť plechovky, které tam necháš ležet.</p>
                 </div>
-
-                <!-- Bublina 2 -->
-                <div class="desatero-bubble">
-                    <div class="desatero-item">
-                        <h4>3. Chraň si ruce 🧤</h4>
-                        <p>Při sběru vždy používej pevné rukavice nebo sběrací kleště. Hliník může být ostrý.</p>
-                    </div>
-                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0;">
-                    <div class="desatero-item">
-                        <h4>4. Pozor na hmyz a zvířata 🐝</h4>
-                        <p>Plechovky v lese jsou skvělým úkrytem pro vosy či sršně. Před sešlápnutím ji zkontroluj.</p>
-                    </div>
+                <div class="desatero-card-single">
+                    <h4>2. Kam s ní? Do recyklace ♻️</h4>
+                    <p>Každá plechovka patří do žlutého/šedého kontejneru na plasty/kovy nebo do sběrného dvora.</p>
                 </div>
-
-                <!-- Bublina 3 -->
-                <div class="desatero-bubble">
-                    <div class="desatero-item">
-                        <h4>5. Vylévej opatrně 💧</h4>
-                        <p>Uvnitř může být zkažená tekutina, plíseň či dešťová voda. Vylévej vždy směrem od těla.</p>
-                    </div>
-                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0;">
-                    <div class="desatero-item">
-                        <h4>6. Bezpečnost na prvním místě 🛡️</h4>
-                        <p>Nesbírej na soukromých pozemcích, staveništích, železničních tratích nebo v nebezpečných místech.</p>
-                    </div>
+                <div class="desatero-card-single">
+                    <h4>3. Chraň si ruce 🧤</h4>
+                    <p>Při sběru vždy používej pevné rukavice nebo sběrací kleště. Hliník může být ostrý.</p>
                 </div>
-
-                <!-- Bublina 4 -->
-                <div class="desatero-bubble">
-                    <div class="desatero-item">
-                        <h4>7. Respektuj přírodu 🌱</h4>
-                        <p>Nenič chráněné rostliny a neruš zvěř jen proto, abys dosáhl na plechovku v křoví.</p>
-                    </div>
-                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0;">
-                    <div class="desatero-item">
-                        <h4>8. Hygiena 🧼</h4>
-                        <p>Po sběru si vždy pečlivě umyj nebo vydezinfikuj ruce. Hygiena je základ zdraví.</p>
-                    </div>
+                <div class="desatero-card-single">
+                    <h4>4. Pozor na hmyz a zvířata 🐝</h4>
+                    <p>Plechovky v lese jsou skvělým úkrytem pro vosy či sršně. Před sešlápnutím ji zkontroluj.</p>
                 </div>
-
-                <!-- Bublina 5 (na desktopu přes 2 sloupce nebo pěkně centrovaná) -->
-                <div class="desatero-bubble" style="grid-column: span 2;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-                        <div class="desatero-item">
-                            <h4>9. Jdi příkladem 🌟</h4>
-                            <p>Svým chováním ukazuješ ostatním, že sbírat odpadky není ostuda, ale hrdost.</p>
-                        </div>
-                        <div class="desatero-item">
-                            <h4>10. Hrajeme fér 🏆</h4>
-                            <p>Žebříček slouží pro radost a motivaci. Jakékoliv podvody kazí hru celé komunitě.</p>
-                        </div>
-                    </div>
+                <div class="desatero-card-single">
+                    <h4>5. Vylévej opatrně 💧</h4>
+                    <p>Uvnitř může být zkažená tekutina, plíseň či dešťová voda. Vylévej vždy směrem od těla.</p>
+                </div>
+                <div class="desatero-card-single">
+                    <h4>6. Bezpečnost na prvním místě 🛡️</h4>
+                    <p>Nesbírej na soukromých pozemcích, staveništích, železničních tratích nebo v nebezpečných místech.</p>
+                </div>
+                <div class="desatero-card-single">
+                    <h4>7. Respektuj přírodu 🌱</h4>
+                    <p>Nenič chráněné rostliny a neruš zvěř jen proto, abys dosáhl na plechovku v křoví.</p>
+                </div>
+                <div class="desatero-card-single">
+                    <h4>8. Hygiena 🧼</h4>
+                    <p>Po sběru si vždy pečlivě umyj nebo vydezinfikuj ruce. Hygiena je základ zdraví.</p>
+                </div>
+                <div class="desatero-card-single">
+                    <h4>9. Jdi příkladem 🌟</h4>
+                    <p>Svým chováním ukazuješ ostatním, že sbírat odpadky není ostuda, ale hrdost.</p>
+                </div>
+                <div class="desatero-card-single">
+                    <h4>10. Hrajeme fér 🏆</h4>
+                    <p>Žebříček slouží pro radost a motivaci. Jakékoliv podvody kazí hru celé komunitě.</p>
                 </div>
             </div>
         </div>
