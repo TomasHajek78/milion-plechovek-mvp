@@ -164,6 +164,67 @@
                 padding-top: 65px;
             }
         }
+    
+        /* 3 bublinky statistik vedle sebe */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 16px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+        }
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+        .stat-card .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Zelené akční tlačítko pod bublinkami */
+        .btn-download {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white !important;
+            padding: 14px 32px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 15px;
+            text-decoration: none !important;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45);
+        }
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .stat-card {
+                padding: 12px 6px;
+            }
+            .stat-card .stat-value {
+                font-size: 18px;
+            }
+            .stat-card .stat-label {
+                font-size: 9px;
+            }
+        }
+
     </style>
 </head>
 <body>
