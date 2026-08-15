@@ -21,11 +21,15 @@
                 <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400">MILION PLECHOVEK</h1>
                 <p class="text-slate-400 text-sm mt-1">Kompletní statistický report projektu a dopadu na životní prostředí</p>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 flex-wrap justify-center md:justify-end">
                 <button onclick="openAdminEditorPasscode()" class="px-4 py-2 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 text-xs font-bold rounded-xl transition duration-200">🛠️ Administrace</button>
                 <div class="glass-card px-6 py-3 rounded-2xl text-center">
                     <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Celkem nasbíráno</span>
-                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">739 ks</span>
+                    <span id="overallTotalCans" class="text-3xl font-black text-emerald-400">... ks</span>
+                </div>
+                <div class="glass-card px-6 py-3 rounded-2xl text-center">
+                    <span class="text-slate-400 text-xs font-bold block uppercase tracking-wider">Chybí do milionu</span>
+                    <span id="overallRemainingCans" class="text-3xl font-black text-teal-400">... ks</span>
                 </div>
             </div>
         </header>
@@ -1206,7 +1210,10 @@
         }
 
         function updateDashboardUI(stats) {
-            document.getElementById('overallTotalCans').textContent = stats.overall.total_cans_collected.toLocaleString('cs-CZ') + ' ks';
+            const totalCans = stats.overall.total_cans_collected;
+            const remainingCans = Math.max(0, 1000000 - totalCans);
+            document.getElementById('overallTotalCans').textContent = totalCans.toLocaleString('cs-CZ') + ' ks';
+            document.getElementById('overallRemainingCans').textContent = remainingCans.toLocaleString('cs-CZ') + ' ks';
             document.getElementById('overallWeight').textContent = stats.overall.total_weight_kg.toFixed(2).replace('.', ',') + ' kg';
             document.getElementById('overallEnergy').textContent = stats.overall.total_energy_saved_kwh.toFixed(1).replace('.', ',') + ' kWh';
             document.getElementById('overallEnergyNote').textContent = `odpovídá ${Math.round(stats.overall.total_energy_saved_kwh / 0.03).toLocaleString('cs-CZ')} hod. notebooku`;
