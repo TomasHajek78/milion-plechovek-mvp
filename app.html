@@ -51,7 +51,14 @@
                 <a href="index.html">
                     <img src="logo.png" alt="Milion Plechovek Logo" class="brand-logo">
                 </a>
-                <div style="width: 40px;"></div> <!-- Right Spacer -->
+                <div style="width: 40px; display: flex; justify-content: flex-end;">
+                    <button onclick="document.getElementById('authModal').classList.remove('hidden')" style="background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center;" title="Profil / Účet">
+                        <span style="position: relative; display: inline-flex; align-items: center; justify-content: center;">
+                            <img id="headerProfileAvatar" src="profil_tomas.jpg" style="border-radius: 50%; border: 2px solid var(--forest-green); width: 32px; height: 32px; object-fit: cover; box-shadow: 0 2px 6px rgba(0,0,0,0.12);" alt="Profil">
+                            <span style="position: absolute; bottom: -1px; right: -1px; width: 8px; height: 8px; background: #10b981; border: 1.5px solid white; border-radius: 50%;"></span>
+                        </span>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -253,11 +260,8 @@
                 <span class="nav-label">Žebříček</span>
             </button>
             <button class="nav-item" onclick="toggleSettings()">
-                <span class="nav-icon" style="position: relative; display: inline-flex; align-items: center; justify-content: center;">
-                    <img id="navProfileAvatar" src="profil_tomas.jpg" class="nav-image-icon" style="border-radius: 50%; border: 2px solid var(--forest-green); width: 26px; height: 26px; object-fit: cover;" alt="Profil">
-                    <span style="position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; background: #10b981; border: 1.5px solid white; border-radius: 50%;"></span>
-                </span>
-                <span class="nav-label">Profil</span>
+                <span class="nav-icon"><img src="ikona_zkrizene_naradi_klic_sroubovak_ciste_crop.png" class="nav-image-icon" alt="Nastavení"></span>
+                <span class="nav-label">Nastavení</span>
             </button>
         </nav>
 
