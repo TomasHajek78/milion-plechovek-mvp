@@ -282,6 +282,7 @@
             <li><a href="#o-projektu">O projektu</a></li>
             <li><a href="#aplikace">Aplikace</a></li>
             <li><a href="#mapa">Mapa</a></li>
+            <li><a href="#zdroje-trideni">Zdroje třídění</a></li>
             <li><a href="#desatero">Desatero</a></li>
             <li><a href="#kontakt">Kontakt</a></li>
         </ul>
@@ -364,6 +365,59 @@
         <div class="content-section" id="mapa" style="padding: 15px;">
             <h2 style="margin-left: 15px;"><img src="icon_world.jpg" style="height: 50px; width: auto; border-radius: 50%;" alt=""> Mapa úlovků</h2>
             <div id="landingMap" style="height: 400px; width: 100%; border-radius: 15px; z-index: 1; border: 2px solid #e2e8f0;"></div>
+        </div>
+
+        <!-- Doporučené zdroje k třídění (Hned pod mapou) -->
+        <div class="content-section" id="zdroje-trideni">
+            <h2><img src="ikona_zluta_popelnice_s_plechovkami_crop.png" style="height: 50px; width: auto; vertical-align: middle; margin-right: 8px;" alt="Třídění"> Doporučené zdroje k třídění</h2>
+            <p style="margin-bottom: 25px;">Sbírání je první krok, druhá polovina úspěchu je správná recyklace. Zde najdete užitečné rady a oficiální vyhledávače kontejnerů na kovy po celém Česku:</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <!-- Karta 1: Kam s ním? -->
+                <div style="background: rgba(245, 247, 248, 0.9); border: 2px solid var(--forest-green); border-radius: 16px; padding: 20px; transition: transform 0.2s;">
+                    <h3 style="color: var(--forest-green); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">🗺️ Kam s ním? (Kamsnim.cz)</h3>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">Skvělá mapa kontejnerů a sběrných míst na kovy, plasty i elektroodpad po celém Česku.</p>
+                    <a href="https://www.kamsnim.cz" target="_blank" rel="noopener" style="color: var(--rust-red); font-weight: bold; font-size: 14px; text-decoration: underline;">Otevřít mapu Kamsnim.cz ➔</a>
+                </div>
+
+                <!-- Karta 2: Jaktridit.cz -->
+                <div style="background: rgba(245, 247, 248, 0.9); border: 2px solid var(--forest-green); border-radius: 16px; padding: 20px; transition: transform 0.2s;">
+                    <h3 style="color: var(--forest-green); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">📖 Jaktridit.cz</h3>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">Oficiální abeceda třídění. Dozvíte se, jak se recykluje hliník a proč končí ve žlutých nebo šedých popelnicích.</p>
+                    <a href="https://www.jaktridit.cz" target="_blank" rel="noopener" style="color: var(--rust-red); font-weight: bold; font-size: 14px; text-decoration: underline;">Navštívit Jaktridit.cz ➔</a>
+                </div>
+
+                <!-- Karta 3: Samosebou.cz -->
+                <div style="background: rgba(245, 247, 248, 0.9); border: 2px solid var(--forest-green); border-radius: 16px; padding: 20px; transition: transform 0.2s;">
+                    <h3 style="color: var(--forest-green); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">♻️ Samosebou.cz</h3>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">Inspirativní projekt o recyklaci obalů, udržitelnosti a životním cyklu materiálů v přírodě.</p>
+                    <a href="https://www.samosebou.cz" target="_blank" rel="noopener" style="color: var(--rust-red); font-weight: bold; font-size: 14px; text-decoration: underline;">Prohlédnout Samosebou.cz ➔</a>
+                </div>
+
+                <!-- Karta 4: EKO-KOM.cz -->
+                <div style="background: rgba(245, 247, 248, 0.9); border: 2px solid var(--forest-green); border-radius: 16px; padding: 20px; transition: transform 0.2s;">
+                    <h3 style="color: var(--forest-green); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">🏭 EKO-KOM.cz</h3>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">Autorizovaná obalová společnost zajišťující sběr a recyklaci obalového odpadu v ČR.</p>
+                    <a href="https://www.ekokom.cz" target="_blank" rel="noopener" style="color: var(--rust-red); font-weight: bold; font-size: 14px; text-decoration: underline;">Více na EKO-KOM.cz ➔</a>
+                </div>
+
+                <!-- Karta 5: Zálohujme.cz -->
+                <div style="background: rgba(245, 247, 248, 0.9); border: 2px solid var(--forest-green); border-radius: 16px; padding: 20px; transition: transform 0.2s;">
+                    <h3 style="color: var(--forest-green); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">💶 Zalohujme.cz</h3>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">Iniciativa pro zavedení plošného zálohového systému na nápojové plechovky a PET lahve v Česku.</p>
+                    <a href="https://www.zalohujme.cz" target="_blank" rel="noopener" style="color: var(--rust-red); font-weight: bold; font-size: 14px; text-decoration: underline;">Přečíst o zálohách na Zalohujme.cz ➔</a>
+                </div>
+            </div>
+
+            <!-- Praktické rady -->
+            <div style="background: rgba(47, 97, 101, 0.08); border-left: 4px solid var(--forest-green); padding: 18px; border-radius: 12px;">
+                <h4 style="color: var(--forest-green); margin-bottom: 8px;">💡 Praktické rady pro správné třídění plechovek:</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-dark); line-height: 1.6;">
+                    <li><strong>Plechovku před vyhozením zmačkejte:</strong> Ušetříte až 80 % místa v kontejneru!</li>
+                    <li><strong>Třídění do žlutých/šedých popelnic:</strong> Většina obcí v ČR dnes umožňuje házet plechovky do žlutých plastových kontejnerů s šedou nálepkou „Kovy“.</li>
+                    <li><strong>Není nutné plechovku vymývat:</strong> Stačí ji důkladně vyprázdnit.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Desatero (5 bublin ve 2 sloupcích) -->
