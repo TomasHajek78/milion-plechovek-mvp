@@ -13,6 +13,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script defer src="/_vercel/insights/script.js"></script>
+    <script>
+        // Automatické přesměrování přihlášení z e-mailu přímo do Aplikace app.html
+        if (window.location.hash.includes('access_token') || window.location.hash.includes('refresh_token') || window.location.search.includes('code=')) {
+            window.location.href = 'app.html' + window.location.search + window.location.hash;
+        }
+    </script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-R89VGK08DV"></script>
     <script>
