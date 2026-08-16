@@ -353,13 +353,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Navigace ---
     function switchView(viewName) {
+        if (!viewName || !sections[viewName]) return;
         // Skrýt vše
-        Object.values(sections).forEach(s => s.classList.add('hidden'));
+        Object.values(sections).forEach(s => { if (s) s.classList.add('hidden'); });
         navItems.forEach(n => n.classList.remove('active'));
 
         // Zobrazit vybrané
         sections[viewName].classList.remove('hidden');
-        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+        const activeNav = document.querySelector(`[data-view="${viewName}"]`);
+        if (activeNav) activeNav.classList.add('active');
 
         if (viewName === 'map') {
             setTimeout(() => map.invalidateSize(), 100);
