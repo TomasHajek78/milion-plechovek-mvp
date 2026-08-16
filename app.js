@@ -1432,25 +1432,42 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const email = emailInput.value.trim();
         if (messageDiv) {
-            messageDiv.style.color = 'var(--text-dark)';
-            messageDiv.innerText = "Odesílám odkaz...";
+            messageDiv.style.color = '#1e293b';
+            messageDiv.innerText = "Odesílám odkaz na e-mail...";
         }
         
-        const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
-        if (client && client.auth) {
-            const { error } = await client.auth.signInWithOtp({
-                email: email,
-                options: { emailRedirectTo: window.location.origin + window.location.pathname }
+        try {
+            const response = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    create_user: true,
+                    email_redirect_to: window.location.origin + window.location.pathname
+                })
             });
-            if (error) {
-                if (messageDiv) messageDiv.style.color = 'red';
-                if (messageDiv) messageDiv.innerText = "Chyba: " + error.message;
+            
+            if (response.ok) {
+                if (messageDiv) {
+                    messageDiv.style.color = 'var(--forest-green)';
+                    messageDiv.innerText = "✅ Přihlašovací odkaz byl odeslán na " + email + "! Zkontroluj si e-mail.";
+                }
             } else {
-                if (messageDiv) messageDiv.style.color = 'var(--forest-green)';
-                if (messageDiv) messageDiv.innerText = "✅ Přihlašovací odkaz byl odeslán na " + email + "! Zkontroluj si e-mail.";
+                const errData = await response.json().catch(() => ({}));
+                if (messageDiv) {
+                    messageDiv.style.color = 'red';
+                    messageDiv.innerText = "Chyba: " + (errData.msg || errData.message || errData.error_description || "Nepodařilo se odeslat odkaz.");
+                }
             }
-        } else {
-            if (messageDiv) messageDiv.innerText = "Chyba napojení Supabase.";
+        } catch (err) {
+            console.error("Auth OTP Error:", err);
+            if (messageDiv) {
+                messageDiv.style.color = 'red';
+                messageDiv.innerText = "Chyba spojení: " + err.message;
+            }
         }
     };
 
