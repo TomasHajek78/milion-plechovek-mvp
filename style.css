@@ -329,11 +329,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 42px;
+    height: 42px;
+    position: relative;
 }
 
 .nav-image-icon {
-    width: 42px;
-    height: 42px;
+    max-width: 42px;
+    max-height: 42px;
+    width: auto;
+    height: auto;
     object-fit: contain;
 }
 
