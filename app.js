@@ -8,6 +8,9 @@ if ('serviceWorker' in navigator) {
 // --- Konfigurace Supabase Databáze ---
 const SUPABASE_URL = 'https://dxlyjugmeucevosmhage.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4bHlqdWdtZXVjZXZvc21oYWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzIzOTUsImV4cCI6MjA5NTEwODM5NX0.cG-DVzuKL1VOj8pwQG_Uu_sS_lJ3Wx5L-QmRbrBxIWw';
+if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Prvky UI ---
@@ -1409,14 +1412,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.signInWithProvider = async function(provider) {
-        if (typeof supabase !== 'undefined' && supabase.auth) {
-            const { error } = await supabase.auth.signInWithOAuth({
+        const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+        if (client && client.auth) {
+            const { error } = await client.auth.signInWithOAuth({
                 provider: provider,
                 options: { redirectTo: window.location.origin + window.location.pathname }
             });
-            if (error) alert("Chyba přihlášení: " + error.message);
+            if (error) alert("Chyba přihlášení (" + provider + "): " + error.message + "\n\nTip: Pro Google/FB/IG je potřeba aktivovat OAuth v Supabase.");
         } else {
-            alert("Přihlašovací služba se připravuje.");
+            alert("Přihlašovací služba se načítá, zkus to za chvíli.");
         }
     };
 
@@ -1427,10 +1431,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!emailInput || !emailInput.value) return;
         
         const email = emailInput.value.trim();
-        if (messageDiv) messageDiv.innerText = "Odesílám odkaz...";
+        if (messageDiv) {
+            messageDiv.style.color = 'var(--text-dark)';
+            messageDiv.innerText = "Odesílám odkaz...";
+        }
         
-        if (typeof supabase !== 'undefined' && supabase.auth) {
-            const { error } = await supabase.auth.signInWithOtp({
+        const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+        if (client && client.auth) {
+            const { error } = await client.auth.signInWithOtp({
                 email: email,
                 options: { emailRedirectTo: window.location.origin + window.location.pathname }
             });
