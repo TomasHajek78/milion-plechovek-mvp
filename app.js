@@ -1397,6 +1397,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- FUNKCE PRO REGISTRACI A PŘIHLÁŠENÍ ---
+    window.openAuthModal = function() {
+        const modal = document.getElementById('authModal');
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeAuthModal = function() {
+        const modal = document.getElementById('authModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.signInWithProvider = async function(provider) {
+        if (typeof supabase !== 'undefined' && supabase.auth) {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: provider,
+                options: { redirectTo: window.location.origin + window.location.pathname }
+            });
+            if (error) alert("Chyba přihlášení: " + error.message);
+        } else {
+            alert("Přihlašovací služba se připravuje.");
+        }
+    };
+
+    window.handleMagicLink = async function(e) {
+        if (e) e.preventDefault();
+        const emailInput = document.getElementById('authEmailInput');
+        const messageDiv = document.getElementById('authMessage');
+        if (!emailInput || !emailInput.value) return;
+        
+        const email = emailInput.value.trim();
+        if (messageDiv) messageDiv.innerText = "Odesílám odkaz...";
+        
+        if (typeof supabase !== 'undefined' && supabase.auth) {
+            const { error } = await supabase.auth.signInWithOtp({
+                email: email,
+                options: { emailRedirectTo: window.location.origin + window.location.pathname }
+            });
+            if (error) {
+                if (messageDiv) messageDiv.style.color = 'red';
+                if (messageDiv) messageDiv.innerText = "Chyba: " + error.message;
+            } else {
+                if (messageDiv) messageDiv.style.color = 'var(--forest-green)';
+                if (messageDiv) messageDiv.innerText = "✅ Přihlašovací odkaz byl odeslán na " + email + "! Zkontroluj si e-mail.";
+            }
+        } else {
+            if (messageDiv) messageDiv.innerText = "Chyba napojení Supabase.";
+        }
+    };
+
+    // Auto-otvírání přihlašovacího okna pokud přijde uživatel z webu s ?signup=true nebo ?auth=true
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('signup') || urlParams.has('auth')) {
+            setTimeout(() => {
+                window.openAuthModal();
+            }, 500);
+        }
+    });
+
 
     // --- REALTIME WEB-SOCKET AKTIVITY ---
     let toastTimeout = null;

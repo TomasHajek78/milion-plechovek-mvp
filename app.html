@@ -66,11 +66,10 @@
             <p class="small-text">Pro jistotu si jednou za čas stáhni zálohu svých dat, aby se ti sběry při promazání telefonu neztratily.</p>
             <button onclick="exportData()" class="primary-btn-small" style="width:100%; margin-bottom:10px;">📥 Stáhnout zálohu (.json)</button>
             
-            <div id="adminTestArea" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
-                <button onclick="document.getElementById('settingsModal').classList.add('hidden'); document.getElementById('authModal').classList.remove('hidden');" class="primary-btn-small" style="width:100%; background-color: #6366f1;">
-                    🧪 TEST: Zobrazit přihlašovací okno
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                <button id="authOpenBtn" onclick="document.getElementById('settingsModal').classList.add('hidden'); document.getElementById('authModal').classList.remove('hidden');" class="primary-btn-small" style="width:100%; background-color: #6366f1; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
+                    🔐 Přihlásit se / Vytvořit profil
                 </button>
-                <p style="font-size: 10px; color: var(--text-dim); margin-top: 5px;">Toto tlačítko vidí pouze vývojáři.</p>
             </div>
             
             <div style="margin: 15px 0; text-align: left;">
