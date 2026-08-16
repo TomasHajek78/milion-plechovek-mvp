@@ -1457,9 +1457,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 const errData = await response.json().catch(() => ({}));
+                let rawErr = (errData.msg || errData.message || errData.error_description || "");
+                let czechErr = rawErr;
+                if (rawErr.includes("For security purposes") || rawErr.includes("rate limit")) {
+                    czechErr = "⚠️ Odkaz už byl odeslán! Další e-mail můžeš vyžádat za chvilku (bezpečnostní pauza).";
+                } else if (rawErr) {
+                    czechErr = "Chyba: " + rawErr;
+                } else {
+                    czechErr = "Nepodařilo se odeslat odkaz. Zkontroluj e-mail.";
+                }
                 if (messageDiv) {
                     messageDiv.style.color = 'red';
-                    messageDiv.innerText = "Chyba: " + (errData.msg || errData.message || errData.error_description || "Nepodařilo se odeslat odkaz.");
+                    messageDiv.innerText = czechErr;
                 }
             }
         } catch (err) {
