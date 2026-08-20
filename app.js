@@ -105,6 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (myEnergyDisplay) {
             myEnergyDisplay.style.display = isTom ? 'flex' : 'none';
         }
+
+        const adminDataBtn = document.getElementById('adminDataBtn');
+        if (adminDataBtn) {
+            adminDataBtn.style.display = isTom ? 'block' : 'none';
+        }
     }
     
     // --- IndexedDB Inicializace pro Offline úlovky ---
@@ -2471,9 +2476,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'Coca-Cola',
         'Pepsi',
         'Monster',
-        'Red Bull',
-        'Tiger',
-        'Kong Strong',
+        'RedBull',
+        'TIGER',
+        'STRONG KONG',
+        'Nestea',
         'Heineken',
         'Starobrno',
         'Kozel',
