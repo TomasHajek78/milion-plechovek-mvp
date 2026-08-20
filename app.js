@@ -861,14 +861,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (canCountInput) {
         canCountInput.addEventListener('input', () => {
-            const count = Math.max(1, Math.min(50, parseInt(canCountInput.value) || 1));
+            let val = parseInt(canCountInput.value);
+            if (val > 20) {
+                alert("⚠️ Maximální počet plechovek na jedné fotce je 20. Prosím rozdělte váš velký úlovek na více fotek.");
+                canCountInput.value = 20;
+                val = 20;
+            }
+            const count = Math.max(1, Math.min(20, val || 1));
             generateUserVolumeSelects(count);
         });
         canCountInput.addEventListener('focus', () => {
             canCountInput.value = '';
         });
         canCountInput.addEventListener('blur', () => {
-            if (canCountInput.value.trim() === '') {
+            if (canCountInput.value.trim() === '' || parseInt(canCountInput.value) < 1) {
                 canCountInput.value = '1';
                 generateUserVolumeSelects(1);
             }
@@ -940,7 +946,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     submitBtn.addEventListener('click', async () => {
-        const count = parseInt(canCountInput.value) || 1;
+        let count = parseInt(canCountInput.value) || 1;
+        if (count > 20) {
+            alert("⚠️ Maximální počet plechovek na jedné fotce je 20. Prosím rozdělte váš velký úlovek na více fotek.");
+            canCountInput.value = 20;
+            count = 20;
+            return;
+        }
         const notes = document.getElementById('notes').value.trim();
         
         // Sběr dobrovolně zadaných velikostí (user_volumes) pro všechny uživatele
