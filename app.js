@@ -356,8 +356,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function closeAllModals() {
+        const modalIds = ['settingsModal', 'authModal', 'desateroModal', 'adminEditorModal', 'userGalleryModal'];
+        modalIds.forEach(id => {
+            const m = document.getElementById(id);
+            if (m) m.classList.add('hidden');
+        });
+    }
+
     // --- Navigace ---
     function switchView(viewName) {
+        closeAllModals();
         if (!viewName || !sections[viewName]) return;
         // Skrýt vše
         Object.values(sections).forEach(s => { if (s) s.classList.add('hidden'); });
