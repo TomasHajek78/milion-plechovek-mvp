@@ -1442,6 +1442,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.classList.add('hidden');
     };
 
+    async function initAuthState() {
+        const card = document.getElementById('loggedInProfileCard');
+        const authBlock = document.getElementById('loggedOutAuthBlock');
+        const navProfileDot = document.getElementById('navProfileDot');
+        
+        const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+        let session = null;
+        if (client && client.auth) {
+            try {
+                const { data } = await client.auth.getSession();
+                session = data ? data.session : null;
+            } catch (e) {}
+        }
+
+        const storedSessionStr = localStorage.getItem('milion_user_session');
+        if (!session && storedSessionStr) {
+            try { session = JSON.parse(storedSessionStr); } catch (e) {}
+        }
+
+        if (session && (session.user || session.email)) {
+            // UŽIVATEL JE PŘIHLAŠENÝ
+            if (card) card.style.display = 'flex';
+            if (authBlock) authBlock.style.display = 'none';
+            const userEmail = (session.user && session.user.email) || session.email || 'tomas@tomashajek.cz';
+            const emailElem = document.getElementById('profileEmail');
+            if (emailElem) emailElem.textContent = userEmail;
+            if (navProfileDot) navProfileDot.style.background = '#10b981';
+        } else {
+            // UŽIVATEL JE ODHLÁŠENÝ
+            if (card) card.style.display = 'none';
+            if (authBlock) authBlock.style.display = 'block';
+            if (navProfileDot) navProfileDot.style.background = '#94a3b8';
+        }
+    }
+    setTimeout(initAuthState, 300);
+
     window.handleSignOut = async function() {
         if (confirm("Opravdu se chceš odhlásit?")) {
             const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
@@ -1452,11 +1488,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('supabase.auth.token');
             localStorage.removeItem('sb-dxlyjugmeucevosmhage-auth-token');
             sessionStorage.clear();
-            const card = document.getElementById('loggedInProfileCard');
-            const authBlock = document.getElementById('loggedOutAuthBlock');
-            if (card) card.style.display = 'none';
-            if (authBlock) authBlock.style.display = 'block';
-            window.location.reload();
+            initAuthState();
+            alert("✅ Byl jsi úspěšně odhlášen!");
         }
     };
 

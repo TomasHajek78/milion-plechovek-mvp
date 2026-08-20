@@ -277,10 +277,10 @@
                 <span class="nav-icon"><img src="ikona_zkrizene_naradi_klic_sroubovak_ciste_crop.png" class="nav-image-icon" alt="Nastavení"></span>
                 <span class="nav-label">Nastavení</span>
             </button>
-            <button class="nav-item" onclick="toggleSettings()">
+            <button class="nav-item" style="opacity: 0.4; filter: grayscale(100%); cursor: not-allowed;" title="Profil bude k dispozici po spuštění plné registrace">
                 <span class="nav-icon">
-                    <img id="navProfileAvatar" src="profil_tomas.jpg" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--forest-green); object-fit: cover;" alt="Profil">
-                    <span style="position: absolute; bottom: 0; right: 0; width: 7px; height: 7px; background: #10b981; border: 1.5px solid white; border-radius: 50%;"></span>
+                    <img id="navProfileAvatar" src="profil_tomas.jpg" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #94a3b8; object-fit: cover;" alt="Profil">
+                    <span id="navProfileDot" style="position: absolute; bottom: 0; right: 0; width: 7px; height: 7px; background: #94a3b8; border: 1.5px solid white; border-radius: 50%;"></span>
                 </span>
                 <span class="nav-label">Profil</span>
             </button>
@@ -690,6 +690,6 @@
         <img id="adminLightboxImg" src="" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
     </div>
 
-    <script src="app.js?v=55"></script>
+    <script src="app.js?v=56"></script>
 </body>
 </html>
