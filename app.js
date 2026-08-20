@@ -1607,7 +1607,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     email: email,
                     create_user: true,
-                    email_redirect_to: 'https://milion-plechovek-mvp.vercel.app/app.html'
+                    email_redirect_to: window.location.origin + window.location.pathname
                 })
             });
             
