@@ -57,39 +57,56 @@
 
         <!-- Modální okno Nastavení (Záloha) -->
         <div id="settingsModal" class="card hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; width:90%; max-width:400px;">
-            <h3>Nastavení & Záloha</h3>
-            <p class="small-text">Pro jistotu si jednou za čas stáhni zálohu svých dat, aby se ti sběry při promazání telefonu neztratily.</p>
-            <button onclick="exportData()" class="primary-btn-small" style="width:100%; margin-bottom:10px;">📥 Stáhnout zálohu (.json)</button>
+            <h3 style="color: var(--forest-green); margin-bottom: 15px;">Profil & Nastavení</h3>
             
-            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+            <!-- Karta Přihlášeného Uživatele -->
+            <div id="loggedInProfileCard" style="background: rgba(46, 117, 89, 0.08); border: 1.5px solid var(--forest-green); border-radius: 16px; padding: 14px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 14px; position: relative;">
+                <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="document.getElementById('profileAvatarInput').click()" title="Změnit profilovou fotku">
+                    <img id="profileCardAvatar" src="profil_tomas.jpg" style="width: 52px; height: 52px; border-radius: 50%; border: 2.5px solid var(--forest-green); object-fit: cover; box-shadow: 0 3px 8px rgba(0,0,0,0.12);" alt="Profilová fotka">
+                    <span style="position: absolute; bottom: -2px; right: -2px; background: var(--forest-green); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; border: 2px solid white;">📷</span>
+                    <input type="file" id="profileAvatarInput" accept="image/*" style="display:none" onchange="window.handleProfileAvatarUpload(this)">
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 15px; font-weight: 900; color: var(--forest-green); display: flex; align-items: center; gap: 5px;">
+                        <span id="profileFullName" style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">Tomáš Hájek</span>
+                        <span style="color: #10b981; font-size: 14px;" title="Ověřený sběrač">✅</span>
+                    </div>
+                    <div id="profileEmail" style="font-size: 12px; color: var(--text-dim); margin-top: 2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">tomas@tomashajek.cz</div>
+                    <button onclick="window.handleSignOut()" style="background: none; border: none; padding: 0; color: var(--rust-red); font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 4px; text-decoration: underline;">Odhlásit se</button>
+                </div>
+            </div>
+
+            <!-- Tlačítko pro Přihlášení (pokud uživatel NENÍ přihlášen) -->
+            <div id="loggedOutAuthBlock" style="display: none; margin-bottom: 15px;">
                 <button id="authOpenBtn" onclick="document.getElementById('settingsModal').classList.add('hidden'); document.getElementById('authModal').classList.remove('hidden');" class="primary-btn-small" style="width:100%; background-color: #6366f1; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
                     🔐 Přihlásit se / Vytvořit profil
                 </button>
             </div>
             
+            <!-- Celé jméno / Přezdívka -->
             <div style="margin: 15px 0; text-align: left;">
-                <label for="settingsNickname" style="font-size: 11px; font-weight: 700; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase;">Přezdívka:</label>
-                <input type="text" id="settingsNickname" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; background: var(--bg-card); color: var(--text-dark); box-sizing: border-box;" placeholder="@pepa_sbira">
+                <label for="settingsNickname" style="font-size: 11px; font-weight: 700; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase;">Celé jméno / Přezdívka:</label>
+                <input type="text" id="settingsNickname" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; background: var(--bg-card); color: var(--text-dark); box-sizing: border-box; font-family: 'Montserrat', sans-serif;" placeholder="Tomáš Hájek">
             </div>
             
-            <div style="margin: 15px 0 5px 0; display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left;">
+            <!-- GPS Zaměření -->
+            <div style="margin: 15px 0 10px 0; display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left;">
                 <input type="checkbox" id="gpsToggle" checked style="width: auto; height: auto; padding: 0; margin: 0; transform: scale(1.2); cursor: pointer;">
                 <label for="gpsToggle" style="font-size: 13px; font-weight: 700; color: var(--text-dark); cursor: pointer;">Zjišťovat GPS polohu automaticky</label>
             </div>
             <p class="small-text" style="color: var(--text-dim); margin-top: 0px; margin-bottom: 15px; font-size: 11px; text-align: left; line-height: 1.3;">
-                Tip: Pokud se telefon na polohu ptá při každé fotce, přidejte si aplikaci na plochu (Sdílet -> Přidat na plochu) nebo povolte polohu trvale v nastavení Safari.
+                Tip: Pokud se telefon na polohu ptá při každé fotce, přidejte si aplikaci na plochu (Sdílet -> Přidat na plochu).
             </p>
 
-            <button onclick="forceRefresh()" class="secondary-btn" style="width:100%; margin-bottom:10px; font-size: 12px; color: var(--rust-red);">🔄 Vynutit aktualizaci (vymazat mezipaměť)</button>
+            <!-- Akční tlačítka v autorském stylu -->
+            <a href="https://www.milionplechovek.cz/#desatero" target="_blank" class="primary-btn-small" style="display: block; width:100%; margin-top:10px; background-color: var(--forest-green); text-decoration: none; text-align: center; box-sizing: border-box; padding: 10px; border-radius: 8px; font-weight: bold;">📖 Desatero sběrače na webu</a>
+            <a href="mailto:tomas@tomashajek.cz?subject=Milion%20Plechovek%20-%20Zpetna%20vazba" class="secondary-btn" style="display: block; width: 100%; margin-top: 10px; border-color: #f59e0b; color: #d97706; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; padding: 10px; border-radius: 8px;">💡 Nápad na zlepšení / Nahlásit chybu</a>
+            <button onclick="forceRefresh()" class="secondary-btn" style="width:100%; margin-top:10px; font-size: 12px; color: var(--rust-red); border-color: #fca5a5; padding: 8px;">🔄 Vynutit aktualizaci (vymazat mezipaměť)</button>
             
-            <p class="small-text" style="margin-top:15px;">Obnovit ze souboru:</p>
-            <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(this)">
-            <button onclick="document.getElementById('importFileInput').click()" class="secondary-btn" style="width:100%;">📤 Nahrát zálohu</button>
-            
-            <a href="https://www.milionplechovek.cz/#desatero" target="_blank" class="primary-btn-small" style="display: block; width:100%; margin-top:15px; background-color: var(--forest-green); text-decoration: none; text-align: center; box-sizing: border-box;">📖 Desatero sběrače na webu</a>
-            <a href="mailto:tomas@tomashajek.cz?subject=Milion%20Plechovek%20-%20Zpetna%20vazba" class="secondary-btn" style="display: block; width: 100%; margin-top: 15px; border-color: #f59e0b; color: #d97706; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box;">💡 Nápad na zlepšení / Nahlásit chybu</a>
+            <!-- Administrace dat (Pouze pro Admina) -->
             <button id="adminDataBtn" onclick="openAdminEditorPasscode(); toggleSettings();" class="secondary-btn" style="display: none; width:100%; margin-top:15px; border-color: #64748b; color: #475569; font-weight: bold;">🛠️ Administrace dat (korekce)</button>
-            <button onclick="toggleSettings()" class="secondary-btn" style="width:100%; margin-top:10px; color:var(--rust-red);">Zavřít</button>
+            
+            <button onclick="toggleSettings()" class="secondary-btn" style="width:100%; margin-top:12px; color:var(--rust-red); font-weight: bold;">Zavřít</button>
         </div>
 
         <!-- Modální okno Desatero -->

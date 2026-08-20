@@ -1418,6 +1418,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.classList.add('hidden');
     };
 
+    window.handleSignOut = async function() {
+        if (confirm("Opravdu se chceš odhlásit?")) {
+            const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+            if (client && client.auth) {
+                await client.auth.signOut();
+            }
+            localStorage.removeItem('milion_user_session');
+            window.location.reload();
+        }
+    };
+
+    window.handleProfileAvatarUpload = function(input) {
+        if (input && input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const avatarSrc = e.target.result;
+                const cardAvatar = document.getElementById('profileCardAvatar');
+                const navAvatar = document.getElementById('navProfileAvatar');
+                if (cardAvatar) cardAvatar.src = avatarSrc;
+                if (navAvatar) navAvatar.src = avatarSrc;
+                localStorage.setItem('milion_custom_avatar', avatarSrc);
+                alert("✅ Profilová fotka byla úspěšně změněna!");
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    };
+
     window.signInWithProvider = async function(provider) {
         const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
         if (client && client.auth) {
