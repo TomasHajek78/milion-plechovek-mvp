@@ -386,7 +386,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     navItems.forEach(item => {
-        item.addEventListener('click', () => switchView(item.dataset.view));
+        item.addEventListener('click', () => {
+            if (item.dataset.view) {
+                switchView(item.dataset.view);
+            }
+        });
     });
 
     // --- Žebříček ---
@@ -1153,7 +1157,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.toggleSettings = () => {
         const modal = document.getElementById('settingsModal');
-        modal.classList.toggle('hidden');
+        if (modal) {
+            const isOpening = modal.classList.contains('hidden');
+            ['authModal', 'desateroModal', 'adminEditorModal', 'userGalleryModal'].forEach(id => {
+                const m = document.getElementById(id);
+                if (m) m.classList.add('hidden');
+            });
+            if (isOpening) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
     };
 
     // --- LOGIKA INTERAKTIVNÍ GALERIE FOTEK UŽIVATELŮ ---
