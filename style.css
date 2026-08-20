@@ -355,8 +355,19 @@ body {
 }
 
 /* Modern Toggle Switch */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ef4444; /* Červená při vypnutí */
+    transition: .3s;
+    border-radius: 26px;
+}
 .switch input:checked + .slider {
-    background-color: var(--forest-green);
+    background-color: #10b981; /* Zelená při zapnutí */
 }
 .switch input:checked + .slider:before {
     transform: translateX(20px);
