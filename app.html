@@ -642,44 +642,48 @@
     <div id="authModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 50000;">
         <div class="card" style="max-width: 400px; width: 90%; background: white; border-radius: 20px; padding: 25px; text-align: center; position: relative;">
             <button onclick="closeAuthModal()" style="position: absolute; right: 15px; top: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #94a3b8;">&times;</button>
-            <h2 style="color: var(--forest-green); margin-bottom: 10px;">Připoj se ke sběračům</h2>
-            <p style="color: var(--text-dim); margin-bottom: 25px; font-size: 14px;">Zaregistruj se a tvé úlovky se bezpečně uloží do žebříčku.</p>
+            <h2 style="color: var(--forest-green); margin-bottom: 6px; font-size: 20px; font-weight: 900;">Připoj se ke sběračům</h2>
+            <p style="color: var(--text-dim); margin-bottom: 20px; font-size: 13px;">Zaregistruj se do aplikace a tvé úlovky se bezpečně uloží do žebříčku.</p>
 
-            <!-- Tlačítka pro sociální sítě -->
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
-                <button onclick="signInWithProvider('google')" class="btn-social btn-google" style="background: white; border: 1px solid #cbd5e1; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: bold; font-family: 'Montserrat', sans-serif;">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style="width: 20px;">
-                    Pokračovat s Google
-                </button>
-                <button onclick="signInWithProvider('apple')" class="btn-social btn-apple hidden" style="background: black; color: white; border: none; padding: 12px; border-radius: 10px; display: none; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: bold; font-family: 'Montserrat', sans-serif;">
-                    <img src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" style="width: 20px; filter: invert(1);">
-                    Pokračovat s Apple
-                </button>
-                <button onclick="signInWithProvider('facebook')" class="btn-social btn-facebook" style="background: #1877F2; color: white; border: none; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: bold; font-family: 'Montserrat', sans-serif;">
-                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" style="width: 20px; filter: brightness(0) invert(1);">
-                    Pokračovat s Facebook
-                </button>
-                <button onclick="signInWithProvider('instagram')" class="btn-social btn-instagram" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; border: none; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: bold; font-family: 'Montserrat', sans-serif;">
-                    <img src="https://www.svgrepo.com/show/448231/instagram.svg" alt="Instagram" style="width: 20px; filter: brightness(0) invert(1);">
-                    Pokračovat přes Instagram
-                </button>
+            <!-- ⭐️ DOPORUČENÉ PŘIHLAŠENÍ E-MAILEM -->
+            <div style="background: #f0fdf4; border: 2px solid var(--forest-green); border-radius: 16px; padding: 16px; margin-bottom: 20px; position: relative;">
+                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--forest-green); color: white; font-size: 10px; font-weight: 900; padding: 2px 10px; border-radius: 10px; letter-spacing: 0.5px; text-transform: uppercase;">⭐ Doporučené</span>
+                <p style="font-size: 12px; font-weight: 700; color: #166534; margin-top: 4px; margin-bottom: 10px;">Přihlášení bez hesla (Magic Link)</p>
+                <form onsubmit="handleMagicLink(event)" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="email" id="authEmailInput" placeholder="tvuj@email.cz" required style="padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-family: 'Montserrat', sans-serif; text-align: center; font-size: 15px; background: white; color: #1e293b;">
+                    <button type="submit" class="primary-btn" id="authEmailBtn" style="border-radius: 10px; padding: 12px; font-weight: 800; font-size: 13px; background-color: var(--forest-green);">✉️ Odeslat přihlašovací odkaz</button>
+                    <div id="authMessage" style="font-size: 12px; margin-top: 6px; min-height: 15px; color: var(--forest-green); font-weight: 700;"></div>
+                </form>
             </div>
 
             <!-- Oddělovač -->
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 25px; color: #94a3b8; font-size: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; color: #94a3b8; font-size: 11px; font-weight: 700;">
                 <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-                <span>NEBO E-MAILEM</span>
+                <span>NEBO PŘES SOCIÁLNÍ SÍTĚ</span>
                 <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
             </div>
 
-            <!-- Formulář pro Magic Link -->
-            <form onsubmit="handleMagicLink(event)" style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="email" id="authEmailInput" placeholder="tvuj@email.cz" required style="padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-family: 'Montserrat', sans-serif; text-align: center; font-size: 16px;">
-                <button type="submit" class="primary-btn" id="authEmailBtn" style="border-radius: 10px; padding: 12px;">Poslat přihlašovací odkaz</button>
-                <div id="authMessage" style="font-size: 12px; margin-top: 10px; min-height: 15px; color: var(--forest-green);"></div>
-            </form>
+            <!-- Tlačítka pro sociální sítě -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="signInWithProvider('google')" class="btn-social btn-google" style="background: white; border: 1px solid #cbd5e1; padding: 11px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: 800; font-size: 12px; font-family: 'Montserrat', sans-serif; color: #1e293b;">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style="width: 18px;">
+                    Pokračovat přes Google
+                </button>
+                <button onclick="signInWithProvider('apple')" class="btn-social btn-apple hidden" style="background: black; color: white; border: none; padding: 11px; border-radius: 10px; display: none; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: 800; font-size: 12px; font-family: 'Montserrat', sans-serif;">
+                    <img src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" style="width: 18px; filter: invert(1);">
+                    Pokračovat přes Apple
+                </button>
+                <button onclick="signInWithProvider('facebook')" class="btn-social btn-facebook" style="background: #1877F2; color: white; border: none; padding: 11px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: 800; font-size: 12px; font-family: 'Montserrat', sans-serif;">
+                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" style="width: 18px; filter: brightness(0) invert(1);">
+                    Pokračovat přes Facebook
+                </button>
+                <button onclick="signInWithProvider('instagram')" class="btn-social btn-instagram" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; border: none; padding: 11px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-weight: 800; font-size: 12px; font-family: 'Montserrat', sans-serif;">
+                    <img src="https://www.svgrepo.com/show/448231/instagram.svg" alt="Instagram" style="width: 18px; filter: brightness(0) invert(1);">
+                    Pokračovat přes Instagram
+                </button>
+            </div>
             
-            <p style="font-size: 10px; color: #94a3b8; margin-top: 20px;">
+            <p style="font-size: 10px; color: #94a3b8; margin-top: 18px;">
                 Přihlášením souhlasíte se <a href="zasady_ochrany_soukromi.md" style="color: var(--forest-green);">Zásadami ochrany soukromí</a>.
             </p>
         </div>
