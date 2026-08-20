@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const adminDataBtn = document.getElementById('adminDataBtn');
         if (adminDataBtn) {
-            adminDataBtn.style.display = isTom ? 'block' : 'none';
+            adminDataBtn.style.display = isTom ? 'flex' : 'none';
         }
     }
     
