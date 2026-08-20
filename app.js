@@ -1425,6 +1425,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 await client.auth.signOut();
             }
             localStorage.removeItem('milion_user_session');
+            localStorage.removeItem('supabase.auth.token');
+            localStorage.removeItem('sb-dxlyjugmeucevosmhage-auth-token');
+            sessionStorage.clear();
+            const card = document.getElementById('loggedInProfileCard');
+            const authBlock = document.getElementById('loggedOutAuthBlock');
+            if (card) card.style.display = 'none';
+            if (authBlock) authBlock.style.display = 'block';
             window.location.reload();
         }
     };
