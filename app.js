@@ -1510,9 +1510,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const authBlock = document.getElementById('loggedOutAuthBlock');
         const navProfileDot = document.getElementById('navProfileDot');
         
-        const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
         let session = null;
-        if (client && client.auth) {
+
+        // Detekce Magic Link přihlášení z URL hash (access_token)
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+            try {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const accessToken = hashParams.get('access_token');
+                const refreshToken = hashParams.get('refresh_token');
+                if (accessToken) {
+                    const payloadBase64 = accessToken.split('.')[1];
+                    const decodedJson = JSON.parse(atob(payloadBase64));
+                    const userEmail = decodedJson.email || 'prihlasen@milionplechovek.cz';
+                    
+                    session = {
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                        email: userEmail,
+                        user: { email: userEmail, id: decodedJson.sub }
+                    };
+                    
+                    localStorage.setItem('milion_user_session', JSON.stringify(session));
+                    localStorage.setItem('sb-dxlyjugmeucevosmhage-auth-token', JSON.stringify(session));
+                    window.history.replaceState(null, null, window.location.pathname);
+                    alert("🎉 Vítej v aplikaci! Byl jsi úspěšně přihlášen jako " + userEmail + "!");
+                }
+            } catch (err) {
+                console.error("Chyba dekódování Magic Link tokenu:", err);
+            }
+        }
+
+        const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+        if (!session && client && client.auth) {
             try {
                 const { data } = await client.auth.getSession();
                 session = data ? data.session : null;
