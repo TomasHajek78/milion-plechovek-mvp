@@ -779,9 +779,60 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function checkUserAuthenticated() {
+        const storedSessionStr = localStorage.getItem('milion_user_session');
+        const token = localStorage.getItem('sb-dxlyjugmeucevosmhage-auth-token');
+        const legacyToken = localStorage.getItem('supabase.auth.token');
+        
+        let hasSession = false;
+        if (storedSessionStr) {
+            try {
+                const sess = JSON.parse(storedSessionStr);
+                if (sess && (sess.user || sess.email)) hasSession = true;
+            } catch (e) {}
+        }
+        if (token || legacyToken) hasSession = true;
+
+        if (window.supabaseClient && window.supabaseClient.auth) {
+            try {
+                const currentSession = window.supabaseClient.auth.session ? window.supabaseClient.auth.session() : null;
+                if (currentSession) hasSession = true;
+            } catch (e) {}
+        }
+
+        return hasSession;
+    }
+
+    function promptAuthRequired() {
+        const authModal = document.getElementById('authModal');
+        const authDesc = authModal ? authModal.querySelector('p') : null;
+        
+        if (authDesc) {
+            authDesc.innerHTML = "🔑 <strong>Pro uložení úlovku a započítání do žebříčku se prosím přihlas do aplikace.</strong>";
+            authDesc.style.color = "var(--forest-green)";
+            authDesc.style.fontSize = "13px";
+        }
+        
+        if (authModal) {
+            authModal.classList.remove('hidden');
+        }
+    }
+
     // --- Akce ---
-    cameraBtn.addEventListener('click', () => cameraInput.click());
-    galleryBtn.addEventListener('click', () => galleryInput.click());
+    cameraBtn.addEventListener('click', () => {
+        if (!checkUserAuthenticated()) {
+            promptAuthRequired();
+            return;
+        }
+        cameraInput.click();
+    });
+    galleryBtn.addEventListener('click', () => {
+        if (!checkUserAuthenticated()) {
+            promptAuthRequired();
+            return;
+        }
+        galleryInput.click();
+    });
 
     [cameraInput, galleryInput].forEach(input => {
         input.addEventListener('change', (e) => {
