@@ -779,60 +779,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function checkUserAuthenticated() {
-        const storedSessionStr = localStorage.getItem('milion_user_session');
-        const token = localStorage.getItem('sb-dxlyjugmeucevosmhage-auth-token');
-        const legacyToken = localStorage.getItem('supabase.auth.token');
-        
-        let hasSession = false;
-        if (storedSessionStr) {
-            try {
-                const sess = JSON.parse(storedSessionStr);
-                if (sess && (sess.user || sess.email)) hasSession = true;
-            } catch (e) {}
-        }
-        if (token || legacyToken) hasSession = true;
-
-        if (window.supabaseClient && window.supabaseClient.auth) {
-            try {
-                const currentSession = window.supabaseClient.auth.session ? window.supabaseClient.auth.session() : null;
-                if (currentSession) hasSession = true;
-            } catch (e) {}
-        }
-
-        return hasSession;
-    }
-
-    function promptAuthRequired() {
-        const authModal = document.getElementById('authModal');
-        const authDesc = authModal ? authModal.querySelector('p') : null;
-        
-        if (authDesc) {
-            authDesc.innerHTML = "🔑 <strong>Pro uložení úlovku a započítání do žebříčku se prosím přihlas do aplikace.</strong>";
-            authDesc.style.color = "var(--forest-green)";
-            authDesc.style.fontSize = "13px";
-        }
-        
-        if (authModal) {
-            authModal.classList.remove('hidden');
-        }
-    }
-
     // --- Akce ---
-    cameraBtn.addEventListener('click', () => {
-        if (!checkUserAuthenticated()) {
-            promptAuthRequired();
-            return;
-        }
-        cameraInput.click();
-    });
-    galleryBtn.addEventListener('click', () => {
-        if (!checkUserAuthenticated()) {
-            promptAuthRequired();
-            return;
-        }
-        galleryInput.click();
-    });
+    cameraBtn.addEventListener('click', () => cameraInput.click());
+    galleryBtn.addEventListener('click', () => galleryInput.click());
 
     [cameraInput, galleryInput].forEach(input => {
         input.addEventListener('change', (e) => {
@@ -1510,38 +1459,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const authBlock = document.getElementById('loggedOutAuthBlock');
         const navProfileDot = document.getElementById('navProfileDot');
         
-        let session = null;
-
-        // Detekce Magic Link přihlášení z URL hash (access_token)
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-            try {
-                const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                const accessToken = hashParams.get('access_token');
-                const refreshToken = hashParams.get('refresh_token');
-                if (accessToken) {
-                    const payloadBase64 = accessToken.split('.')[1];
-                    const decodedJson = JSON.parse(atob(payloadBase64));
-                    const userEmail = decodedJson.email || 'prihlasen@milionplechovek.cz';
-                    
-                    session = {
-                        access_token: accessToken,
-                        refresh_token: refreshToken,
-                        email: userEmail,
-                        user: { email: userEmail, id: decodedJson.sub }
-                    };
-                    
-                    localStorage.setItem('milion_user_session', JSON.stringify(session));
-                    localStorage.setItem('sb-dxlyjugmeucevosmhage-auth-token', JSON.stringify(session));
-                    window.history.replaceState(null, null, window.location.pathname);
-                    alert("🎉 Vítej v aplikaci! Byl jsi úspěšně přihlášen jako " + userEmail + "!");
-                }
-            } catch (err) {
-                console.error("Chyba dekódování Magic Link tokenu:", err);
-            }
-        }
-
         const client = window.supabaseClient || (typeof window.supabase !== 'undefined' && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
-        if (!session && client && client.auth) {
+        let session = null;
+        if (client && client.auth) {
             try {
                 const { data } = await client.auth.getSession();
                 session = data ? data.session : null;
