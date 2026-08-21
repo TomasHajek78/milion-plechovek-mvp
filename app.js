@@ -670,6 +670,8 @@ document.addEventListener('DOMContentLoaded', () => {
             userNick = e.target.value.trim();
             localStorage.setItem('milion_nickname', userNick);
             userNickDisplay.textContent = userNick;
+            const nameElem = document.getElementById('profileFullName');
+            if (nameElem) nameElem.textContent = userNick || 'Sběrač';
             updateTomFeaturesVisibility();
         });
     }
@@ -1477,9 +1479,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // UŽIVATEL JE PŘIHLAŠENÝ
             if (card) card.style.display = 'flex';
             if (authBlock) authBlock.style.display = 'none';
-            const userEmail = (session.user && session.user.email) || session.email || 'tomas@tomashajek.cz';
+            const userEmail = (session.user && session.user.email) || session.email || 'přihlášen';
             const emailElem = document.getElementById('profileEmail');
             if (emailElem) emailElem.textContent = userEmail;
+            
+            const currentNick = localStorage.getItem('userNick') || (session.user && session.user.user_metadata && session.user.user_metadata.full_name) || 'Sběrač';
+            const nameElem = document.getElementById('profileFullName');
+            if (nameElem) nameElem.textContent = currentNick;
+
+            const customAvatar = localStorage.getItem('milion_custom_avatar');
+            const cardAvatar = document.getElementById('profileCardAvatar');
+            if (cardAvatar) cardAvatar.src = customAvatar || 'ikona_kruhove_sipky_recyklace_crop.png';
+
             if (navProfileDot) navProfileDot.style.background = '#10b981';
         } else {
             // UŽIVATEL JE ODHLÁŠENÝ
