@@ -220,7 +220,7 @@
             </div>
         </section>
         
-        <!-- Kompletní seznam značek -->
+        <!-- Kompletní seznam značek (Původní) -->
         <section class="glass-card p-6 rounded-2xl mt-8">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-bold text-slate-300">Kompletní adresář značek plechovek</h3>
@@ -237,6 +237,38 @@
                         </tr>
                     </thead>
                     <tbody id="brandsDirectoryBody" class="text-sm text-slate-300">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 🌟 Kompletní adresář značek 2 (Pouze Ověřené Záznamy) -->
+        <section class="glass-card p-6 rounded-2xl mt-8 border-2 border-emerald-500/40 bg-slate-900/80 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-lg font-black text-emerald-400 flex items-center gap-2">
+                        <span>Kompletní adresář značek plechovek 2</span>
+                        <span class="text-xs bg-emerald-500/20 text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/40">✓ Pouze Ověřené</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Zobrazeny strictly pouze ověřené úlovky schválené administrátorem s automatickou normalizací překlepů a synonym</p>
+                </div>
+                <span id="verifiedBrandsDirectoryHeader" class="text-xs text-emerald-300 font-black bg-emerald-950/80 border border-emerald-500/50 px-3.5 py-1.5 rounded-full shadow-inner">Načítám...</span>
+            </div>
+            <div class="max-h-[450px] overflow-y-auto pr-2">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-emerald-800/40 text-xs text-emerald-400/80 uppercase tracking-wider font-bold">
+                            <th class="py-2.5 w-16">Pořadí</th>
+                            <th class="py-2.5">Ověřená Značka</th>
+                            <th class="py-2.5 text-right w-28">Počet (ks)</th>
+                            <th class="py-2.5 text-right w-24">Podíl</th>
+                        </tr>
+                    </thead>
+                    <tbody id="verifiedBrandsDirectoryBody" class="text-sm text-slate-200">
+                    </tbody>
+                </table>
+            </div>
+        </section>
                         
                             <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
                                 <td class="py-2 font-mono text-slate-500">1.</td>
@@ -1204,6 +1236,113 @@
                 percentage: parseFloat(((b.count / (analyzed_cans_count || 1)) * 100).toFixed(1))
             }));
 
+            // --- COMPUTATION FOR KOMPLEKTNÍ ADRESÁŘ ZNAČEK 2 (POUZE OVĚŘENÉ ZÁZNAMY) ---
+            const verified_brands_dict = {};
+            let total_verified_cans = 0;
+
+            pickups.forEach(p => {
+                if (p.is_verified === true) {
+                    const cans_array = p.analysis_json || [];
+                    cans_array.forEach(can => {
+                        let brand = (can.brand || '').trim();
+                        if (!brand || brand === 'Unknown' || brand === 'unknown') brand = 'Nerozpoznáno';
+
+                        const cLower = brand.toLowerCase().replace(/[\s\-_.]+/g, '');
+
+                        if (cLower.includes('redbull') || cLower.includes('redbul')) brand = 'RedBull';
+                        else if (cLower.includes('monster')) brand = 'Monster';
+                        else if (cLower.includes('tiger')) brand = 'TIGER';
+                        else if (cLower.includes('crazywolf')) brand = 'Crazy Wolf';
+                        else if (cLower.includes('radegast')) brand = 'Radegast';
+                        else if (cLower.includes('kozel')) brand = 'Kozel';
+                        else if (cLower.includes('birell')) brand = 'Birell';
+                        else if (cLower.includes('gambrinus')) brand = 'Gambrinus';
+                        else if (cLower.includes('cocacola') || cLower === 'coca' || cLower === 'cola') brand = 'Coca-Cola';
+                        else if (cLower.includes('krušovice') || cLower.includes('krusovice')) brand = 'Krušovice';
+                        else if (cLower.includes('strongkong') || cLower.includes('kongstrong') || cLower === 'kong' || cLower === 'strong') brand = 'STRONG KONG';
+                        else if (cLower.includes('starobrno') || cLower.includes('štatl') || cLower.includes('štal')) brand = 'Starobrno';
+                        else if (cLower.includes('argus')) brand = 'Argus';
+                        else if (cLower.includes('fanta')) brand = 'Fanta';
+                        else if (cLower.includes('pilsner') || cLower.includes('urquell') || cLower.includes('plzeň')) brand = 'Pilsner Urquell';
+                        else if (cLower.includes('firebird') || cLower.includes('fire-bird')) brand = 'Firebird';
+                        else if (cLower.includes('desperados')) brand = 'Desperados';
+                        else if (cLower.includes('bigshock') || cLower.includes('shock')) brand = 'Big Shock';
+                        else if (cLower.includes('staropramen')) brand = 'Staropramen';
+                        else if (cLower.includes('semtex')) brand = 'Semtex';
+                        else if (cLower.includes('freeway')) brand = 'Freeway';
+                        else if (cLower.includes('strongbow')) brand = 'Strongbow';
+                        else if (cLower.includes('pepsi')) brand = 'Pepsi';
+                        else if (cLower.includes('braník') || cLower.includes('branik')) brand = 'Braník';
+                        else if (cLower.includes('heineken')) brand = 'Heineken';
+                        else if (cLower.includes('budvar') || cLower.includes('budweiser') || cLower.includes('budwar')) brand = 'Budvar';
+                        else if (cLower.includes('birgo') || cLower.includes('bir-go')) brand = 'BirGo';
+                        else if (cLower.includes('hell')) brand = 'HELL';
+                        else if (cLower.includes('kofola')) brand = 'Kofola';
+                        else if (cLower.includes('svijany') || cLower.includes('svijanský')) brand = 'Svijany';
+                        else if (cLower.includes('lišácké') || cLower.includes('lisacke') || cLower.includes('sacke') || cLower.includes('lišák')) brand = 'Lišácké Jablko';
+                        else if (cLower.includes('drpepper')) brand = 'Dr Pepper';
+                        else if (cLower.includes('guarana')) brand = 'Guarana';
+                        else if (cLower.includes('perlenbacher')) brand = 'Perlenbacher';
+                        else if (cLower.includes('bažant') || cLower.includes('bazant')) brand = 'Zlatý Bažant';
+                        else if (cLower.includes('mirinda')) brand = 'Mirinda';
+                        else if (cLower.includes('eiskaffee') || cLower.includes('icecoffee') || cLower.includes('coffee')) brand = 'Ice Coffee';
+                        else if (cLower.includes('mrbrown') || cLower.includes('brown')) brand = 'Mr. Brown';
+                        else if (cLower.includes('frisco')) brand = 'Frisco';
+                        else if (cLower.includes('zlatopramen')) brand = 'Zlatopramen';
+                        else if (cLower.includes('clever')) brand = 'Clever Energy';
+                        else if (cLower.includes('bohém') || cLower.includes('bohem')) brand = 'Bohém';
+                        else if (cLower.includes('lipton')) brand = 'Lipton';
+                        else if (cLower.includes('tary')) brand = 'Tary Drink';
+                        else if (cLower.includes('staročech') || cLower.includes('starocech')) brand = 'Staročech';
+                        else if (cLower.includes('proud')) brand = 'Proud';
+                        else if (cLower.includes('bluespark')) brand = 'Blue Spark';
+                        else if (cLower.includes('beefeater')) brand = 'Beefeater';
+                        else if (cLower.includes('mattoni')) brand = 'Mattoni';
+                        else if (cLower.includes('nescafe') || cLower.includes('nescafé')) brand = 'Nescafé';
+                        else if (cLower.includes('amundsen')) brand = 'Amundsen';
+                        else if (cLower.includes('tuborg')) brand = 'Tuborg';
+                        else if (cLower.includes('black')) brand = 'BLACK Energy';
+                        else if (cLower.includes('allini')) brand = 'Allini';
+                        else if (cLower.includes('xpboost')) brand = 'XP Boost';
+                        else if (cLower.includes('targa')) brand = 'Targa Florio';
+                        else if (cLower.includes('republica') || cLower.includes('božkov')) brand = 'Božkov Republica';
+                        else if (cLower.includes('zubr')) brand = 'Zubr';
+                        else if (cLower.includes('kronenbourg')) brand = 'Kronenbourg';
+                        else if (cLower.includes('holba')) brand = 'Holba';
+                        else if (cLower.includes('stella')) brand = 'Stella Artois';
+                        else if (cLower.includes('royalcrown')) brand = 'Royal Crown';
+                        else if (cLower.includes('kasztelan')) brand = 'Kasztelan';
+                        else if (cLower.includes('redstripe')) brand = 'Red Stripe';
+                        else if (cLower.includes('lobkowicz')) brand = 'Lobkowicz';
+                        else if (cLower.includes('carlsberg')) brand = 'Carlsberg';
+                        else if (cLower.includes('litovel')) brand = 'Litovel';
+                        else if (cLower.includes('vinea')) brand = 'Vinea';
+                        else if (cLower.includes('corona')) brand = 'Corona';
+                        else if (cLower.includes('bertold') || cLower.includes('bertel')) brand = 'Bertold';
+                        else if (cLower.includes('černáhora') || cLower.includes('cernahora')) brand = 'Černá Hora';
+                        else if (cLower.includes('pfanner')) brand = 'Pfanner';
+                        else if (cLower.includes('březňák') || cLower.includes('breznak')) brand = 'Březňák';
+                        else if (cLower.includes('bohemia')) brand = 'Bohemia Sekt';
+                        else if (cLower.includes('ožujsko') || cLower.includes('ozujsko')) brand = 'Ožujsko';
+                        else if (cLower.includes('pittinger')) brand = 'Pittinger';
+                        else if (cLower.includes('aquila')) brand = 'Aquila';
+                        else if (cLower.includes('lemonice')) brand = 'Lemon Ice';
+
+                        if (brand !== 'Nerozpoznáno') {
+                            verified_brands_dict[brand] = (verified_brands_dict[brand] || 0) + 1;
+                            total_verified_cans += 1;
+                        }
+                    });
+                }
+            });
+
+            const verified_raw_brands = Object.keys(verified_brands_dict).map(name => ({
+                name,
+                count: verified_brands_dict[name],
+                percentage: parseFloat(((verified_brands_dict[name] / (total_verified_cans || 1)) * 100).toFixed(1))
+            }));
+            verified_raw_brands.sort((a, b) => b.count - a.count);
+
             const sorted_volumes = Object.keys(volumes).map(size => {
                 const size_str = (size === 'Unknown' || size === 'unknown') ? 'Neznámý' : size + " L";
                 return { size: size_str, count: volumes[size] };
@@ -1234,6 +1373,8 @@
                 },
                 brands_breakdown: top_brands,
                 all_brands: full_brands_list,
+                verified_brands: verified_raw_brands,
+                total_verified_cans: total_verified_cans,
                 raw_brands_count: raw_brands.length,
                 volumes_breakdown: sorted_volumes,
                 teams_leaderboard: sorted_teams,
@@ -1316,6 +1457,27 @@
                         <td class="py-2 text-right text-slate-400">${brand.percentage.toFixed(1).replace('.', ',')} %</td>
                     `;
                     brandsBody.appendChild(tr);
+                });
+            }
+
+            // Renderování Kompletního adresáře značek 2 (Pouze Ověřené Záznamy)
+            const verifiedHeader = document.getElementById('verifiedBrandsDirectoryHeader');
+            if (verifiedHeader && stats.verified_brands) {
+                verifiedHeader.textContent = `${stats.verified_brands.length} ověřených značek (${stats.total_verified_cans.toLocaleString('cs-CZ')} ks)`;
+            }
+            const verifiedBody = document.getElementById('verifiedBrandsDirectoryBody');
+            if (verifiedBody && stats.verified_brands) {
+                verifiedBody.innerHTML = '';
+                stats.verified_brands.forEach((brand, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-emerald-900/30 hover:bg-emerald-950/30 transition-colors';
+                    tr.innerHTML = `
+                        <td class="py-2.5 font-mono text-emerald-500 font-bold">${idx + 1}.</td>
+                        <td class="py-2.5 font-extrabold text-slate-100">${brand.name}</td>
+                        <td class="py-2.5 text-right font-black text-emerald-400">${brand.count} ks</td>
+                        <td class="py-2.5 text-right text-emerald-300/80 font-bold">${brand.percentage.toFixed(1).replace('.', ',')} %</td>
+                    `;
+                    verifiedBody.appendChild(tr);
                 });
             }
 
