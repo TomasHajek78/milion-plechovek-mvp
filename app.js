@@ -1017,6 +1017,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({
                     nickname: userNick,
+                    user_email: (function(){ try { const s=JSON.parse(localStorage.getItem('milion_user_session')); return (s&&s.user&&s.user.email)|| (s&&s.email)||null; } catch(e){return null;} })(),
                     count: count,
                     latitude: currentCoords ? currentCoords.lat : null,
                     longitude: currentCoords ? currentCoords.lon : null,
@@ -2176,6 +2177,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 },
                                 body: JSON.stringify({
                                     nickname: item.nickname,
+                                    user_email: item.user_email || (function(){ try { const s=JSON.parse(localStorage.getItem('milion_user_session')); return (s&&s.user&&s.user.email)|| (s&&s.email)||null; } catch(e){return null;} })(),
                                     count: item.count,
                                     latitude: item.latitude,
                                     longitude: item.longitude,
