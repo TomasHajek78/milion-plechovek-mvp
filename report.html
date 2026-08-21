@@ -1140,6 +1140,16 @@
                         if (brand === 'Unknown' || brand === 'unknown' || brand === '') {
                             brand = 'Nerozpoznáno';
                         }
+                        
+                        // Normalizace značek (RedBull, TIGER, Nestea, STRONG KONG, Zlatopramen Soulad)
+                        const bTrim = brand.trim();
+                        const cleanLower = bTrim.toLowerCase().replace(/[\s\-_]+/g, '');
+                        if (cleanLower === 'redbull' || cleanLower === 'redbul') brand = 'RedBull';
+                        else if (cleanLower === 'tiger' || cleanLower === 'tigerenergy') brand = 'TIGER';
+                        else if (cleanLower === 'nest' || cleanLower === 'nestea' || cleanLower === 'nesttea' || cleanLower.startsWith('nest')) brand = 'Nestea';
+                        else if (cleanLower === 'strongkong' || cleanLower === 'kongstrong' || cleanLower === 'kong' || cleanLower === 'strong') brand = 'STRONG KONG';
+                        else if (cleanLower === 'soulad' || cleanLower === 'zlatopramensoulad') brand = 'Zlatopramen Soulad';
+
                         let vol = can.volume_liters || 'Unknown';
                         if (vol === 'Unknown' && i < user_vols.length && user_vols[i] !== null && user_vols[i] !== undefined) {
                             vol = user_vols[i];
@@ -1165,7 +1175,7 @@
             let other_count = 0;
             
             raw_brands.forEach((b, index) => {
-                if (index < 15 && b.count >= 2) {
+                if (index < 30 && b.count >= 2) {
                     top_brands.push({
                         name: b.name,
                         count: b.count,
