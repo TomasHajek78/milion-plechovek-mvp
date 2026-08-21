@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let keepFetching = true;
 
             while (keepFetching) {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes,is_verified&limit=${limit}&offset=${offset}`, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,user_email,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes,is_verified&limit=${limit}&offset=${offset}`, {
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -257,21 +257,49 @@ document.addEventListener('DOMContentLoaded', () => {
             
             allPickups = data; // Uložení do globálního pole pro galerii
 
+            // Pomocné ověření nároku uživatele podle e-mailu i přezdívky
+            function isMyItem(item) {
+                if (!item) return false;
+                let userEmail = null;
+                const sessionStr = localStorage.getItem('milion_user_session');
+                if (sessionStr) {
+                    try {
+                        const sess = JSON.parse(sessionStr);
+                        userEmail = (sess.user && sess.user.email) || sess.email;
+                    } catch(e) {}
+                }
+                // 1. Ověření podle e-mailu
+                if (userEmail && item.user_email && item.user_email.trim().toLowerCase() === userEmail.trim().toLowerCase()) {
+                    return true;
+                }
+                // 2. Pro Tomášův účet (tomas@tomashajek.cz) spárujeme historické přezdívky 'Tom' a 'Tomáš Hájek'
+                if (userEmail && userEmail.trim().toLowerCase() === 'tomas@tomashajek.cz') {
+                    if (item.nickname && (item.nickname === 'Tom' || item.nickname === 'Tomáš Hájek' || item.nickname === 'Tomashajek')) {
+                        return true;
+                    }
+                }
+                // 3. Ověření podle přezdívky
+                if (userNick && item.nickname && item.nickname.trim().toLowerCase() === userNick.trim().toLowerCase()) {
+                    return true;
+                }
+                return false;
+            }
+
             // Sčítání globálních a osobních statistik
             const totalCans = data.reduce((sum, item) => sum + item.count, 0);
             globalStats = 1000000 - totalCans;
-            myStats = data.filter(item => item.nickname === userNick).reduce((sum, item) => sum + item.count, 0);
+            myStats = data.filter(isMyItem).reduce((sum, item) => sum + item.count, 0);
 
             // Součet celkové ušetřené energie
             const totalEnergy = data.reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
             globalEnergy = totalEnergy;
 
             // Součet osobní ušetřené energie
-            const myEnergy = data.filter(item => item.nickname === userNick)
+            const myEnergy = data.filter(isMyItem)
                 .reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
 
             // Formátování historie pro aktuálního uživatele
-            myHistory = data.filter(item => item.nickname === userNick)
+            myHistory = data.filter(isMyItem)
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                 .slice(0, 5)
                 .map(item => ({
