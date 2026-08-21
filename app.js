@@ -1453,6 +1453,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.closeAuthModal = function() {
         const modal = document.getElementById('authModal');
+        const emailInput = document.getElementById('authEmailInput');
+        const messageDiv = document.getElementById('authMessage');
+        if (emailInput) emailInput.value = '';
+        if (messageDiv) messageDiv.innerText = '';
         if (modal) modal.classList.add('hidden');
     };
 
@@ -1479,9 +1483,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // UŽIVATEL JE PŘIHLAŠENÝ
             if (card) card.style.display = 'flex';
             if (authBlock) authBlock.style.display = 'none';
-            const userEmail = (session.user && session.user.email) || session.email || 'přihlášen';
+            const userEmail = (session.user && session.user.email) || session.email;
             const emailElem = document.getElementById('profileEmail');
-            if (emailElem) emailElem.textContent = userEmail;
+            if (emailElem) emailElem.textContent = userEmail || 'přihlášen';
             
             const currentNick = (typeof userNick !== 'undefined' && userNick) || localStorage.getItem('milion_nickname') || localStorage.getItem('userNick') || (session.user && session.user.user_metadata && session.user.user_metadata.full_name) || 'Sběrač';
             const nameElem = document.getElementById('profileFullName');
@@ -1492,6 +1496,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cardAvatar) cardAvatar.src = customAvatar || 'ikona_kruhove_sipky_recyklace_crop.png';
 
             if (navProfileDot) navProfileDot.style.background = '#10b981';
+
+            // Automatické spárování nepropojených úlovků sběrače v databázi s jeho e-mailem
+            if (userEmail && userNick) {
+                const nicksToLink = ['Tom', 'Tomáš Hájek', 'Tomashajek', userNick].filter(Boolean);
+                const orCond = nicksToLink.map(n => `nickname.eq.${encodeURIComponent(n)}`).join(',');
+                fetch(`${SUPABASE_URL}/rest/v1/pickups?or=(${orCond})&user_email=is.null`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_email: userEmail })
+                }).then(() => { if (typeof loadData === 'function') loadData(); }).catch(() => {});
+            }
         } else {
             // UŽIVATEL JE ODHLÁŠENÝ
             if (card) card.style.display = 'none';
@@ -1572,6 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (response.ok) {
+                if (emailInput) emailInput.value = '';
                 if (messageDiv) {
                     messageDiv.style.color = 'var(--forest-green)';
                     messageDiv.innerText = "✅ Přihlašovací odkaz byl odeslán na " + email + "! Zkontroluj si e-mail.";
