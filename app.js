@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let keepFetching = true;
 
             while (keepFetching) {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,user_email,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes,is_verified&limit=${limit}&offset=${offset}`, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/pickups?select=id,nickname,count,latitude,longitude,notes,created_at,photo_url,team_code,likes_count,energy_saved_kwh,aluminum_weight_g,co2_saved_kg,analysis_json,is_analyzed,user_volumes,is_verified&limit=${limit}&offset=${offset}`, {
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -259,7 +259,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Pomocné ověření nároku uživatele podle e-mailu i přezdívky
             function isMyItem(item) {
-                if (!item) return false;
+                if (!item || !item.nickname) return false;
+                const nickLower = item.nickname.trim().toLowerCase();
+                const currentNickLower = (userNick || '').trim().toLowerCase();
+
                 let userEmail = null;
                 const sessionStr = localStorage.getItem('milion_user_session');
                 if (sessionStr) {
@@ -268,20 +271,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         userEmail = (sess.user && sess.user.email) || sess.email;
                     } catch(e) {}
                 }
-                // 1. Ověření podle e-mailu
-                if (userEmail && item.user_email && item.user_email.trim().toLowerCase() === userEmail.trim().toLowerCase()) {
-                    return true;
-                }
-                // 2. Pro Tomášův účet (tomas@tomashajek.cz) spárujeme historické přezdívky 'Tom' a 'Tomáš Hájek'
-                if (userEmail && userEmail.trim().toLowerCase() === 'tomas@tomashajek.cz') {
-                    if (item.nickname && (item.nickname === 'Tom' || item.nickname === 'Tomáš Hájek' || item.nickname === 'Tomashajek')) {
+
+                // Pokud je přihlášen jako tomas@tomashajek.cz nebo má přezdívku Tom / Tomáš Hájek
+                const isTomAccount = (userEmail && userEmail.toLowerCase() === 'tomas@tomashajek.cz') || currentNickLower === 'tom' || currentNickLower === 'tomáš hájek' || currentNickLower === 'tomashajek';
+
+                if (isTomAccount) {
+                    if (nickLower === 'tom' || nickLower === 'tomáš hájek' || nickLower === 'tomashajek') {
                         return true;
                     }
                 }
-                // 3. Ověření podle přezdívky
-                if (userNick && item.nickname && item.nickname.trim().toLowerCase() === userNick.trim().toLowerCase()) {
+
+                if (item.user_email && userEmail && item.user_email.toLowerCase() === userEmail.toLowerCase()) {
                     return true;
                 }
+
+                if (currentNickLower && nickLower === currentNickLower) {
+                    return true;
+                }
+
                 return false;
             }
 
