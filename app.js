@@ -1483,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const emailElem = document.getElementById('profileEmail');
             if (emailElem) emailElem.textContent = userEmail;
             
-            const currentNick = localStorage.getItem('userNick') || (session.user && session.user.user_metadata && session.user.user_metadata.full_name) || 'Sběrač';
+            const currentNick = (typeof userNick !== 'undefined' && userNick) || localStorage.getItem('milion_nickname') || localStorage.getItem('userNick') || (session.user && session.user.user_metadata && session.user.user_metadata.full_name) || 'Sběrač';
             const nameElem = document.getElementById('profileFullName');
             if (nameElem) nameElem.textContent = currentNick;
 
