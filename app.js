@@ -1486,8 +1486,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('authModal');
         const emailInput = document.getElementById('authEmailInput');
         const messageDiv = document.getElementById('authMessage');
+        const otpSec = document.getElementById('otpVerifySection');
+        const otpInput = document.getElementById('authOtpInput');
+        const otpMsg = document.getElementById('otpMessage');
         if (emailInput) emailInput.value = '';
         if (messageDiv) messageDiv.innerText = '';
+        if (otpInput) otpInput.value = '';
+        if (otpMsg) otpMsg.innerText = '';
+        if (otpSec) otpSec.classList.add('hidden');
         if (modal) modal.classList.remove('hidden');
     };
 
@@ -1495,8 +1501,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('authModal');
         const emailInput = document.getElementById('authEmailInput');
         const messageDiv = document.getElementById('authMessage');
+        const otpSec = document.getElementById('otpVerifySection');
+        const otpInput = document.getElementById('authOtpInput');
+        const otpMsg = document.getElementById('otpMessage');
         if (emailInput) emailInput.value = '';
         if (messageDiv) messageDiv.innerText = '';
+        if (otpInput) otpInput.value = '';
+        if (otpMsg) otpMsg.innerText = '';
+        if (otpSec) otpSec.classList.add('hidden');
         if (modal) modal.classList.add('hidden');
     };
 
@@ -1631,10 +1643,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (response.ok) {
+                localStorage.setItem('milion_pending_email', email);
+                const otpSec = document.getElementById('otpVerifySection');
+                if (otpSec) otpSec.classList.remove('hidden');
                 if (emailInput) emailInput.value = '';
                 if (messageDiv) {
                     messageDiv.style.color = 'var(--forest-green)';
-                    messageDiv.innerText = "✅ Přihlašovací odkaz byl odeslán na " + email + "! Zkontroluj si e-mail.";
+                    messageDiv.innerText = "✅ Odkaz & 6místný PIN kód byl odeslán na " + email + "! Zkontroluj e-mail.";
                 }
             } else {
                 const errData = await response.json().catch(() => ({}));
@@ -1658,6 +1673,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageDiv.style.color = 'red';
                 messageDiv.innerText = "Chyba spojení: " + err.message;
             }
+        }
+    };
+
+    // --- 🔑 OVĚŘENÍ 6-MÍSTNÉHO PIN KÓDU Z E-MAILU (Pro PWA Aplikaci na ploše) ---
+    window.handleVerifyOtp = async function() {
+        const otpInput = document.getElementById('authOtpInput');
+        const otpMsg = document.getElementById('otpMessage');
+        const pendingEmail = localStorage.getItem('milion_pending_email');
+        
+        if (!otpInput || !otpInput.value) {
+            if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Zadej 6místný PIN kód z e-mailu!'; }
+            return;
+        }
+        const code = otpInput.value.trim();
+        if (!pendingEmail) {
+            if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Nejprve zadej e-mail a odesli ho!'; }
+            return;
+        }
+        
+        if (otpMsg) { otpMsg.style.color = '#1e293b'; otpMsg.innerText = 'Ověřuji PIN kód...'; }
+
+        try {
+            const resp = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: 'magiclink',
+                    email: pendingEmail,
+                    token: code
+                })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                localStorage.setItem('milion_user_session', JSON.stringify(data));
+                if (data.access_token) {
+                    localStorage.setItem('sb-dxlyjugmeucevosmhage-auth-token', JSON.stringify(data));
+                }
+                if (otpMsg) { otpMsg.style.color = 'var(--forest-green)'; otpMsg.innerText = '🎉 PIN kód správný! Byl jsi přihlášen!'; }
+                setTimeout(() => {
+                    closeAuthModal();
+                    initAuthState();
+                    if (typeof loadData === 'function') loadData();
+                    alert("🎉 Vítej v aplikaci! Byl jsi úspěšně přihlášen!");
+                }, 600);
+            } else {
+                const errData = await resp.json().catch(() => ({}));
+                const rawErr = errData.msg || errData.message || errData.error_description || '';
+                let czechErr = 'Neplatný nebo vypršený PIN kód.';
+                if (rawErr.includes('expired')) czechErr = 'Vypršela platnost PIN kódu. Vyžaduj nový.';
+                if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Chyba: ' + czechErr; }
+            }
+        } catch (err) {
+            if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Chyba spojení: ' + err.message; }
         }
     };
 

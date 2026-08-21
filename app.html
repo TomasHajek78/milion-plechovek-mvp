@@ -653,10 +653,21 @@
                     <input type="email" id="authEmailInput" placeholder="tvuj@email.cz" required style="padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-family: 'Montserrat', sans-serif; text-align: center; font-size: 15px; background: white; color: #1e293b;">
                     <button type="submit" class="primary-btn" id="authEmailBtn" style="border-radius: 10px; padding: 12px; font-weight: 800; font-size: 13px; background-color: var(--forest-green); display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;">
                         <img src="ikona_klic_se_zamkem.png" style="width: 20px; height: 20px;" alt="Klíč">
-                        Odeslat přihlašovací odkaz
+                        Odeslat přihlašovací odkaz / PIN
                     </button>
-                    <div id="authMessage" style="font-size: 12px; margin-top: 6px; min-height: 15px; color: var(--forest-green); font-weight: 700;"></div>
+                    <div id="authMessage" style="font-size: 12px; margin-top: 4px; min-height: 15px; color: var(--forest-green); font-weight: 700;"></div>
                 </form>
+
+                <!-- 🔑 SEKCIE PRE zadanie 6-místného PIN kódu z e-mailu -->
+                <div id="otpVerifySection" class="hidden" style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
+                    <p style="font-size: 12px; font-weight: 700; color: #1e293b; margin: 0;">Nebo opiš 6místný PIN kód z e-mailu:</p>
+                    <input type="text" id="authOtpInput" placeholder="např. 849201" maxlength="6" inputmode="numeric" style="padding: 12px; border-radius: 10px; border: 2px solid var(--forest-green); font-family: 'Montserrat', sans-serif; text-align: center; font-size: 18px; font-weight: 900; letter-spacing: 4px; background: #ffffff; color: #166534;">
+                    <button onclick="handleVerifyOtp()" type="button" class="primary-btn" style="border-radius: 10px; padding: 12px; font-weight: 800; font-size: 13px; background-color: #166534; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <img src="ikona_klic_se_zamkem.png" style="width: 18px; height: 18px;" alt="Klíč">
+                        🔑 Ověřit PIN a přihlásit se
+                    </button>
+                    <div id="otpMessage" style="font-size: 12px; min-height: 15px; color: var(--forest-green); font-weight: 700;"></div>
+                </div>
             </div>
 
             <!-- Oddělovač -->
@@ -685,6 +696,6 @@
         <img id="adminLightboxImg" src="" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
     </div>
 
-    <script src="app.js?v=72"></script>
+    <script src="app.js?v=73"></script>
 </body>
 </html>
