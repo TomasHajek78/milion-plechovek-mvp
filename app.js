@@ -1484,6 +1484,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FUNKCE PRO REGISTRACI A PŘIHLÁŠENÍ ---
     window.openAuthModal = function() {
         const modal = document.getElementById('authModal');
+        const emailInput = document.getElementById('authEmailInput');
+        const messageDiv = document.getElementById('authMessage');
+        if (emailInput) emailInput.value = '';
+        if (messageDiv) messageDiv.innerText = '';
         if (modal) modal.classList.remove('hidden');
     };
 
