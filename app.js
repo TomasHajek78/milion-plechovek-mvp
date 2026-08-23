@@ -297,9 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
             globalStats = 1000000 - totalCans;
             myStats = data.filter(isMyItem).reduce((sum, item) => sum + item.count, 0);
 
-            // Kontrola oslavných milníků komunity
-            checkMilestonePopups(totalCans);
-
             // Součet celkové ušetřené energie
             const totalEnergy = data.reduce((sum, item) => sum + (parseFloat(item.energy_saved_kwh) || 0), 0);
             globalEnergy = totalEnergy;
@@ -3414,41 +3411,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     newPickupBtn.addEventListener('click', () => { window.location.reload(); });
     cancelBtn.addEventListener('click', () => { window.location.reload(); });
-
-    // --- POP-UP SYSTÉM OSLAVNÝCH MILNÍKŮ ---
-    window.closeMilestoneModal = function() {
-        const modal = document.getElementById('milestoneModal');
-        if (modal) modal.classList.add('hidden');
-    };
-
-    function checkMilestonePopups(totalCans) {
-        if (!totalCans || totalCans <= 0) return;
-
-        const milestones = [
-            { count: 3200, id: 'm_3200', title: '🎉 DĚKUJEME! DOSÁHLI JSME 3 200 PLECHOVEK!', desc: `Společně jsme zrecyklovali už <strong>${totalCans.toLocaleString('cs-CZ')} plechovek</strong>! Zbývá nám už jen ${(1000000 - totalCans).toLocaleString('cs-CZ')} k vytouženému milionu!` },
-            { count: 5000, id: 'm_5000', title: '🎉 5 000 PLECHOVEK JE DOMA!', desc: `Úžasný milník! Komunita posbírala přes <strong>5 000 plechovek</strong>! Zrecyklovali jsme stovky kg hliníku!` },
-            { count: 10000, id: 'm_10000', title: '🚀 HRANICE 10 000 PLECHOVEK PŘEKONÁNA!', desc: `Neskutečný výkon! Dosáhli jsme <strong>10 000 zrecyklovaných plechovek</strong>!` }
-        ];
-
-        for (const m of milestones) {
-            if (totalCans >= m.count) {
-                const seenKey = `milestone_seen_${m.id}`;
-                if (!localStorage.getItem(seenKey)) {
-                    setTimeout(() => {
-                        const modal = document.getElementById('milestoneModal');
-                        const titleElem = document.getElementById('milestoneTitle');
-                        const descElem = document.getElementById('milestoneDesc');
-                        if (modal && titleElem && descElem) {
-                            titleElem.innerHTML = m.title;
-                            descElem.innerHTML = m.desc;
-                            modal.classList.remove('hidden');
-                            if (typeof launchConfetti === 'function') launchConfetti();
-                            localStorage.setItem(seenKey, 'true');
-                        }
-                    }, 1200);
-                    break;
-                }
-            }
-        }
-    }
 });
