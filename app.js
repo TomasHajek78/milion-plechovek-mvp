@@ -259,9 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Pomocné ověření nároku uživatele podle e-mailu i přezdívky
             function isMyItem(item) {
-                if (!item || !item.nickname) return false;
-                const nickLower = item.nickname.trim().toLowerCase();
-                const currentNickLower = (userNick || '').trim().toLowerCase();
+                if (!item) return false;
+                const nickClean = (item.nickname || '').trim().toLowerCase().replace(/^@/, '');
+                const currentNickClean = (userNick || '').trim().toLowerCase().replace(/^@/, '');
 
                 let userEmail = null;
                 const sessionStr = localStorage.getItem('milion_user_session');
@@ -273,10 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Pokud je přihlášen jako tomas@tomashajek.cz nebo má přezdívku Tom / Tomáš Hájek
-                const isTomAccount = (userEmail && userEmail.toLowerCase() === 'tomas@tomashajek.cz') || currentNickLower === 'tom' || currentNickLower === 'tomáš hájek' || currentNickLower === 'tomashajek';
+                const isTomAccount = (userEmail && userEmail.toLowerCase() === 'tomas@tomashajek.cz') || currentNickClean === 'tom' || currentNickClean === 'tomáš hájek' || currentNickClean === 'tomashajek';
 
                 if (isTomAccount) {
-                    if (nickLower === 'tom' || nickLower === 'tomáš hájek' || nickLower === 'tomashajek') {
+                    if (nickClean === 'tom' || nickClean === 'tomáš hájek' || nickClean === 'tomashajek') {
                         return true;
                     }
                 }
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return true;
                 }
 
-                if (currentNickLower && nickLower === currentNickLower) {
+                if (currentNickClean && nickClean === currentNickClean) {
                     return true;
                 }
 
@@ -2115,13 +2115,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const transaction = db.transaction(['pendingPickups'], 'readwrite');
             const store = transaction.objectStore('pendingPickups');
             
+            let currentEmail = null;
+            try {
+                const sess = JSON.parse(localStorage.getItem('milion_user_session'));
+                currentEmail = (sess && sess.user && sess.user.email) || (sess && sess.email) || null;
+            } catch(e) {}
+
             const item = {
                 nickname: userNick,
+                user_email: currentEmail,
                 count: count,
                 latitude: currentCoords ? currentCoords.lat : null,
                 longitude: currentCoords ? currentCoords.lon : null,
                 notes: notes || null,
-                photoBase64: photoBase64, // Ukládáme jako Base64 text (odolné vůči iOS Safari bugům)
+                photoBase64: photoBase64,
                 user_volumes: userVolumes || null,
                 timestamp: Date.now()
             };
