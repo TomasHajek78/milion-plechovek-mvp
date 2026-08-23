@@ -269,6 +269,34 @@
                 </table>
             </div>
         </section>
+
+        <!-- 👥 Přehled Registrovaných Sběratelů s E-mailem -->
+        <section class="glass-card p-6 rounded-2xl mt-8 border-2 border-indigo-500/40 bg-slate-900/80 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-lg font-black text-indigo-400 flex items-center gap-2">
+                        <span>👥 Přehled Registrovaných Sběratelů s E-mailem</span>
+                        <span class="text-xs bg-indigo-500/20 text-indigo-300 font-extrabold px-2.5 py-0.5 rounded-full border border-indigo-500/40">Unikátní Účty</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Zobrazeni všichni přihlášení sběratelé a celkový počet jim přiřazených plechovek na základě e-mailu</p>
+                </div>
+                <span id="registeredUsersHeader" class="text-xs text-indigo-300 font-black bg-indigo-950/80 border border-indigo-500/50 px-3.5 py-1.5 rounded-full shadow-inner">Načítám...</span>
+            </div>
+            <div class="max-h-[350px] overflow-y-auto pr-2">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-indigo-800/40 text-xs text-indigo-400/80 uppercase tracking-wider font-bold">
+                            <th class="py-2.5 w-16">#</th>
+                            <th class="py-2.5">E-mail Sběratele</th>
+                            <th class="py-2.5">Přezdívky</th>
+                            <th class="py-2.5 text-right w-28">Plechovky</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registeredUsersBody" class="text-sm text-slate-200">
+                    </tbody>
+                </table>
+            </div>
+        </section>
                         
                             <tr class="border-b border-slate-800/40 hover:bg-slate-800/20">
                                 <td class="py-2 font-mono text-slate-500">1.</td>
@@ -1480,6 +1508,39 @@
                     `;
                     verifiedBody.appendChild(tr);
                 });
+            }
+
+            // Renderování Přehledu Registrovaných Sběratelů s E-mailem
+            const user_emails_dict = {};
+            pickups.forEach(p => {
+                const email = p.user_email;
+                if (email) {
+                    if (!user_emails_dict[email]) {
+                        user_emails_dict[email] = { email: email, nicknames: new Set(), cans: 0 };
+                    }
+                    if (p.nickname) user_emails_dict[email].nicknames.add(p.nickname);
+                    user_emails_dict[email].cans += (p.count || 1);
+                }
+            });
+
+            const userEmailsList = Object.values(user_emails_dict).sort((a, b) => b.cans - a.cans);
+            const userHeaderElem = document.getElementById('registeredUsersHeader');
+            if (userHeaderElem) userHeaderElem.textContent = `${userEmailsList.length} registrovaných e-mailů`;
+
+            const userBodyElem = document.getElementById('registeredUsersBody');
+            if (userBodyElem) {
+                if (userEmailsList.length === 0) {
+                    userBodyElem.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500">Zatím žádné úlovky s uloženým registračním e-mailem.</td></tr>`;
+                } else {
+                    userBodyElem.innerHTML = userEmailsList.map((u, i) => `
+                        <tr class="border-b border-indigo-900/30 hover:bg-indigo-950/30 transition-colors">
+                            <td class="py-2.5 font-mono text-indigo-400 font-bold">${i + 1}.</td>
+                            <td class="py-2.5 font-extrabold text-indigo-200">${u.email}</td>
+                            <td class="py-2.5 text-slate-300">${Array.from(u.nicknames).join(', ') || 'Sběrač'}</td>
+                            <td class="py-2.5 text-right font-black text-emerald-400">${u.cans.toLocaleString('cs-CZ')} ks</td>
+                        </tr>
+                    `).join('');
+                }
             }
 
             // Graf značek (Doughnut)
