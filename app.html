@@ -737,6 +737,7 @@
                         Odeslat přihlašovací odkaz / PIN
                     </button>
                     <div id="authMessage" style="font-size: 12px; margin-top: 4px; min-height: 15px; color: var(--forest-green); font-weight: 700;"></div>
+                    <p style="font-size: 10px; color: #475569; margin-top: 4px; margin-bottom: 0; line-height: 1.3;">Přihlášením souhlasíš se zasíláním občasných komunitních novinek a tipů pro sběr 🥫</p>
                 </form>
 
                 <!-- 🔑 SEKCIE PRE zadanie PIN kódu z e-mailu -->
@@ -772,11 +773,28 @@
         </div>
     </div>
 
+    <!-- 🎉 Oslavný Milníkový Pop-up Modal -->
+    <div id="milestoneModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 55000; padding: 20px;">
+        <div class="card" style="max-width: 380px; width: 100%; background: white; border-radius: 24px; padding: 28px 22px; text-align: center; position: relative; border: 3px solid var(--forest-green); box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+            <div style="margin-bottom: 12px;">
+                <img src="logo_milion_plechovek_full.png" style="height: 55px; object-fit: contain;" alt="Milion Plechovek">
+            </div>
+            <div style="font-size: 40px; margin-bottom: 8px;" id="milestoneEmoji">🎉</div>
+            <h2 id="milestoneTitle" style="color: var(--forest-green); font-size: 19px; font-weight: 900; margin-bottom: 8px; font-family: 'Montserrat', sans-serif;">DÍKY VÁM VŠEM!</h2>
+            <p id="milestoneDesc" style="color: #334155; font-size: 13px; line-height: 1.5; margin-bottom: 20px; font-family: 'Montserrat', sans-serif;">
+                Společně jsme zrecyklovali už <strong>3 200+ plechovek</strong>!
+            </p>
+            <button onclick="closeMilestoneModal()" class="primary-btn" style="width: 100%; border-radius: 12px; padding: 14px; font-weight: 900; font-size: 14px; background-color: var(--forest-green); color: white; border: none; cursor: pointer; font-family: 'Montserrat', sans-serif;">
+                POKRAČOVAT VE SBĚRU 🚀
+            </button>
+        </div>
+    </div>
+
     <!-- Lightbox pro detailní náhled fotografie v administraci -->
     <div id="adminPhotoLightbox" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 99999; cursor: zoom-out;">
         <img id="adminLightboxImg" src="" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
     </div>
 
-    <script src="app.js?v=76"></script>
+    <script src="app.js?v=77"></script>
 </body>
 </html>
