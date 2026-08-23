@@ -2002,6 +2002,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.forceRefresh = async () => {
         try {
+            if (db) {
+                try {
+                    const tx = db.transaction(['pendingPickups'], 'readwrite');
+                    tx.objectStore('pendingPickups').clear();
+                } catch(err) {
+                    console.error("Chyba vyčištění neodeslaných úlovků:", err);
+                }
+            }
             if ('serviceWorker' in navigator) {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 for (let registration of registrations) {
@@ -2262,14 +2270,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         
                         if (!uploadSuccess) {
-                            if (isNetworkError) {
+                            await incrementRetryCount(item);
+                            if ((item.retryCount || 0) >= 2) {
+                                console.warn(`Položka ID ${item.id} selhala 3x – automaticky ji mažeme z paměti telefonu.`);
+                                try {
+                                    const deleteTx = db.transaction(['pendingPickups'], 'readwrite');
+                                    deleteTx.objectStore('pendingPickups').delete(item.id);
+                                } catch(e) {}
+                            } else if (isNetworkError) {
                                 console.warn(`Přerušuji synchronizaci kvůli síťové chybě nahrávání fotky pro ID ${item.id}.`);
-                                break; // Přerušíme celou frontu, abychom zamezili zbytečným timeoutům
-                            } else {
-                                console.warn(`Přeskakuji vadný záznam ID ${item.id} kvůli trvalé chybě serveru při nahrávání fotky.`);
-                                await incrementRetryCount(item);
-                                continue; // Jdeme na další soubor, tento je vadný
+                                break;
                             }
+                            continue;
                         }
                         
                         // AbortController: přeruší zápis do DB pokud trvá déle než 15s
