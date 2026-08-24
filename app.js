@@ -463,23 +463,55 @@ document.addEventListener('DOMContentLoaded', () => {
             return n1.trim().toLowerCase().replace(/^@/, '') === n2.trim().toLowerCase().replace(/^@/, '');
         };
 
-        // Sečtení plechovek podle uživatelů
+        let currentUserEmail = null;
+        try {
+            const sess = JSON.parse(localStorage.getItem('milion_user_session'));
+            currentUserEmail = (sess && sess.user && sess.user.email) || (sess && sess.email) || null;
+        } catch(e) {}
+
+        // Sečtení plechovek podle UNIKÁTNÍHO ÚČTU (e-mail má přednost před přezdívkou)
         const userSums = {};
+        const userDisplayNicks = {};
+        const userEmailsMap = {};
+
         allData.forEach(item => {
-            const nick = item.nickname || 'Anonymní Sběrač';
-            userSums[nick] = (userSums[nick] || 0) + item.count;
+            const emailKey = (item.user_email || '').trim().toLowerCase();
+            const cleanNickKey = (item.nickname || '').trim().toLowerCase().replace(/^@/, '');
+            
+            // Klič účtu: pokud existuje e-mail, použijeme ho jako primární ID účtu. Jinak čištěnou přezdívku.
+            const accountKey = emailKey || cleanNickKey || 'anonymni_sberac';
+
+            userSums[accountKey] = (userSums[accountKey] || 0) + item.count;
+            if (emailKey) userEmailsMap[accountKey] = emailKey;
+
+            // Vybereme nejlepší zobrazovanou přezdívku pro tento účet
+            if (!userDisplayNicks[accountKey] || (item.nickname && item.nickname.startsWith('@'))) {
+                userDisplayNicks[accountKey] = item.nickname || cleanNickKey || 'Anonymní Sběrač';
+            }
         });
 
-        // Seřazení uživatelů sestupně
+        // Seřazení účtů sestupně podle počtu plechovek
         const sortedUsers = Object.entries(userSums)
-            .map(([nick, count]) => ({ nick, count }))
+            .map(([accountKey, count]) => ({
+                accountKey,
+                nick: userDisplayNicks[accountKey] || 'Anonymní Sběrač',
+                email: userEmailsMap[accountKey] || null,
+                count
+            }))
             .sort((a, b) => b.count - a.count);
 
-        // Vykreslení TOP 50
+        // Pomocné ověření zda jde o můj účet
+        const isMyAccount = (u) => {
+            if (currentUserEmail && u.email && u.email.toLowerCase() === currentUserEmail.toLowerCase()) return true;
+            if (userNick && matchNick(u.nick, userNick)) return true;
+            return false;
+        };
+
+        // Vykreslení TOP 50 účtů
         sortedUsers.slice(0, 50).forEach((user, index) => {
             const li = document.createElement('li');
             li.className = 'leaderboard-item';
-            if (matchNick(user.nick, userNick)) li.className += ' me';
+            if (isMyAccount(user)) li.className += ' me';
             li.innerHTML = `
                 <span class="rank">${index + 1}.</span>
                 <span class="nick">${user.nick}</span>
@@ -489,15 +521,15 @@ document.addEventListener('DOMContentLoaded', () => {
             leaderboardList.appendChild(li);
         });
 
-        // Moje pozice v reálném žebříčku
-        const myRankIndex = sortedUsers.findIndex(u => matchNick(u.nick, userNick));
+        // Moje pozice v reálném žebříčku (pokud jsem mimo TOP 50)
+        const myRankIndex = sortedUsers.findIndex(isMyAccount);
         if (myRankIndex >= 50) {
             const matchedUser = sortedUsers[myRankIndex];
             const myLi = document.createElement('li');
             myLi.className = 'leaderboard-item me';
             myLi.innerHTML = `
                 <span class="rank">${myRankIndex + 1}.</span>
-                <span class="nick">${userNick}</span>
+                <span class="nick">${userNick || matchedUser.nick}</span>
                 <span class="count">${matchedUser ? matchedUser.count : 0} ks</span>
             `;
             myLi.addEventListener('click', () => openUserGallery(userNick));
