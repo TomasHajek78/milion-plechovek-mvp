@@ -1676,14 +1676,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- 🔑 OVĚŘENÍ 6-MÍSTNÉHO PIN KÓDU Z E-MAILU (Pro PWA Aplikaci na ploše) ---
+    // --- 🔑 OVĚŘENÍ 8-MÍSTNÉHO PIN KÓDU Z E-MAILU (Pro PWA Aplikaci) ---
     window.handleVerifyOtp = async function() {
         const otpInput = document.getElementById('authOtpInput');
         const otpMsg = document.getElementById('otpMessage');
         const pendingEmail = localStorage.getItem('milion_pending_email');
         
         if (!otpInput || !otpInput.value) {
-            if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Zadej 6místný PIN kód z e-mailu!'; }
+            if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Zadej 8místný PIN kód z e-mailu!'; }
             return;
         }
         const code = otpInput.value.trim();
@@ -1694,42 +1694,51 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (otpMsg) { otpMsg.style.color = '#1e293b'; otpMsg.innerText = 'Ověřuji PIN kód...'; }
 
-        try {
-            const resp = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
-                method: 'POST',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    type: 'magiclink',
-                    email: pendingEmail,
-                    token: code
-                })
-            });
+        const typesToTry = ['magiclink', 'signup', 'email'];
+        let successData = null;
+        let lastErrData = null;
 
-            if (resp.ok) {
-                const data = await resp.json();
-                localStorage.setItem('milion_user_session', JSON.stringify(data));
-                if (data.access_token) {
-                    localStorage.setItem('sb-dxlyjugmeucevosmhage-auth-token', JSON.stringify(data));
+        for (const authType of typesToTry) {
+            try {
+                const resp = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: authType,
+                        email: pendingEmail,
+                        token: code
+                    })
+                });
+
+                if (resp.ok) {
+                    successData = await resp.json();
+                    break;
+                } else {
+                    lastErrData = await resp.json().catch(() => ({}));
                 }
-                if (otpMsg) { otpMsg.style.color = 'var(--forest-green)'; otpMsg.innerText = '🎉 PIN kód správný! Byl jsi přihlášen!'; }
-                setTimeout(() => {
-                    closeAuthModal();
-                    initAuthState();
-                    if (typeof loadData === 'function') loadData();
-                    alert("🎉 Vítej v aplikaci! Byl jsi úspěšně přihlášen!");
-                }, 600);
-            } else {
-                const errData = await resp.json().catch(() => ({}));
-                const rawErr = errData.msg || errData.message || errData.error_description || '';
-                let czechErr = 'Neplatný nebo vypršený PIN kód.';
-                if (rawErr.includes('expired')) czechErr = 'Vypršela platnost PIN kódu. Vyžaduj nový.';
-                if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Chyba: ' + czechErr; }
+            } catch(e) {}
+        }
+
+        if (successData) {
+            localStorage.setItem('milion_user_session', JSON.stringify(successData));
+            if (successData.access_token) {
+                localStorage.setItem('sb-dxlyjugmeucevosmhage-auth-token', JSON.stringify(successData));
             }
-        } catch (err) {
-            if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Chyba spojení: ' + err.message; }
+            if (otpMsg) { otpMsg.style.color = 'var(--forest-green)'; otpMsg.innerText = '🎉 PIN kód správný! Byl jsi přihlášen!'; }
+            setTimeout(() => {
+                closeAuthModal();
+                initAuthState();
+                if (typeof loadData === 'function') loadData();
+                alert("🎉 Vítej v aplikaci! Byl jsi úspěšně přihlášen!");
+            }, 600);
+        } else {
+            const rawErr = (lastErrData && (lastErrData.msg || lastErrData.message || lastErrData.error_description)) || '';
+            let czechErr = 'Neplatný nebo vypršený PIN kód.';
+            if (rawErr.includes('expired')) czechErr = 'Vypršela platnost PIN kódu. Vyžaduj nový.';
+            if (otpMsg) { otpMsg.style.color = 'red'; otpMsg.innerText = 'Chyba: ' + czechErr; }
         }
     };
 
