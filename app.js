@@ -725,7 +725,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Inicializace a uložení přezdívky z nastavení
+    // Inicializace a uložení přezdívky z nastavení s automatickým udržením historie
+    let nickSyncTimeout = null;
     if (settingsNicknameInput) {
         settingsNicknameInput.value = userNick;
         settingsNicknameInput.addEventListener('input', (e) => {
@@ -735,6 +736,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const nameElem = document.getElementById('profileFullName');
             if (nameElem) nameElem.textContent = userNick || 'Sběrač';
             updateTomFeaturesVisibility();
+
+            // Automatická synchronizace nové přezdívky do Supabase databáze u celého účtu
+            clearTimeout(nickSyncTimeout);
+            nickSyncTimeout = setTimeout(async () => {
+                if (!userNick) return;
+                let userEmail = null;
+                try {
+                    const sess = JSON.parse(localStorage.getItem('milion_user_session'));
+                    userEmail = (sess && sess.user && sess.user.email) || (sess && sess.email) || null;
+                } catch(err) {}
+
+                if (userEmail) {
+                    try {
+                        await fetch(`${SUPABASE_URL}/rest/v1/pickups?user_email=eq.${encodeURIComponent(userEmail)}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ nickname: userNick })
+                        });
+                        if (typeof loadData === 'function') loadData();
+                    } catch(err) {
+                        console.error("Chyba při aktualizaci přezdívky v databázi:", err);
+                    }
+                }
+            }, 800);
         });
     }
 
@@ -1579,7 +1608,20 @@ document.addEventListener('DOMContentLoaded', () => {
             // Automatické spárování nepropojených úlovků sběrače v databázi s jeho e-mailem
             if (userEmail && userNick) {
                 const cleanNick = userNick.trim().replace(/^@/, '');
-                let nicksToLink = [userNick, `@${cleanNick}`, cleanNick];
+                const oldLocalNick = (localStorage.getItem('milion_nickname') || localStorage.getItem('userNick') || '').trim().replace(/^@/, '');
+                
+                let nicksToLink = [
+                    userNick,
+                    `@${cleanNick}`,
+                    cleanNick,
+                    cleanNick.toLowerCase(),
+                    cleanNick.replace(/\s+/g, ''),
+                    cleanNick.replace(/\s+/g, '_')
+                ];
+
+                if (oldLocalNick) {
+                    nicksToLink.push(oldLocalNick, `@${oldLocalNick}`, oldLocalNick.toLowerCase());
+                }
 
                 if (userEmail.toLowerCase() === 'tomas@tomashajek.cz') {
                     nicksToLink.push('Tom', 'Tomáš Hájek', 'Tomashajek');
