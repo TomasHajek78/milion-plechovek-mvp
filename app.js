@@ -458,6 +458,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const matchNick = (n1, n2) => {
+            if (!n1 || !n2) return false;
+            return n1.trim().toLowerCase().replace(/^@/, '') === n2.trim().toLowerCase().replace(/^@/, '');
+        };
+
         // Sečtení plechovek podle uživatelů
         const userSums = {};
         allData.forEach(item => {
@@ -470,11 +475,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .map(([nick, count]) => ({ nick, count }))
             .sort((a, b) => b.count - a.count);
 
-        // Vykreslení TOP 10
+        // Vykreslení TOP 50
         sortedUsers.slice(0, 50).forEach((user, index) => {
             const li = document.createElement('li');
             li.className = 'leaderboard-item';
-            if (user.nick === userNick) li.className += ' me';
+            if (matchNick(user.nick, userNick)) li.className += ' me';
             li.innerHTML = `
                 <span class="rank">${index + 1}.</span>
                 <span class="nick">${user.nick}</span>
@@ -485,25 +490,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Moje pozice v reálném žebříčku
-        const myRankIndex = sortedUsers.findIndex(u => u.nick === userNick);
-        if (myRankIndex >= 10) {
+        const myRankIndex = sortedUsers.findIndex(u => matchNick(u.nick, userNick));
+        if (myRankIndex >= 50) {
+            const matchedUser = sortedUsers[myRankIndex];
             const myLi = document.createElement('li');
             myLi.className = 'leaderboard-item me';
             myLi.innerHTML = `
                 <span class="rank">${myRankIndex + 1}.</span>
                 <span class="nick">${userNick}</span>
-                <span class="count">${userSums[userNick] || 0} ks</span>
-            `;
-            myLi.addEventListener('click', () => openUserGallery(userNick));
-            leaderboardList.appendChild(myLi);
-        } else if (myRankIndex === -1 && userNick) {
-            // Pokud ještě nic nenasbíral
-            const myLi = document.createElement('li');
-            myLi.className = 'leaderboard-item me';
-            myLi.innerHTML = `
-                <span class="rank">${sortedUsers.length + 1}.</span>
-                <span class="nick">${userNick}</span>
-                <span class="count">0 ks</span>
+                <span class="count">${matchedUser ? matchedUser.count : 0} ks</span>
             `;
             myLi.addEventListener('click', () => openUserGallery(userNick));
             leaderboardList.appendChild(myLi);
@@ -1551,8 +1546,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Automatické spárování nepropojených úlovků sběrače v databázi s jeho e-mailem
             if (userEmail && userNick) {
-                const nicksToLink = ['Tom', 'Tomáš Hájek', 'Tomashajek', userNick].filter(Boolean);
+                const cleanNick = userNick.trim().replace(/^@/, '');
+                let nicksToLink = [userNick, `@${cleanNick}`, cleanNick];
+
+                if (userEmail.toLowerCase() === 'tomas@tomashajek.cz') {
+                    nicksToLink.push('Tom', 'Tomáš Hájek', 'Tomashajek');
+                } else if (userEmail.toLowerCase() === 'mullous@yahoo.com') {
+                    nicksToLink.push('@WildTrashMapcz', 'WildTrashMapcz', 'Květák', '@Květák');
+                } else if (userEmail.toLowerCase() === 'david.mikac@seznam.cz') {
+                    nicksToLink.push('@david_mikac', 'david_mikac', 'maxmiki', '@maxmiki');
+                }
+
+                // Odstranění duplicit
+                nicksToLink = Array.from(new Set(nicksToLink.filter(Boolean)));
                 const orCond = nicksToLink.map(n => `nickname.eq.${encodeURIComponent(n)}`).join(',');
+
+                // 1) Doplnit e-mail ke všem starým nepárovaným fotkám dané přezdívky
                 fetch(`${SUPABASE_URL}/rest/v1/pickups?or=(${orCond})&user_email=is.null`, {
                     method: 'PATCH',
                     headers: {
@@ -1561,7 +1570,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ user_email: userEmail })
-                }).then(() => { if (typeof loadData === 'function') loadData(); }).catch(() => {});
+                }).then(() => {
+                    // 2) Sjednotit přezdívku v DB podle aktuálního userNick
+                    fetch(`${SUPABASE_URL}/rest/v1/pickups?user_email=eq.${encodeURIComponent(userEmail)}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ nickname: userNick })
+                    }).then(() => {
+                        if (typeof loadData === 'function') loadData();
+                    }).catch(() => {});
+                }).catch(() => {});
             }
         } else {
             // UŽIVATEL JE ODHLÁŠENÝ
